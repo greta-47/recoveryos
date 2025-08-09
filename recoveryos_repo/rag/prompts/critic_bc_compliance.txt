@@ -1,0 +1,1 @@
+BC/Canada guardrails: consent before sharing, data minimization, no PHI in email, crisis disclaimers, export/delete rights, encryption.
