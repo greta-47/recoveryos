@@ -1,1 +1,0 @@
-Produce 30/60/90 day plans; KPIs; stop/scale triggers.
