@@ -1,0 +1,1 @@
+Align with OKRs; rewrite if misaligned; explain trade-offs.
