@@ -1,18 +1,105 @@
+# docker-compose.yml
 version: "3.9"
+
+# Run prod (gunicorn) -> `docker compose --profile prod up --build`
+# Run dev (hot reload) -> `docker compose --profile dev up --build`
+
 services:
+  # ================================
+  # API Service (Production)
+  # Uses your Dockerfile CMD: gunicorn -k uvicorn.workers.UvicornWorker ...
+  # ================================
   api:
-    build: ../
-    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
-    ports: ["8000:8000"]
-    env_file: ../.env
-    depends_on: [db]
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Do not override command; let Dockerfile CMD run gunicorn
+    environment:
+      - PORT=8000
+      - ENV=production
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/recoveryos
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # Override Dockerfile HEALTHCHECK (which used curl) with a Python-based check
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/healthz', timeout=3).getcode()==200 else sys.exit(1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ================================
+  # API Service (Development with hot reload)
+  # Uses uvicorn --reload and a bind mount for live code edits
+  # ================================
+  api-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - PORT=8000
+      - ENV=development
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/recoveryos
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/healthz', timeout=3).getcode()==200 else sys.exit(1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ================================
+  # Database Service (PostgreSQL)
+  # ================================
   db:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: recoveryos
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports: ["5432:5432"]
-    volumes: ["pgdata:/var/lib/postgresql/data"]
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d  # Optional: put *.sql or *.sh here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d recoveryos || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ================================
+  # Optional: Adminer (DB UI)
+  # http://localhost:8080
+  # ================================
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - db
+    profiles: ["dev", "prod"]
+
 volumes:
   pgdata:
