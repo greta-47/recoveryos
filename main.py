@@ -8,36 +8,11 @@ from pydantic import BaseModel, Field, validator
 from datetime import datetime
 import logging
 import re
-from typing import List, Union, Optional, Dict, Any
+from typing import Optional
 
-# --- Import your multi-agent pipeline (robust to package or flat module) ---
-try:
-    # Preferred: package layout agents/agents.py with agents/__init__.py
-    from agents.agents import (
-        AgentsIn as PipelineAgentsIn,
-        agents_run as pipeline_agents_run,
-        run_multi_agent,
-    )
-except Exception:
-    try:
-        # Fallback: legacy flat file agents.py at project root
-        from agents import (
-            AgentsIn as PipelineAgentsIn,
-            agents_run as pipeline_agents_run,
-            run_multi_agent,
-        )
-    except Exception as e:
-        raise ImportError(
-            "Could not import the pipeline. Ensure either:\n"
-            "A) Package layout: agents/agents.py + agents/__init__.py, and NO top-level agents.py\n"
-            "or\n"
-            "B) Flat module: agents.py at project root.\n"
-            f"Original error: {e}"
-        )
-
-# Optional routers (uncomment if present)
-# from admin_clinician import router as clinician_router
-# from briefing import router as briefing_router
+# ---- Import the flat agents.py you showed ----
+# (No package import; this matches your current layout exactly)
+from agents import run_multi_agent
 
 # ----------------------
 # Logging Setup (audit & observability)
@@ -58,6 +33,7 @@ app = FastAPI(
     description="AI-powered relapse prevention platform for addiction recovery",
 )
 
+# Secure CORS (tighten to your domain(s) in prod)
 ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:3000",
@@ -73,34 +49,23 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
-# Mount optional routers if you enabled them
-# app.include_router(clinician_router)
-# app.include_router(briefing_router)
-
 # ----------------------
 # Models (API-facing DTOs)
 # ----------------------
 class Checkin(BaseModel):
-    mood: int = Field(..., ge=1, le=5, description="Mood level: 1 (struggling) to 5 (strong)")
-    urge: int = Field(..., ge=1, le=5, description="Urge to use: 1 (low) to 5 (high)")
+    mood: int = Field(..., ge=1, le=5, description="Mood: 1 (struggling) to 5 (strong)")
+    urge: int = Field(..., ge=1, le=5, description="Urge: 1 (low) to 5 (high)")
     sleep_hours: float = Field(0, ge=0, le=24, description="Hours slept last night")
     isolation_score: int = Field(0, ge=0, le=5, description="Social connection: 1 (isolated) to 5 (connected)")
 
 
 class AgentsRequest(BaseModel):
-    """
-    Public request model for /agents/run.
-    Accepts OKRs as either a single string (e.g., '1) X 2) Y') or a list of strings.
-    """
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
-    okrs: Union[str, List[str]] = Field(
-        default='["Cash-flow positive","Consistent scaling","CSAT 85%"]',
-        description="OKRs as a single string or an array of strings",
-    )
-    research: Optional[str] = Field(
-        default=None,
-        description="Optional: if provided, the pipeline will use this instead of synthesizing lightweight research",
+    okrs: str = Field(
+        default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%",
+        max_length=1000,
+        description="OKRs in plain text (the flat agents.py expects a string)",
     )
 
     @validator("topic")
@@ -108,14 +73,6 @@ class AgentsRequest(BaseModel):
         if re.search(r"password|token|secret|PHI", v, re.I):
             raise ValueError("Invalid topic — restricted keywords detected")
         return v.strip()
-
-    def okrs_as_list(self) -> List[str]:
-        if isinstance(self.okrs, list):
-            return [str(x).strip() for x in self.okrs if str(x).strip()]
-        raw = str(self.okrs)
-        parts = re.split(r"(?:\d+\)\s*|;|,|\n)", raw)
-        as_list = [p.strip(" •-") for p in parts if p and p.strip()]
-        return as_list or [raw.strip()]
 
 
 # ----------------------
@@ -173,27 +130,19 @@ def create_checkin(checkin: Checkin, request: Request):
 @app.post("/agents/run")
 def agents_run(body: AgentsRequest, request: Request):
     """
-    Runs the multi-agent pipeline: Researcher → Analyst → Strategist → Advisor
-    Returns all stage outputs. Outputs are de-identified and sanitized.
+    Runs the multi-agent pipeline (Researcher → Analyst → Critic → Strategist → Advisor).
+    Returns all stage outputs from your flat agents.py.
     """
     client_host = request.client.host if request.client else "unknown"
     request_id = f"agent-{hash(f'{client_host}-{datetime.utcnow().timestamp()}') % 10**8}"
     logger.info(f"Agent pipeline started | ID={request_id} | Topic='{body.topic}'")
 
     try:
-        okrs_list = body.okrs_as_list()
+        # Call your flat agents.py runner (expects okrs as string)
+        result = run_multi_agent(body.topic, body.horizon, body.okrs)
 
-        pipeline_in = PipelineAgentsIn(
-            topic=body.topic,
-            horizon=body.horizon,
-            okrs=okrs_list,
-            research=body.research,
-        )
-
-        result: Dict[str, Any] = pipeline_agents_run(pipeline_in)
-
-        # Conservative PHI scrub
-        for key in ["researcher", "analyst", "strategist", "advisor"]:
+        # Conservative PHI scrub on string outputs
+        for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
             if key in result and isinstance(result[key], str) and result[key]:
                 if re.search(r"(patient\s+\d+|name\s*:|DOB\s*:)", result[key], re.I):
                     logger.warning(f"Potential PHI detected in {key} output — redacting")
@@ -201,10 +150,8 @@ def agents_run(body: AgentsRequest, request: Request):
 
         logger.info(f"Agent pipeline completed | ID={request_id}")
         return {
-            **result,
-            "request_id": request_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "okrs": okrs_list,
+            **result,  # includes request_id & timestamp from your agents.py already
+            "api_request_id": request_id,  # extra ID from API edge
         }
 
     except HTTPException:
@@ -233,7 +180,6 @@ def ui():
   label{display:block;margin:10px 0 6px;color:#cbd5e1;font-size:14px}
   input,textarea,button{width:100%;padding:12px;border-radius:12px}
   input,textarea{background:#0f1627;border:1px solid #2a3b66;color:var(--ink)}
-  textarea{min-height:90px}
   button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer;margin-top:12px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:800px){.grid{grid-template-columns:1fr}}
   .out{white-space:pre-wrap;background:#0f1627;border:1px dashed #2a3b66;padding:12px;border-radius:12px;margin-top:16px}
@@ -247,10 +193,8 @@ def ui():
     <input id="topic" placeholder="Top 3 underserved niches in mental health tech 2025">
     <div class="grid">
       <div><label>Horizon</label><input id="horizon" value="90 days"></div>
-      <div><label>OKRs (string or JSON array)</label><input id="okrs" value='["100 beta users","80% weekly engagement","Zero safety incidents"]'></div>
+      <div><label>OKRs (plain text)</label><input id="okrs" value="1) 100 beta users 2) 80% engagement 3) Zero safety incidents"></div>
     </div>
-    <label>Optional: Paste external research (otherwise a lightweight summary is synthesized)</label>
-    <textarea id="research" placeholder="Key facts, signals, uncertainties, constraints..."></textarea>
     <button id="run">Run Agents</button>
     <div id="status" style="margin-top:8px"></div>
     <div id="result" class="out" style="display:none"></div>
@@ -260,24 +204,15 @@ def ui():
 <script>
 const el = (id) => document.getElementById(id);
 
-function parseOKRs(raw) {
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-  } catch(e) {}
-  return raw; // server will split strings into a list
-}
-
 el("run").onclick = async () => {
   const payload = {
     topic: el("topic").value.trim() || "RecoveryOS go-to-market strategy",
     horizon: el("horizon").value.trim() || "90 days",
-    okrs: parseOKRs(el("okrs").value.trim()),
-    research: el("research").value.trim() || null
+    okrs: el("okrs").value.trim() || "1) 100 beta users 2) 80% engagement 3) Zero safety incidents"
   };
 
   el("run").disabled = true;
-  el("status").textContent = "Running Researcher → Analyst → Strategist → Advisor…";
+  el("status").textContent = "Running Researcher → Analyst → Critic → Strategist → Advisor…";
   el("result").style.display = "none";
 
   try {
@@ -294,10 +229,10 @@ el("run").onclick = async () => {
     el("result").textContent =
       "► Researcher\\n\\n" + (data.researcher || "(no output)") + "\\n\\n" +
       "► Analyst\\n\\n" + (data.analyst || "(no output)") + "\\n\\n" +
+      "► Critic\\n\\n" + (data.critic || "(no output)") + "\\n\\n" +
       "► Strategist\\n\\n" + (data.strategist || "(no output)") + "\\n\\n" +
-      "► Advisor\\n\\n" + (data.advisor || "(no output)") + "\\n\\n" +
-      `[OKRs: ${(data.okrs || []).join(" | ")}]` + "\\n" +
-      `[Request ID: ${data.request_id} | ${new Date().toLocaleString()}]`;
+      "► Advisor Memo\\n\\n" + (data.advisor_memo || "(no output)") + "\\n\\n" +
+      `[Agent Request ID: ${data.request_id || "n/a"} | API Edge ID: ${data.api_request_id || "n/a"}]`;
   } catch (e) {
     el("status").textContent = "❌ Error: " + (e.message || e);
   } finally {
