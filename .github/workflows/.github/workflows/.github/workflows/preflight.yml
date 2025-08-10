@@ -4,73 +4,126 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   preflight:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ---------- Structure sanity ----------
-      - name: Verify required files exist at repo ROOT
+      # ---------- Security & Structure Check ----------
+      - name: Verify repo integrity and safety
         run: |
           set -e
+          # Required files
           test -f Dockerfile || (echo "❌ Missing Dockerfile at repo root" && exit 1)
-          test -f requirements.txt || (echo "❌ Missing requirements.txt at repo root" && exit 1)
-          test -f api/main.py || (echo "❌ Missing api/main.py at repo root" && exit 1)
-          test -f api/__init__.py || (echo "❌ Missing api/__init__.py at repo root" && exit 1)
-          echo "✅ Repo structure looks good."
+          test -f requirements.txt || (echo "❌ Missing requirements.txt" && exit 1)
+          test -f api/main.py || (echo "❌ Missing api/main.py" && exit 1)
+          test -f api/__init__.py || (echo "❌ Missing api/__init__.py" && exit 1)
+          
+          # Block accidental secrets
+          if git grep -E 'BEGIN (RSA|PRIVATE) KEY|aws_secret|password=|token=|jwt_secret|client_secret' -- . ; then
+            echo "❌ Sensitive data detected in repo. Aborting."
+            exit 1
+          fi
 
-      # ---------- Python setup ----------
+          # Warn if .env exists
+          if [ -f .env ]; then
+            echo "⚠️ .env file found — ensure it's not committed"
+          fi
+
+          echo "✅ Repo structure and safety check passed."
+
+      # ---------- Python Setup + Cache ----------
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ---------- Import smoke test ----------
-      - name: Import api.main (catches 'No module named api')
+      # ---------- Import & Config Test ----------
+      - name: Import api.main with env safety
         run: |
           python - <<'PY'
           import importlib
-          importlib.import_module("api.main")
-          print("✅ api.main import ok")
+          import os
+          # Mock required env vars
+          os.environ.setdefault("JWT_SECRET", "test-secret")
+          try:
+              importlib.import_module("api.main")
+              print("✅ api.main imported successfully")
+          except Exception as e:
+              print(f"❌ Import failed: {e}")
+              raise
           PY
 
-      # ---------- Optional: quick lint ----------
-      - name: Lint (basic)
+      # ---------- Linting (Strict) ----------
+      - name: Lint with ruff (modern, fast)
         run: |
-          pip install flake8
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+          pip install ruff
+          ruff check . --exit-zero > ruff-output.txt || true
+          # Fail if any errors
+          if grep -q "error" ruff-output.txt; then
+            echo "❌ Lint errors found:"
+            cat ruff-output.txt
+            exit 1
+          fi
+          echo "✅ No lint errors"
 
-      # ---------- Run app briefly to verify startup ----------
-      - name: Start Uvicorn (background) and probe / and /docs
+      # ---------- Runtime Smoke Test ----------
+      - name: Start Uvicorn and probe endpoints
         env:
           PORT: 8000
           JWT_SECRET: ci-test-secret
         run: |
+          # Start app in background
           uvicorn api.main:app --host 0.0.0.0 --port $PORT &
           PID=$!
-          # wait for server
-          for i in {1..30}; do
-            curl -fsS http://127.0.0.1:$PORT/ && break
-            sleep 1
-          done
-          echo "✅ Root endpoint reachable"
-          curl -fsS http://127.0.0.1:$PORT/docs > /dev/null
-          echo "✅ /docs reachable"
-          kill $PID || true
 
-      # ---------- Docker build check (matches Render) ----------
-      - name: Build Docker image (ensures Dockerfile is valid)
+          # Wait for server to respond
+          timeout 30s bash -c 'until curl -fs http://127.0.0.1:$PORT/; do sleep 1; done' || (echo "❌ App failed to start" && kill $PID && exit 1)
+          echo "✅ Root endpoint reachable"
+
+          # Test /docs
+          curl -fs http://127.0.0.1:$PORT/docs > /dev/null
+          echo "✅ /docs reachable"
+
+          # Test health check
+          curl -fs http://127.0.0.1:$PORT/healthz | grep -q "status.*ok" && echo "✅ Health check OK" || (echo "❌ Health check failed" && kill $PID && exit 1)
+
+          # Clean shutdown
+          kill $PID && wait $PID 2>/dev/null || echo "✅ Server stopped"
+
+      # ---------- Docker Build + Scan ----------
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Docker Build
+
+      - name: Build Docker image
         run: |
           docker build -t recoveryos:test -f Dockerfile .
+          echo "✅ Docker image built"
+
+      - name: Scan Docker image for vulnerabilities
+        run: |
+          # Install Trivy (lightweight scanner)
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.56.0/trivy_0.56.0_Linux-64bit.tar.gz
+          tar -xzf trivy_0.56.0_Linux-64bit.tar.gz
+          sudo mv trivy /usr/local/bin/
+          
+          # Scan
+          trivy image --exit-code 1 --severity CRITICAL recoveryos:test || (echo "⚠️ Critical vulnerabilities found — review before deploy" && exit 1)
+          echo "✅ No critical vulnerabilities found"
+
+      # ---------- Final Status ----------
+      - name: Final Status
+        run: |
+          echo "🚀 RecoveryOS Preflight Complete — Ready for Secure, Scalable Care"
