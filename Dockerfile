@@ -3,7 +3,7 @@
 # Secure, minimal, auditable
 # ================================
 
-# Use slim Python 3.11 (pinned for reproducibility)
+# Base image (pin for reproducibility)
 FROM python:3.11.9-slim AS base
 
 # --- Runtime env ---
@@ -12,40 +12,39 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Create non-root user (security best practice)
-# UID/GID 10001 avoids clashes on some PaaS
+# Create non-root user/group with stable IDs
 RUN addgroup --system --gid 10001 appuser && \
     adduser  --system --uid 10001 --ingroup appuser appuser
 
-# System packages needed at runtime (curl for HEALTHCHECK)
-# tini is a tiny init to handle PID 1 signals & zombies correctly
+# System deps: curl for HEALTHCHECK, tini to handle PID 1 properly
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl tini && \
     rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Working dir
 WORKDIR /app
 
-# Copy requirements first to leverage Docker cache
+# Copy only requirements first for better build caching (if present)
+# If you switch to pyproject.toml, adjust this section.
 COPY --chown=appuser:appuser requirements.txt /app/requirements.txt
+RUN if [ -f /app/requirements.txt ]; then \
+      pip install --no-compile -r /app/requirements.txt && \
+      pip install --no-compile gunicorn uvicorn[standard]; \
+    else \
+      pip install --no-compile gunicorn uvicorn[standard]; \
+    fi
 
-# Install Python deps (gunicorn + uvicorn workers included)
-RUN pip install --no-compile -r requirements.txt && \
-    pip install --no-compile gunicorn uvicorn[standard]
+# Copy the entire application (use a .dockerignore to keep it lean)
+COPY --chown=appuser:appuser . /app
 
-# Copy only essential app files
-# (adjust paths if your package layout changes)
-COPY --chown=appuser:appuser main.py /app/main.py
-COPY --chown=appuser:appuser agents/ /app/agents/
-
-# Switch to non-root user
+# Switch to non-root
 USER appuser
 
-# Health check (expects /healthz in main.py)
+# Health check endpoint must exist in main.py
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8000/healthz || exit 1
 
-# Labels for audit and traceability
+# OCI labels
 LABEL org.opencontainers.image.title="RecoveryOS API" \
       org.opencontainers.image.description="AI-powered relapse prevention for addiction recovery" \
       org.opencontainers.image.version="0.1.0" \
@@ -53,19 +52,19 @@ LABEL org.opencontainers.image.title="RecoveryOS API" \
       org.opencontainers.image.source="https://github.com/yourname/recoveryos"
 
 # ================================
-# Final Stage (minimal runtime)
+# Final Stage (runtime)
 # ================================
 FROM base AS final
 
-# Expose port (Render/Heroku will set $PORT; default 8000 for local)
+# Network
 EXPOSE 8000
 ENV PORT=8000
 
-# Use tini as entrypoint to reap zombies & forward signals to gunicorn
+# Use tini for proper signal handling and zombie reaping
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-# Start Gunicorn + Uvicorn worker (robust vs. raw uvicorn)
-# Workers=1 is fine for async; bump if you have CPU headroom
+# Launch Gunicorn with Uvicorn workers
+# Tweak WORKERS/TIMEOUT via env on your platform
 CMD ["sh", "-c", "gunicorn main:app \
   -k uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:${PORT:-8000} \
