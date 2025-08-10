@@ -1,1 +1,321 @@
-BC/Canada guardrails: consent before sharing, data minimization, no PHI in email, crisis disclaimers, export/delete rights, encryption.
+# consent_guardrails.py
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Dict, Any, Optional, Iterable, Tuple
+import logging
+import re
+import json
+
+# Try to integrate with your consent engine; fall back to mocks if not available.
+try:
+    from consent import (
+        ConsentType,
+        ConsentRecord,
+        can_send_weekly,
+        can_run_analytics,
+        can_use_ai_research,
+        can_enroll_peer_support,
+        can_notify_family,
+    )
+    _CONSENT_AVAILABLE = True
+except Exception:  # pragma: no cover
+    _CONSENT_AVAILABLE = False
+
+logger = logging.getLogger("recoveryos")
+
+# =========================================================
+# 1) Consent mapping & validation
+# =========================================================
+
+# Canonical data types for outbound sharing.
+# Keys are external-facing strings your app uses; values map to ConsentType.
+DATA_TYPE_TO_CONSENT: Dict[str, str] = {
+    "weekly_briefing": "weekly_briefing",
+    "family_updates": "family_updates",
+    "peer_support": "peer_support",
+    "data_analytics": "data_analytics",
+    "ai_research": "ai_research",
+}
+
+def _normalize_data_type(data_type: str) -> str:
+    """Normalize incoming data_type strings and catch common variants."""
+    t = (data_type or "").strip().lower()
+    # Backward-compat with earlier typos/variants
+    aliases = {
+        "family_update": "family_updates",
+        "analytics": "data_analytics",
+        "weekly": "weekly_briefing",
+        "peer": "peer_support",
+        "research": "ai_research",
+    }
+    return aliases.get(t, t)
+
+def requires_consent(data_type: str) -> bool:
+    return _normalize_data_type(data_type) in DATA_TYPE_TO_CONSENT
+
+# --- Mock store for demo/testing when consent.py (and DB) are unavailable ---
+_MOCK_CONSENTS: Dict[str, Iterable[str]] = {
+    "usr-abc123": ["weekly_briefing", "data_analytics"],
+    "usr-def456": [],
+}
+
+def _mock_has_active_consent(user_id: str, data_type: str) -> bool:
+    granted = set(_MOCK_CONSENTS.get(user_id, []))
+    return _normalize_data_type(data_type) in granted
+
+def has_active_consent(user_id: str, data_type: str) -> bool:
+    """
+    Returns True if the user has active consent for the given data type.
+    Uses your consent engine if available; otherwise uses a mock.
+    """
+    norm = _normalize_data_type(data_type)
+
+    if not requires_consent(norm):
+        # If this data type doesn't require consent, treat as allowed.
+        logger.info("Consent not required | User=%s | Type=%s", user_id, norm)
+        return True
+
+    if not _CONSENT_AVAILABLE:
+        allowed = _mock_has_active_consent(user_id, norm)
+        logger.info("Consent check (mock) | User=%s | Type=%s | Allowed=%s", user_id, norm, allowed)
+        return allowed
+
+    # consent.py path
+    # In a real system, you would fetch a ConsentRecord from your DB.
+    # Here we conservatively assume "not allowed" unless a record exists.
+    # You can swap this with your repo’s actual retrieval function.
+    def _check_with_engine(norm_type: str) -> bool:
+        # Map normalized string to consent check helper
+        if norm_type == "weekly_briefing":
+            # You would pass a ConsentRecord for the user; using None means "not allowed".
+            return can_send_weekly(None)
+        if norm_type == "data_analytics":
+            return can_run_analytics(None)
+        if norm_type == "ai_research":
+            return can_use_ai_research(None)
+        if norm_type == "peer_support":
+            return can_enroll_peer_support(None)
+        if norm_type == "family_updates":
+            return can_notify_family(None)
+        return False
+
+    allowed = _check_with_engine(norm)
+    logger.info("Consent check | User=%s | Type=%s | Allowed=%s", user_id, norm, allowed)
+    return allowed
+
+
+# =========================================================
+# 2) Data minimization (with shallow + dotted-path support)
+# =========================================================
+
+# Allowed keys for each outbound use. Supports dotted paths for nested dicts.
+ALLOWED_KEYS: Dict[str, Iterable[str]] = {
+    "weekly_briefing": ["user_id", "name_display", "recovery_days", "trend", "risk_flags"],
+    "family_updates": ["user_id", "engagement_level", "progress_note"],
+    "data_analytics": ["user_id", "mood", "urge", "sleep_hours", "timestamp"],
+    "ai_research": ["user_id", "features", "labels", "timestamp"],
+    "peer_support": ["user_id", "support_need", "timeframe", "message"],
+}
+
+def _get_by_path(d: Dict[str, Any], path: str) -> Tuple[bool, Any]:
+    """Safely retrieve nested values using dot paths (e.g., 'trend.urge_avg')."""
+    cur = d
+    parts = path.split(".")
+    for p in parts:
+        if not isinstance(cur, dict) or p not in cur:
+            return (False, None)
+        cur = cur[p]
+    return (True, cur)
+
+def _set_by_path(d: Dict[str, Any], path: str, value: Any) -> None:
+    """Safely set nested values using dot paths, creating intermediate dicts."""
+    cur = d
+    parts = path.split(".")
+    for p in parts[:-1]:
+        if p not in cur or not isinstance(cur[p], dict):
+            cur[p] = {}
+        cur = cur[p]
+    cur[parts[-1]] = value
+
+def minimize_data(data: Dict[str, Any], allowed_keys: Iterable[str]) -> Dict[str, Any]:
+    """
+    Strip all fields not in allowed_keys.
+    Keeps entire sub-objects if the top key is allowed (e.g., "trend").
+    Allows dotted paths for precise inclusion (e.g., "trend.urge_avg").
+    """
+    minimized: Dict[str, Any] = {}
+    for key in allowed_keys:
+        if "." in key:
+            ok, val = _get_by_path(data, key)
+            if ok:
+                _set_by_path(minimized, key, val)
+        else:
+            if key in data:
+                minimized[key] = data[key]
+    logger.debug("Data minimized | Kept=%s", list(minimized.keys()))
+    return minimized
+
+
+# =========================================================
+# 3) PHI/PII detection & redaction (conservative, extensible)
+# =========================================================
+
+_PHI_PATTERNS = [
+    r"\b\d{3}-\d{3}-\d{4}\b",                              # phone (NA)
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", # email
+    r"\bDOB[:\s]*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b",         # DOB variants
+    r"\b(SIN|SSN)[:\s]*\d{3}[- ]?\d{3}[- ]?\d{3,4}\b",     # SIN/SSN
+    r"\b\d{3}-\d{2}-\d{4}\b",                              # US SSN style
+    r"\b(address|location)[:\s]*[A-Za-z0-9#.\- ]+(?:,.*)?",# Address/location prefix
+]
+_PHI_RE = re.compile("|".join(_PHI_PATTERNS), re.I)
+
+def contains_phi(text: str) -> bool:
+    if not text:
+        return False
+    return bool(_PHI_RE.search(text))
+
+def redact_phi(text: str) -> str:
+    if not text:
+        return text
+    return _PHI_RE.sub("[REDACTED]", text)
+
+def sanitize_text(text: str) -> str:
+    """Redact PHI if present; return safe text."""
+    if contains_phi(text):
+        logger.warning("PHI detected in text — redacting")
+        return redact_phi(text)
+    return text
+
+def sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Redact PHI-like patterns inside a JSON-able payload (shallow scan on string values).
+    Consider pre-minimizing prior to calling this for best effect.
+    """
+    safe = {}
+    for k, v in payload.items():
+        if isinstance(v, str):
+            safe[k] = sanitize_text(v)
+        elif isinstance(v, dict):
+            safe[k] = sanitize_payload(v)
+        elif isinstance(v, list):
+            safe[k] = [sanitize_text(x) if isinstance(x, str) else x for x in v]
+        else:
+            safe[k] = v
+    return safe
+
+
+# =========================================================
+# 4) Crisis disclaimer (BC/Canada-safe, de-identified)
+# =========================================================
+
+CRISIS_DISCLAIMER = (
+    "—\n"
+    "This message is part of your RecoveryOS support program and is not monitored 24/7.\n"
+    "If you are in crisis or feel unsafe, please call local emergency services or a crisis line immediately.\n"
+    "BC Crisis Line: 1-800-784-2433 • If in immediate danger, call 9-1-1.\n"
+)
+
+def append_crisis_disclaimer(text: str) -> str:
+    text = (text or "").rstrip()
+    return f"{text}\n\n{CRISIS_DISCLAIMER}"
+
+
+# =========================================================
+# 5) One-shot guard for outbound messages (email/notification)
+# =========================================================
+
+def prepare_outbound_message(
+    *,
+    user_id: str,
+    data_type: str,
+    payload: Dict[str, Any],
+    subject: str,
+    body: str,
+    include_crisis_disclaimer: bool = True,
+    limit_body_chars: int = 10_000,
+) -> Dict[str, Any]:
+    """
+    End-to-end guardrail for outbound sharing:
+      1) Verify consent (if required)
+      2) Minimize data by allowed keys
+      3) Redact PHI in payload & body
+      4) Append crisis disclaimer (optional)
+      5) Return safe subject, body, and payload
+
+    Raises ValueError if consent is missing/invalid.
+    """
+    norm_type = _normalize_data_type(data_type)
+
+    # 1) Consent
+    if requires_consent(norm_type) and not has_active_consent(user_id, norm_type):
+        logger.warning("Blocked outbound — missing consent | User=%s | Type=%s", user_id, norm_type)
+        raise ValueError("Consent not granted for this data type.")
+
+    # 2) Minimize
+    allowed = ALLOWED_KEYS.get(norm_type, [])
+    minimized = minimize_data(payload or {}, allowed)
+
+    # 3) Sanitize payload & body
+    safe_payload = sanitize_payload(minimized)
+    safe_subject = sanitize_text(subject or "")
+    safe_body = sanitize_text(body or "")
+    if include_crisis_disclaimer:
+        safe_body = append_crisis_disclaimer(safe_body)
+
+    # 4) Truncate excessively long bodies (defense-in-depth)
+    if limit_body_chars and len(safe_body) > limit_body_chars:
+        logger.info("Body truncated for length | Old=%s New=%s", len(safe_body), limit_body_chars)
+        safe_body = safe_body[:limit_body_chars] + "\n…"
+
+    # 5) Return safe bundle
+    result = {
+        "user_id": user_id,
+        "data_type": norm_type,
+        "subject": safe_subject,
+        "body": safe_body,
+        "payload": safe_payload,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    logger.info("Outbound prepared | User=%s | Type=%s | Keys=%s", user_id, norm_type, list(safe_payload.keys()))
+    return result
+
+
+# =========================================================
+# 6) Safe logging helpers
+# =========================================================
+
+def safe_json_log(event: Dict[str, Any]) -> str:
+    """Serialize events for logs without throwing; replaces non-serializable types."""
+    try:
+        return json.dumps(event, default=str, ensure_ascii=False)
+    except Exception:
+        # Last resort: shallow stringification
+        return json.dumps({k: str(v) for k, v in event.items()}, ensure_ascii=False)
+
+
+# =========================================================
+# Example (manual test)
+# =========================================================
+if __name__ == "__main__":  # pragma: no cover
+    demo_payload = {
+        "user_id": "usr-abc123",
+        "name_display": "Patient J",
+        "recovery_days": 54,
+        "trend": {"urge_avg": 2.7, "mood_change": "+0.8"},
+        "risk_flags": {"isolation_risk": True},
+        "notes": "Call me at 604-555-1234",
+    }
+
+    try:
+        bundle = prepare_outbound_message(
+            user_id="usr-abc123",
+            data_type="weekly_briefing",
+            payload=demo_payload,
+            subject="Weekly Briefing",
+            body="Here are the last 7 days of trends.",
+        )
+        print(safe_json_log(bundle))
+    except ValueError as e:
+        print("Blocked:", e)
