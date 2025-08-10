@@ -17,17 +17,17 @@ RUN adduser --disabled-password --gecos '' appuser
 # Set working directory
 WORKDIR /app
 
-# Install only what's needed
+# Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --no-compile -r requirements.txt && \
     pip install gunicorn uvicorn[standard] && \
     rm -rf /root/.cache/
 
-# Copy only the app (not .git, .env, etc.)
+# Copy only essential app files
 COPY main.py ./
 COPY agents/ ./agents/
 
-# Change ownership to appuser
+# Change ownership to non-root user
 RUN chown -R appuser:appuser /app
 
 # Switch to non-root user
@@ -48,3 +48,9 @@ LABEL org.opencontainers.image.source="https://github.com/yourname/recoveryos"
 # Final Stage (minimal runtime)
 # ================================
 FROM base AS final
+
+# Expose port (convention, but Render uses $PORT)
+EXPOSE 8000
+
+# Start with Gunicorn + Uvicorn (more robust than uvicorn alone)
+CMD ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --workers 1 --timeout 30 main:app"]
