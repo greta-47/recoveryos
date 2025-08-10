@@ -1,0 +1,76 @@
+name: RecoveryOS Preflight
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------- Structure sanity ----------
+      - name: Verify required files exist at repo ROOT
+        run: |
+          set -e
+          test -f Dockerfile || (echo "❌ Missing Dockerfile at repo root" && exit 1)
+          test -f requirements.txt || (echo "❌ Missing requirements.txt at repo root" && exit 1)
+          test -f api/main.py || (echo "❌ Missing api/main.py at repo root" && exit 1)
+          test -f api/__init__.py || (echo "❌ Missing api/__init__.py at repo root" && exit 1)
+          echo "✅ Repo structure looks good."
+
+      # ---------- Python setup ----------
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ---------- Import smoke test ----------
+      - name: Import api.main (catches 'No module named api')
+        run: |
+          python - <<'PY'
+          import importlib
+          importlib.import_module("api.main")
+          print("✅ api.main import ok")
+          PY
+
+      # ---------- Optional: quick lint ----------
+      - name: Lint (basic)
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+      # ---------- Run app briefly to verify startup ----------
+      - name: Start Uvicorn (background) and probe / and /docs
+        env:
+          PORT: 8000
+          JWT_SECRET: ci-test-secret
+        run: |
+          uvicorn api.main:app --host 0.0.0.0 --port $PORT &
+          PID=$!
+          # wait for server
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:$PORT/ && break
+            sleep 1
+          done
+          echo "✅ Root endpoint reachable"
+          curl -fsS http://127.0.0.1:$PORT/docs > /dev/null
+          echo "✅ /docs reachable"
+          kill $PID || true
+
+      # ---------- Docker build check (matches Render) ----------
+      - name: Build Docker image (ensures Dockerfile is valid)
+        uses: docker/setup-buildx-action@v3
+      - name: Docker Build
+        run: |
+          docker build -t recoveryos:test -f Dockerfile .
