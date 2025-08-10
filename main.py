@@ -10,12 +10,34 @@ import logging
 import re
 from typing import List, Union, Optional, Dict, Any
 
-# --- Import your multi-agent pipeline (ours lives in agents/agents.py) ---
-# Exposes: AgentsIn, agents_run, run_multi_agent
-from agents.agents import AgentsIn as PipelineAgentsIn, agents_run as pipeline_agents_run, run_multi_agent
+# --- Import your multi-agent pipeline (robust to package or flat module) ---
+try:
+    # Preferred: package layout agents/agents.py with agents/__init__.py
+    from agents.agents import (
+        AgentsIn as PipelineAgentsIn,
+        agents_run as pipeline_agents_run,
+        run_multi_agent,
+    )
+except Exception:
+    try:
+        # Fallback: legacy flat file agents.py at project root
+        from agents import (
+            AgentsIn as PipelineAgentsIn,
+            agents_run as pipeline_agents_run,
+            run_multi_agent,
+        )
+    except Exception as e:
+        raise ImportError(
+            "Could not import the pipeline. Ensure either:\n"
+            "A) Package layout: agents/agents.py + agents/__init__.py, and NO top-level agents.py\n"
+            "or\n"
+            "B) Flat module: agents.py at project root.\n"
+            f"Original error: {e}"
+        )
 
-# If you created clinician routes, mount them here:
+# Optional routers (uncomment if present)
 # from admin_clinician import router as clinician_router
+# from briefing import router as briefing_router
 
 # ----------------------
 # Logging Setup (audit & observability)
@@ -36,7 +58,6 @@ app = FastAPI(
     description="AI-powered relapse prevention platform for addiction recovery",
 )
 
-# Secure CORS (tighten for prod)
 ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:3000",
@@ -52,8 +73,9 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
-# If you enabled clinician routes:
+# Mount optional routers if you enabled them
 # app.include_router(clinician_router)
+# app.include_router(briefing_router)
 
 # ----------------------
 # Models (API-facing DTOs)
@@ -73,7 +95,7 @@ class AgentsRequest(BaseModel):
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
     okrs: Union[str, List[str]] = Field(
-        default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%",
+        default='["Cash-flow positive","Consistent scaling","CSAT 85%"]',
         description="OKRs as a single string or an array of strings",
     )
     research: Optional[str] = Field(
@@ -83,7 +105,6 @@ class AgentsRequest(BaseModel):
 
     @validator("topic")
     def _sanitize_topic(cls, v: str) -> str:
-        # Prevent obvious prompt injection / unsafe tokens
         if re.search(r"password|token|secret|PHI", v, re.I):
             raise ValueError("Invalid topic — restricted keywords detected")
         return v.strip()
@@ -91,7 +112,6 @@ class AgentsRequest(BaseModel):
     def okrs_as_list(self) -> List[str]:
         if isinstance(self.okrs, list):
             return [str(x).strip() for x in self.okrs if str(x).strip()]
-        # split on numbered bullets or semicolons/commas/newlines
         raw = str(self.okrs)
         parts = re.split(r"(?:\d+\)\s*|;|,|\n)", raw)
         as_list = [p.strip(" •-") for p in parts if p and p.strip()]
@@ -130,7 +150,6 @@ def create_checkin(checkin: Checkin, request: Request):
 
     logger.info(f"Check-in received | ID={request_id} | Urge={checkin.urge} | Mood={checkin.mood}")
 
-    # AI Safety Guardrail: Avoid harmful or shaming language
     if checkin.urge >= 4:
         tool = "Urge Surfing — 5-minute guided wave visualization"
     elif checkin.mood <= 2:
@@ -164,7 +183,6 @@ def agents_run(body: AgentsRequest, request: Request):
     try:
         okrs_list = body.okrs_as_list()
 
-        # Build pipeline input (using the pipeline's Pydantic model)
         pipeline_in = PipelineAgentsIn(
             topic=body.topic,
             horizon=body.horizon,
@@ -172,9 +190,9 @@ def agents_run(body: AgentsRequest, request: Request):
             research=body.research,
         )
 
-        result: Dict[str, Any] = pipeline_agents_run(pipeline_in)  # or: run_multi_agent(...)
+        result: Dict[str, Any] = pipeline_agents_run(pipeline_in)
 
-        # Ensure outputs are safe and de-identified (very conservative regex)
+        # Conservative PHI scrub
         for key in ["researcher", "analyst", "strategist", "advisor"]:
             if key in result and isinstance(result[key], str) and result[key]:
                 if re.search(r"(patient\s+\d+|name\s*:|DOB\s*:)", result[key], re.I):
