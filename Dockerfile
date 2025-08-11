@@ -3,7 +3,6 @@
 # Secure, minimal, auditable
 # ================================
 
-# syntax=docker/dockerfile:1.6
 FROM python:3.11-slim AS base
 
 # --- Runtime env ---
@@ -17,10 +16,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser
 
-# Minimal OS deps (torch CPU often needs OpenMP)
+# Minimal OS deps (libgomp for torch; curl for healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgomp1 \
- && rm -rf /var/lib/apt/lists/*
+      libgomp1 \
+      curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -30,16 +30,12 @@ RUN python -m pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # --- Optional: Preload SentenceTransformer model to avoid cold pull at runtime ---
-# Build-time toggle: --build-arg PRELOAD_RAG_MODEL=1 (defaults to 0)
+# Build-time toggle: docker build --build-arg PRELOAD_RAG_MODEL=1 ...
 ARG PRELOAD_RAG_MODEL=0
 ENV RAG_MODEL=all-MiniLM-L6-v2
 RUN if [ "$PRELOAD_RAG_MODEL" = "1" ]; then \
-      python - <<'PY'; \
-from sentence_transformers import SentenceTransformer; import os; \
-m=os.environ.get("RAG_MODEL","all-MiniLM-L6-v2"); SentenceTransformer(m); \
-print(f"Preloaded model: {m}") \
-PY \
-    ; fi
+      python -c "from sentence_transformers import SentenceTransformer as S; import os; m=os.environ.get('RAG_MODEL','all-MiniLM-L6-v2'); S(m); print(f'Preloaded model: {m}')" ; \
+    fi
 
 # Copy app source
 COPY . /app
@@ -50,17 +46,9 @@ RUN chown -R appuser:appuser /app /home/appuser
 # Switch to non-root
 USER appuser
 
-# --- Healthcheck (Python-based; no curl needed) ---
+# --- Healthcheck (curl) ---
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python - <<'PY' || exit 1
-import os, sys, urllib.request
-port = os.environ.get("PORT", "8000")
-try:
-    with urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=2) as r:
-        sys.exit(0 if r.getcode() == 200 else 1)
-except Exception:
-    sys.exit(1)
-PY
+  CMD curl -fsS "http://127.0.0.1:${PORT:-8000}/healthz" || exit 1
 
 # Labels for audit and traceability
 LABEL org.opencontainers.image.title="RecoveryOS API" \
@@ -69,10 +57,10 @@ LABEL org.opencontainers.image.title="RecoveryOS API" \
       org.opencontainers.image.authors="Your Name <you@recoveryos.app>" \
       org.opencontainers.image.source="https://github.com/yourname/recoveryos"
 
-# Expose conventional port (Render/Heroku use $PORT)
+# Expose conventional port (platforms will set $PORT)
 EXPOSE 8000
 
 # --- Start (Gunicorn + Uvicorn worker) ---
-# WORKERS can be tuned via env; default 1 for small dynos
+# WORKERS can be tuned via env; default 1 for small instances
 ENV WORKERS=1
 CMD ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --workers ${WORKERS} --timeout 45 main:app"]
