@@ -267,9 +267,7 @@ def _fix_json_like(s: str) -> str:
     """Best-effort: normalize curly quotes and remove trailing commas."""
     if not s:
         return s
-    # Normalize curly quotes to straight quotes
     s = s.replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'")
-    # Remove trailing commas before } or ]
     s = re.sub(r",(\s*[}\]])", r"\1", s)
     return s
 
@@ -288,15 +286,12 @@ def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
         except Exception:
             continue
         if isinstance(arr, list):
-            # Sanity filter: must look like test objects
             required = {"hypothesis", "test_method", "metric"}
             objs = [o for o in arr if isinstance(o, dict) and required.issubset(o.keys())]
             if objs:
-                # Normalize common fields/types
                 out: List[Dict[str, Any]] = []
                 for o in objs[:5]:
                     item = dict(o)
-                    # Coerce types where reasonable
                     if "timeframe_days" in item:
                         try:
                             item["timeframe_days"] = int(item["timeframe_days"])
@@ -367,13 +362,13 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
             "okrs": okrs,
             "researcher": researcher,
             "analyst": analyst,
-            "analyst_tests": analyst_tests,  # <— parsed Top 5 tests
+            "analyst_tests": analyst_tests,
             "critic": critic,
             "strategist": strategist,
             "advisor_memo": advisor_memo,
         }
 
     except Exception as e:
-        logger.error(f"Agent pipeline failed | ID={request_id} | Error={str(e)}")
+        logger.error("Agent pipeline failed | ID=%s | Error=%s", request_id, str(e))
         raise
 
