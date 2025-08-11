@@ -3,72 +3,76 @@
 # Secure, minimal, auditable
 # ================================
 
-# Base image (pin for reproducibility)
-FROM python:3.11.9-slim AS base
+# syntax=docker/dockerfile:1.6
+FROM python:3.11-slim AS base
 
 # --- Runtime env ---
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONFAULTHANDLER=1 \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    TRANSFORMERS_CACHE=/home/appuser/.cache/huggingface \
+    HF_HOME=/home/appuser/.cache/huggingface
 
-# Create non-root user/group with stable IDs
-RUN addgroup --system --gid 10001 appuser && \
-    adduser  --system --uid 10001 --ingroup appuser appuser
+# Create non-root user
+RUN adduser --disabled-password --gecos '' appuser
 
-# System deps: curl for HEALTHCHECK, tini to handle PID 1 properly
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl tini && \
-    rm -rf /var/lib/apt/lists/*
+# Minimal OS deps (torch CPU often needs OpenMP)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+ && rm -rf /var/lib/apt/lists/*
 
-# Working dir
 WORKDIR /app
 
-# Copy only requirements first for better build caching (if present)
-# If you switch to pyproject.toml, adjust this section.
-COPY --chown=appuser:appuser requirements.txt /app/requirements.txt
-RUN if [ -f /app/requirements.txt ]; then \
-      pip install --no-compile -r /app/requirements.txt && \
-      pip install --no-compile gunicorn uvicorn[standard]; \
-    else \
-      pip install --no-compile gunicorn uvicorn[standard]; \
-    fi
+# Install Python deps first for layer caching
+COPY requirements.txt .
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire application (use a .dockerignore to keep it lean)
-COPY --chown=appuser:appuser . /app
+# --- Optional: Preload SentenceTransformer model to avoid cold pull at runtime ---
+# Build-time toggle: --build-arg PRELOAD_RAG_MODEL=1 (defaults to 0)
+ARG PRELOAD_RAG_MODEL=0
+ENV RAG_MODEL=all-MiniLM-L6-v2
+RUN if [ "$PRELOAD_RAG_MODEL" = "1" ]; then \
+      python - <<'PY'; \
+from sentence_transformers import SentenceTransformer; import os; \
+m=os.environ.get("RAG_MODEL","all-MiniLM-L6-v2"); SentenceTransformer(m); \
+print(f"Preloaded model: {m}") \
+PY \
+    ; fi
+
+# Copy app source
+COPY . /app
+
+# Ownership to non-root
+RUN chown -R appuser:appuser /app /home/appuser
 
 # Switch to non-root
 USER appuser
 
-# Health check endpoint must exist in main.py
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8000/healthz || exit 1
+# --- Healthcheck (Python-based; no curl needed) ---
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python - <<'PY' || exit 1
+import os, sys, urllib.request
+port = os.environ.get("PORT", "8000")
+try:
+    with urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=2) as r:
+        sys.exit(0 if r.getcode() == 200 else 1)
+except Exception:
+    sys.exit(1)
+PY
 
-# OCI labels
+# Labels for audit and traceability
 LABEL org.opencontainers.image.title="RecoveryOS API" \
       org.opencontainers.image.description="AI-powered relapse prevention for addiction recovery" \
       org.opencontainers.image.version="0.1.0" \
       org.opencontainers.image.authors="Your Name <you@recoveryos.app>" \
       org.opencontainers.image.source="https://github.com/yourname/recoveryos"
 
-# ================================
-# Final Stage (runtime)
-# ================================
-FROM base AS final
-
-# Network
+# Expose conventional port (Render/Heroku use $PORT)
 EXPOSE 8000
-ENV PORT=8000
 
-# Use tini for proper signal handling and zombie reaping
-ENTRYPOINT ["/usr/bin/tini", "--"]
-
-# Launch Gunicorn with Uvicorn workers
-# Tweak WORKERS/TIMEOUT via env on your platform
-CMD ["sh", "-c", "gunicorn main:app \
-  -k uvicorn.workers.UvicornWorker \
-  --bind 0.0.0.0:${PORT:-8000} \
-  --workers ${WORKERS:-1} \
-  --timeout ${TIMEOUT:-30} \
-  --access-logfile - \
-  --error-logfile -"]
+# --- Start (Gunicorn + Uvicorn worker) ---
+# WORKERS can be tuned via env; default 1 for small dynos
+ENV WORKERS=1
+CMD ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --workers ${WORKERS} --timeout 45 main:app"]
