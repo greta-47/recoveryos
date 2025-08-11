@@ -11,7 +11,7 @@ pydantic==2.7.4               # models / validation
 
 # --- Database (SQLModel + Postgres) ---
 sqlmodel==0.0.18
-psycopg2-binary==2.9.9        # Postgres driver (ok for containers); switch to psycopg (v3) when ready
+psycopg2-binary==2.9.9        # Postgres driver (ok for containers)
 
 # --- AI & RAG ---
 openai==1.35.0
@@ -21,7 +21,7 @@ numpy==1.26.4
 
 # --- Rate limiting ---
 slowapi==0.1.7
-limits==3.7.0                 # backend for slowapi
+limits>=2.3,<3.0              # slowapi 0.1.7 requires limits < 3.0
 
 # --- HTTP client (Slack, email, external APIs) ---
 httpx==0.27.0
@@ -41,3 +41,4 @@ passlib[bcrypt]==1.7.4
 # pytest==8.2.0
 # black==24.4.2
 # mypy==1.10.0
+
