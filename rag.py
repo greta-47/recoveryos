@@ -358,3 +358,4 @@ if __name__ == "__main__":
     hits = retrieve("How do I help a patient with strong urges?")
     for r in hits:
         print(f"📄 {r['title']} (Score: {r['score']:.2f})\n{r['content']}\n")
+
