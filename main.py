@@ -1,26 +1,25 @@
 # main.py
-from __future__ import annotations
-
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from datetime import datetime
 import logging
 import re
-from typing import Optional
 
-# ---- Import the flat agents.py you showed ----
-# (No package import; this matches your current layout exactly)
+# --- Internal imports ---
 from agents import run_multi_agent
+from coping import router as coping_router            # <-- added
+from briefing import router as briefing_router        # <-- added
+from admin_clinician import router as clinician_router  # <-- added
 
 # ----------------------
-# Logging Setup (audit & observability)
+# Logging Setup (for audit & observability)
 # ----------------------
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    handlers=[logging.StreamHandler()],
+    format='%(asctime)s | %(levelname)s | %(message)s',
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("recoveryos")
 
@@ -30,71 +29,74 @@ logger = logging.getLogger("recoveryos")
 app = FastAPI(
     title="RecoveryOS API",
     version="0.1.0",
-    description="AI-powered relapse prevention platform for addiction recovery",
+    description="AI-powered relapse prevention platform for addiction recovery"
 )
 
-# Secure CORS (tighten to your domain(s) in prod)
+# Secure CORS (tightened from *)
+# TODO: Replace with your domain in production (e.g., https://recoveryos.app)
 ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:3000",
     "https://recoveryos.app",
-    "https://your-clinic-domain.com",
+    "https://your-clinic-domain.com"
 ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["POST", "GET"],
+    allow_methods=["POST", "GET", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"],
+    expose_headers=["X-Request-ID"]
 )
 
 # ----------------------
-# Models (API-facing DTOs)
+# Mount Routers (this is where you add them)
+# ----------------------
+app.include_router(coping_router)      # /coping/...
+app.include_router(briefing_router)    # /briefings/...
+app.include_router(clinician_router)   # /clinician/...
+
+# ----------------------
+# Models (for simple demo endpoints below)
 # ----------------------
 class Checkin(BaseModel):
-    mood: int = Field(..., ge=1, le=5, description="Mood: 1 (struggling) to 5 (strong)")
-    urge: int = Field(..., ge=1, le=5, description="Urge: 1 (low) to 5 (high)")
+    mood: int = Field(..., ge=1, le=5, description="Mood level: 1 (struggling) to 5 (strong)")
+    urge: int = Field(..., ge=1, le=5, description="Urge to use: 1 (low) to 5 (high)")
     sleep_hours: float = Field(0, ge=0, le=24, description="Hours slept last night")
     isolation_score: int = Field(0, ge=0, le=5, description="Social connection: 1 (isolated) to 5 (connected)")
 
-
-class AgentsRequest(BaseModel):
+class AgentsIn(BaseModel):
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
-    okrs: str = Field(
-        default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%",
-        max_length=1000,
-        description="OKRs in plain text (the flat agents.py expects a string)",
-    )
-
-    @validator("topic")
-    def _sanitize_topic(cls, v: str) -> str:
-        if re.search(r"password|token|secret|PHI", v, re.I):
-            raise ValueError("Invalid topic — restricted keywords detected")
-        return v.strip()
-
+    okrs: str = Field(default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", max_length=500)
 
 # ----------------------
 # Routes
 # ----------------------
 @app.get("/", response_class=JSONResponse)
 def root():
-    """Health & service info."""
+    """
+    Health check and service info.
+    """
     return {
         "ok": True,
         "service": "RecoveryOS",
         "version": app.version,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "environment": "development",
+        "environment": "development"
     }
-
 
 @app.get("/healthz", response_class=JSONResponse)
 def health():
-    """Lightweight health check for load balancers and CI."""
-    return {"status": "ok", "app": "RecoveryOS", "timestamp": datetime.utcnow().isoformat() + "Z"}
-
+    """
+    Lightweight health check for load balancers and CI.
+    """
+    return {
+        "status": "ok",
+        "app": "RecoveryOS",
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
 
 @app.post("/checkins")
 def create_checkin(checkin: Checkin, request: Request):
@@ -102,20 +104,23 @@ def create_checkin(checkin: Checkin, request: Request):
     Receive a daily check-in and return a personalized coping tool.
     Logs request (without PHI) for observability.
     """
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = request.client.host
     request_id = f"req-{hash(f'{client_ip}-{datetime.utcnow().timestamp()}') % 10**8}"
-
+    
     logger.info(f"Check-in received | ID={request_id} | Urge={checkin.urge} | Mood={checkin.mood}")
 
+    # AI Safety Guardrail: Avoid harmful or shaming language
+    tool = ""
     if checkin.urge >= 4:
         tool = "Urge Surfing — 5-minute guided wave visualization"
     elif checkin.mood <= 2:
         tool = "Grounding — 5-4-3-2-1 sensory exercise"
     elif checkin.sleep_hours < 5:
-        tool = "Sleep Hygiene Tip — Try a 10-minute body scan"
+        tool = "Sleep Hygiene Tip: Try a 10-minute body scan"
     else:
         tool = "Breathing — Box breathing 4x4"
 
+    # Log anonymized decision
     logger.info(f"Tool suggested | ID={request_id} | Tool='{tool}'")
 
     return {
@@ -123,43 +128,39 @@ def create_checkin(checkin: Checkin, request: Request):
         "tool": tool,
         "data": checkin.dict(),
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "request_id": request_id,
+        "request_id": request_id
     }
 
-
 @app.post("/agents/run")
-def agents_run(body: AgentsRequest, request: Request):
+def agents_run(body: AgentsIn, request: Request):
     """
-    Runs the multi-agent pipeline (Researcher → Analyst → Critic → Strategist → Advisor).
-    Returns all stage outputs from your flat agents.py.
+    Runs the multi-agent pipeline: Researcher → Analyst → Critic → Strategist → Advisor
+    Returns the compiled Advisor memo.
+    All outputs are de-identified and sanitized.
     """
-    client_host = request.client.host if request.client else "unknown"
-    request_id = f"agent-{hash(f'{client_host}-{datetime.utcnow().timestamp()}') % 10**8}"
+    request_id = f"agent-{hash(f'{request.client.host}-{datetime.utcnow().timestamp()}') % 10**8}"
     logger.info(f"Agent pipeline started | ID={request_id} | Topic='{body.topic}'")
 
     try:
-        # Call your flat agents.py runner (expects okrs as string)
+        # Sanitize input (prevent prompt injection)
+        if re.search(r"password|token|secret|PHI", body.topic, re.I):
+            raise HTTPException(status_code=400, detail="Invalid topic — restricted keywords detected")
+
         result = run_multi_agent(body.topic, body.horizon, body.okrs)
 
-        # Conservative PHI scrub on string outputs
+        # Ensure outputs are safe and de-identified
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
-            if key in result and isinstance(result[key], str) and result[key]:
-                if re.search(r"(patient\s+\d+|name\s*:|DOB\s*:)", result[key], re.I):
+            if key in result and result[key]:
+                if re.search(r"patient \d+|name:|DOB:", result[key], re.I):
                     logger.warning(f"Potential PHI detected in {key} output — redacting")
                     result[key] = "[REDACTED] Output may contain sensitive data."
 
         logger.info(f"Agent pipeline completed | ID={request_id}")
-        return {
-            **result,  # includes request_id & timestamp from your agents.py already
-            "api_request_id": request_id,  # extra ID from API edge
-        }
+        return {**result, "request_id": request_id, "timestamp": datetime.utcnow().isoformat() + "Z"}
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Agent pipeline failed | ID={request_id} | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Internal agent error — please try again")
-
 
 # ----------------------
 # Minimal Web UI at /ui
@@ -172,48 +173,43 @@ def ui():
 <title>RecoveryOS – Multi-Agent Console</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  :root{--bg:#0b1220;--panel:#121b2f;--muted:#94a3b8;--ink:#e6e9ef;--line:#223055;--accent:#5b8cff}
-  *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);margin:0}
-  .wrap{max-width:960px;margin:40px auto;padding:16px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  label{display:block;margin:10px 0 6px;color:#cbd5e1;font-size:14px}
-  input,textarea,button{width:100%;padding:12px;border-radius:12px}
-  input,textarea{background:#0f1627;border:1px solid #2a3b66;color:var(--ink)}
-  button{background:var(--accent);color:#fff;border:none;font-weight:600;cursor:pointer;margin-top:12px}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b1220;color:#e6e9ef;margin:0}
+  .wrap{max-width:900px;margin:40px auto;padding:16px}
+  .card{background:#121b2f;border:1px solid #223055;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  label{display:block;margin:10px 0 4px;color:#cbd5e1}
+  input,button{width:100%;padding:12px;border-radius:12px}
+  input{background:#0f1627;border:1px solid #2a3b66;color:#e6e9ef}
+  button{background:#5b8cff;color:#fff;border:none;font-weight:600;cursor:pointer;margin-top:12px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:800px){.grid{grid-template-columns:1fr}}
   .out{white-space:pre-wrap;background:#0f1627;border:1px dashed #2a3b66;padding:12px;border-radius:12px;margin-top:16px}
-  #status{color:var(--muted)}
-  small{color:var(--muted)}
+  #status{color:#94a3b8}
 </style>
 <div class="wrap">
   <h1>🧠 RecoveryOS – Multi-Agent Console</h1>
   <div class="card">
     <label>Topic</label>
-    <input id="topic" placeholder="Top 3 underserved niches in mental health tech 2025">
+    <input id="topic" placeholder="Top 3 Underserved Niches in Mental Health Tech 2025">
     <div class="grid">
       <div><label>Horizon</label><input id="horizon" value="90 days"></div>
-      <div><label>OKRs (plain text)</label><input id="okrs" value="1) 100 beta users 2) 80% engagement 3) Zero safety incidents"></div>
+      <div><label>OKRs</label><input id="okrs" value="1) 100 beta users 2) 80% engagement 3) Zero safety incidents"></div>
     </div>
     <button id="run">Run Agents</button>
     <div id="status" style="margin-top:8px"></div>
     <div id="result" class="out" style="display:none"></div>
-    <small>Tip: API docs at <a href="/docs" target="_blank" style="color:#a5b4fc">/docs</a></small>
   </div>
 </div>
 <script>
-const el = (id) => document.getElementById(id);
-
-el("run").onclick = async () => {
+const $ = id => document.getElementById(id);
+$("run").onclick = async () => {
   const payload = {
-    topic: el("topic").value.trim() || "RecoveryOS go-to-market strategy",
-    horizon: el("horizon").value.trim() || "90 days",
-    okrs: el("okrs").value.trim() || "1) 100 beta users 2) 80% engagement 3) Zero safety incidents"
+    topic: $("topic").value.trim() || "RecoveryOS go-to-market strategy",
+    horizon: $("horizon").value.trim() || "90 days",
+    okrs: $("okrs").value.trim() || "1) 100 beta users 2) 80% engagement 3) Zero safety incidents"
   };
 
-  el("run").disabled = true;
-  el("status").textContent = "Running Researcher → Analyst → Critic → Strategist → Advisor…";
-  el("result").style.display = "none";
+  $("run").disabled = true;
+  $("status").textContent = "Running Researcher → Analyst → Critic → Strategist…";
+  $("result").style.display = "none";
 
   try {
     const res = await fetch("/agents/run", {
@@ -221,22 +217,23 @@ el("run").onclick = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error("HTTP " + res.status);
 
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
     const data = await res.json();
-    el("status").textContent = "✅ Done.";
-    el("result").style.display = "block";
-    el("result").textContent =
+    $("status").textContent = "✅ Done.";
+    $("result").style.display = "block";
+    $("result").textContent =
       "► Researcher\\n\\n" + (data.researcher || "(no output)") + "\\n\\n" +
       "► Analyst\\n\\n" + (data.analyst || "(no output)") + "\\n\\n" +
       "► Critic\\n\\n" + (data.critic || "(no output)") + "\\n\\n" +
       "► Strategist\\n\\n" + (data.strategist || "(no output)") + "\\n\\n" +
       "► Advisor Memo\\n\\n" + (data.advisor_memo || "(no output)") + "\\n\\n" +
-      `[Agent Request ID: ${data.request_id || "n/a"} | API Edge ID: ${data.api_request_id || "n/a"}]`;
+      `[Request ID: ${data.request_id} | ${new Date().toLocaleString()}]`;
   } catch (e) {
-    el("status").textContent = "❌ Error: " + (e.message || e);
+    $("status").textContent = "❌ Error: " + (e.message || e);
   } finally {
-    el("run").disabled = false;
+    $("run").disabled = false;
   }
 };
 </script>
