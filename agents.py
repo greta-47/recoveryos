@@ -3,7 +3,8 @@ import os
 import time
 import uuid
 import re
-from typing import Dict, Any
+import json
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from openai import OpenAI, APIError, RateLimitError
 import logging
@@ -259,6 +260,57 @@ def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
             time.sleep(2)
     raise RuntimeError("Max retries exceeded")
 
+# --- JSON extraction for Analyst's Top 5 tests ---
+_JSON_ARRAY_RE = re.compile(r"\[\s*(?:\{[\s\S]*?\})(?:\s*,\s*\{[\s\S]*?\}\s*)*\s*\]")
+
+def _fix_json_like(s: str) -> str:
+    """Best-effort: normalize curly quotes and remove trailing commas."""
+    if not s:
+        return s
+    # Normalize curly quotes to straight quotes
+    s = s.replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'")
+    # Remove trailing commas before } or ]
+    s = re.sub(r",(\s*[}\]])", r"\1", s)
+    return s
+
+def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
+    """
+    Extract the JSON array from the Analyst section and return up to 5 test dicts.
+    We look for the first valid JSON array; filter for dicts with expected keys.
+    """
+    if not text:
+        return []
+    candidates = _JSON_ARRAY_RE.findall(text)
+    for raw in candidates:
+        fixed = _fix_json_like(raw)
+        try:
+            arr = json.loads(fixed)
+        except Exception:
+            continue
+        if isinstance(arr, list):
+            # Sanity filter: must look like test objects
+            required = {"hypothesis", "test_method", "metric"}
+            objs = [o for o in arr if isinstance(o, dict) and required.issubset(o.keys())]
+            if objs:
+                # Normalize common fields/types
+                out: List[Dict[str, Any]] = []
+                for o in objs[:5]:
+                    item = dict(o)
+                    # Coerce types where reasonable
+                    if "timeframe_days" in item:
+                        try:
+                            item["timeframe_days"] = int(item["timeframe_days"])
+                        except Exception:
+                            pass
+                    if "budget_max_usd" in item:
+                        try:
+                            item["budget_max_usd"] = float(item["budget_max_usd"])
+                        except Exception:
+                            pass
+                    out.append(item)
+                return out
+    return []
+
 # ----------------------
 # Pipeline
 # ----------------------
@@ -278,6 +330,7 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
 
         # 2) Analyst (Top 5 tests)
         analyst = _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
+        analyst_tests = _parse_analyst_tests(analyst)
 
         # 3) Critic
         critic = _chat(f"Researcher + Analyst:\n{researcher}\n\n{analyst}\n\n{CRITIC_PROMPT}")
@@ -314,6 +367,7 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
             "okrs": okrs,
             "researcher": researcher,
             "analyst": analyst,
+            "analyst_tests": analyst_tests,  # <— parsed Top 5 tests
             "critic": critic,
             "strategist": strategist,
             "advisor_memo": advisor_memo,
