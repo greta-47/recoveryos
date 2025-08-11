@@ -1,15 +1,43 @@
 # ================================
-# RecoveryOS API - Production Dependencies
-# Pinned for security, reproducibility, and compliance
+# RecoveryOS API - Production Dependencies (pinned)
+# Security, reproducibility, and compatibility
 # ================================
 
+# --- Core API stack ---
 fastapi==0.111.0
-uvicorn[standard]==0.30.1
-pydantic==2.7.4
-openai>=1.35.0
+uvicorn[standard]==0.30.1     # uvloop, httptools, websockets, watchfiles
+gunicorn==21.2.0              # production process manager
+pydantic==2.7.4               # models / validation
 
-# Rate limiting (protects API from abuse)
+# --- Database (SQLModel + Postgres) ---
+sqlmodel==0.0.18
+psycopg2-binary==2.9.9        # Postgres driver (ok for containers); switch to psycopg (v3) when ready
+
+# --- AI & RAG ---
+openai==1.35.0
+sentence-transformers==2.6.1  # local embeddings
+torch==2.3.0                  # required by sentence-transformers
+numpy==1.26.4
+
+# --- Rate limiting ---
 slowapi==0.1.7
+limits==3.7.0                 # backend for slowapi
 
-# HTTP client for Slack alerts / external hooks
+# --- HTTP client (Slack, email, external APIs) ---
 httpx==0.27.0
+tenacity==8.2.3               # retries for external calls (optional but useful)
+
+# --- Config / settings (optional but recommended) ---
+pydantic-settings==2.4.0
+
+# --- Security & compliance ---
+python-jose[cryptography]==3.3.0  # JWT / JWS (correct package for `from jose import jwt`)
+passlib[bcrypt]==1.7.4
+
+# --- Optional: Email (SendGrid) ---
+# sendgrid==6.9.7
+
+# --- Optional: Dev-only (move to dev-requirements.txt) ---
+# pytest==8.2.0
+# black==24.4.2
+# mypy==1.10.0
