@@ -3,7 +3,7 @@ import os
 import time
 import uuid
 import re
-from typing import Dict, Any, Callable
+from typing import Dict, Any
 from datetime import datetime
 from openai import OpenAI, APIError, RateLimitError
 import logging
@@ -25,6 +25,10 @@ if not api_key:
     raise RuntimeError("OPENAI_API_KEY is not set in environment")
 client = OpenAI(api_key=api_key)
 
+# Allow env overrides for models
+MODEL_FAST = os.getenv("OPENAI_MODEL_FAST", "gpt-4o-mini")
+MODEL_HIGH = os.getenv("OPENAI_MODEL_HIGH", "gpt-4o")
+
 # ----------------------
 # System message
 # ----------------------
@@ -39,7 +43,7 @@ Core principles:
 """
 
 # ----------------------
-# Prompts (functions where needed)
+# Prompts
 # ----------------------
 def researcher_prompt(topic: str, horizon: str) -> str:
     return f"""ROLE: Researcher (RecoveryOS Intelligence Unit)
@@ -71,7 +75,7 @@ COMPLIANCE & SAFETY
 RELIABILITY RUBRIC (assign one per finding)
 - High: Systematic review/meta-analysis; well-powered RCT; national/provincial guideline; governmental statistic.
 - Moderate: Prospective/retrospective cohorts, small RCTs/pilots, reputable NGOs with transparent methods.
-- Low: Case reports, anecdotal/forum posts, non-peer-reviewed preprints without corroboration.
+- Low: Case reports, anecdotal/forum posts, non–peer-reviewed preprints without corroboration.
 
 NUMERIC HYGIENE
 - Convert claims to clear metrics with denominators & timeframes (e.g., “30% higher retention at 90 days vs 23% control; ARR +7%”).
@@ -168,7 +172,7 @@ Return exactly 5 objects, fields below, ordered by **Priority** (P1 highest). Ke
 ]
 
 Constraints:
-- **Fast** (<14 days), **Lean** (≤ $500), **Risk-reducing** (biggest unknowns first, e.g., “Will patients trust AI coaching?”).
+- **Fast** (<14 days), **Lean** (≤ $500), **Risk-reducing** (biggest unknowns first).
 - Prefer tests that can run asynchronously and de-identified.
 
 3) PRIORITIZATION RATIONALE (2–4 bullets)
@@ -178,11 +182,144 @@ STYLE
 - Be concise. No fluff. Only actionable insights.
 """
 
-CRITIC_PROMPT = '''ROLE: Critic (Compliance + Red Team)
+CRITIC_PROMPT = """ROLE: Critic (Compliance + Red Team)
 Challenge assumptions and feasibility. Flag hidden costs (support load, returns), platform risk, data handling.
 BC/Canada guardrails: informed consent before sharing, data minimization, no PHI in email, crisis disclaimers,
-export/delete rights, encryption in transit/at rest. Provide risks, kill-criteria, escalation triggers.'''
+export/delete rights, encryption in transit/at rest. Provide risks, kill-criteria, escalation triggers.
+"""
 
-STRATEGIST_PROMPT = '''ROLE: Strategist
+STRATEGIST_PROMPT = """ROLE: Strategist
 Produce a 90-day GTM plan with 3 budget variants (Lean / Standard / Aggressive).
 Include: ICP, offer, channels, budget, KPIs (leading/lagging), 30/60/90 milestones,
+and clear stop/scale thresholds.
+"""
+
+def advisor_prompt(okrs: str) -> str:
+    return f"""You are the final Advisor in the RecoveryOS multi-agent pipeline.
+Your job is not to summarize — it is to **decide, align, and reveal trade-offs**.
+
+## OKRs to Align With:
+{okrs}
+
+## Task:
+1. **Evaluate**: Does the Strategist's plan clearly advance these OKRs?
+   - If YES: refine for clarity and actionability.
+   - If NO: **rewrite the core strategy** to align.
+
+2. **Explain Trade-offs**:
+   - What must we sacrifice (time, budget, scope) to hit each OKR?
+   - What happens if we don't invest in X?
+   - What are the hidden costs (e.g., clinician burnout, patient trust)?
+
+3. **Flag Gaps**:
+   - Missing data? Unproven assumptions? Over-reliance on AI?
+   - Is this ethical, trauma-informed, and safe for BC/Canada?
+
+4. **Output Structure**:
+   - Decision: [Go / No-Go / Pivot]
+   - Rationale: 3–5 sentences
+   - Top 3 Trade-offs
+   - Next Actions (owner + deadline)
+   - Risks if we proceed / if we delay
+
+Be concise. Be courageous. Be clinical.
+"""
+
+# ----------------------
+# Helpers
+# ----------------------
+def _contains_phi(text: str) -> bool:
+    patterns = [
+        r"\b\d{3}-\d{3}-\d{4}\b",
+        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        r"\b\d{3}-\d{2}-\d{4}\b",
+        r"\bDOB[:\s]*\d{1,2}/\d{1,2}/\d{4}\b",
+    ]
+    return any(re.search(p, text, re.I) for p in patterns)
+
+def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
+    for attempt in range(max_retries):
+        try:
+            resp = client.chat.completions.create(
+                model=model,
+                temperature=0.3,
+                messages=[
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": content}
+                ],
+                timeout=15
+            )
+            return resp.choices[0].message.content
+        except RateLimitError:
+            wait = 2 ** attempt
+            time.sleep(wait)
+        except APIError as e:
+            if attempt == max_retries - 1:
+                raise RuntimeError(f"OpenAI API error after {max_retries} attempts: {e}")
+            time.sleep(2)
+    raise RuntimeError("Max retries exceeded")
+
+# ----------------------
+# Pipeline
+# ----------------------
+def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
+    request_id = str(uuid.uuid4())
+    logger.info(f"Agent pipeline started | ID={request_id} | Topic='{topic}'")
+
+    # Input validation
+    if not topic or len(topic.strip()) < 5:
+        raise ValueError("Topic must be at least 5 characters")
+    if not horizon or not okrs:
+        raise ValueError("Horizon and OKRs are required")
+
+    try:
+        # 1) Researcher
+        researcher = _chat(researcher_prompt(topic, horizon))
+
+        # 2) Analyst (Top 5 tests)
+        analyst = _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
+
+        # 3) Critic
+        critic = _chat(f"Researcher + Analyst:\n{researcher}\n\n{analyst}\n\n{CRITIC_PROMPT}")
+
+        # 4) Strategist
+        strategist = _chat(
+            "Use the prior outputs to build the plan.\n"
+            f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\n{STRATEGIST_PROMPT}"
+        )
+
+        # 5) Advisor (decision + trade-offs, aligned to OKRs) — higher quality model
+        advisor_input = (
+            advisor_prompt(okrs)
+            + "\n\nContext:\n"
+            + f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\nStrategist:\n{strategist}"
+        )
+        raw_memo = client.chat.completions.create(
+            model=MODEL_HIGH,
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": SYSTEM},
+                {"role": "user", "content": advisor_input},
+            ],
+        ).choices[0].message.content
+
+        advisor_memo = "[REDACTED] Potential PHI detected." if _contains_phi(raw_memo) else raw_memo
+
+        logger.info(f"Agent pipeline completed | ID={request_id}")
+        return {
+            "request_id": request_id,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "topic": topic,
+            "horizon": horizon,
+            "okrs": okrs,
+            "researcher": researcher,
+            "analyst": analyst,
+            "critic": critic,
+            "strategist": strategist,
+            "advisor_memo": advisor_memo,
+        }
+
+    except Exception as e:
+        logger.error(f"Agent pipeline failed | ID={request_id} | Error={str(e)}")
+        raise
+
