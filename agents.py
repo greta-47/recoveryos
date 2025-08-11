@@ -1,377 +1,167 @@
-# agents.py
+# alerts.py
 import os
-import time
-import uuid
-import re
-import json
-from typing import Dict, Any, List, Optional
-from datetime import datetime
-from openai import OpenAI, APIError, RateLimitError
 import logging
+from typing import List, Dict, Optional
+from datetime import datetime, timedelta
 
-# ----------------------
-# Logging
-# ----------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s'
-)
+import httpx
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 logger = logging.getLogger("recoveryos")
 
-# ----------------------
-# OpenAI client
-# ----------------------
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise RuntimeError("OPENAI_API_KEY is not set in environment")
-client = OpenAI(api_key=api_key)
+# --- Config ---
+SLACK_WEBHOOK = os.getenv("SLACK_WEBHOOK", "").strip()  # Incoming Webhook URL
+RISK_HIGH_THRESHOLD = float(os.getenv("RISK_HIGH_THRESHOLD", "7.0"))
+ALERT_THROTTLE_MINUTES = int(os.getenv("ALERT_THROTTLE_MINUTES", "30"))  # per user_id
 
-# Allow env overrides for models
-MODEL_FAST = os.getenv("OPENAI_MODEL_FAST", "gpt-4o-mini")
-MODEL_HIGH = os.getenv("OPENAI_MODEL_HIGH", "gpt-4o")
+# In-memory throttle map (simple, process-local)
+_last_sent_at: dict[str, datetime] = {}
 
-# ----------------------
-# System message
-# ----------------------
-SYSTEM = """You are a coordinated multi-agent team for RecoveryOS (BC, Canada).
-Agents: Researcher, Analyst, Critic (BC compliance), Strategist, Advisor.
-Core principles:
-- Trauma-informed, professional, decision-ready
-- No clinical diagnosis or crisis advice
-- Cite sources, note assumptions, keep concise
-- Never include PHI or patient identifiers
-- All outputs must be de-identified and audit-safe
-"""
+def _risk_level(score: float) -> str:
+    if score >= 9:
+        return "Severe"
+    if score >= 7:
+        return "High"
+    if score >= 4:
+        return "Moderate"
+    return "Low"
 
-# ----------------------
-# Prompts
-# ----------------------
-def researcher_prompt(topic: str, horizon: str) -> str:
-    return f"""ROLE: Researcher (RecoveryOS Intelligence Unit)
+def _sanitize_user(user_id: str) -> str:
+    # Enforce de-identification in Slack: no emails/phones/real names
+    uid = (user_id or "anon").strip()
+    return uid if uid.startswith("anon-") else f"anon-{uid[-6:]}"
 
-MISSION
-You gather high-signal, decision-grade intelligence on "{topic}" focused on the next {horizon}, with attention to BC/Canada context when relevant.
+def _build_blocks(
+    user_id: str,
+    risk_score: float,
+    factors: List[Dict],
+    suggested_action: str,
+) -> List[Dict]:
+    top = None
+    try:
+        top = max(factors or [], key=lambda x: float(x.get("impact", 0)))
+    except Exception:
+        top = None
 
-PRIORITIZE (in order)
-1) Peer-reviewed research (systematic reviews/meta-analyses, RCTs, strong cohort studies)
-2) Clinical guidelines & governmental/agency sources (e.g., BC Centre on Substance Use, Health Canada, BCCDC, NIDA, WHO, CIHI, CADTH, CMAJ)
-3) Official regulatory/commercial documents (regulations, public safety advisories, SEDAR/EDGAR filings, earnings calls)
-4) De-identified patient/community forums (for qualitative signals only; lowest reliability)
+    key_factors_lines = []
+    for f in (factors or [])[:3]:
+        name = str(f.get("name", "Factor")).strip()
+        explanation = str(f.get("explanation", "")).strip()
+        key_factors_lines.append(f"• *{name}*: {explanation}")
 
-EXCLUDE / DOWN-WEIGHT
-- Blogs, unverifiable social media, vendor marketing without primary evidence
-- Content that stigmatizes addiction (use person-first language)
-- Anything behind paywalls you cannot verify verbatim
+    key_factors_text = "\n".join(key_factors_lines) or "No key factors available."
 
-RECENCY & SCOPE
-- Prefer items ≤36 months old unless seminal or still definitive.
-- Always include the original publication date (YYYY-MM-DD) and the event date if different.
-- Note jurisdiction; call out when a finding is outside BC/Canada and may not generalize.
+    level = _risk_level(risk_score)
+    uid = _sanitize_user(user_id)
 
-COMPLIANCE & SAFETY
-- No PHI, no real names, no DOBs, no addresses. Quote ≤35 words max and cite.
-- Be trauma-informed and non-shaming.
-- Flag unproven or risky claims; never present speculation as fact.
-
-RELIABILITY RUBRIC (assign one per finding)
-- High: Systematic review/meta-analysis; well-powered RCT; national/provincial guideline; governmental statistic.
-- Moderate: Prospective/retrospective cohorts, small RCTs/pilots, reputable NGOs with transparent methods.
-- Low: Case reports, anecdotal/forum posts, non–peer-reviewed preprints without corroboration.
-
-NUMERIC HYGIENE
-- Convert claims to clear metrics with denominators & timeframes (e.g., “30% higher retention at 90 days vs 23% control; ARR +7%”).
-- Include CIs or p-values when available; otherwise write "unknown".
-
-RETRACTION / CROSS-CHECK
-- Avoid retracted/flagged studies. Prefer two independent sources for novel/surprising claims.
-
---------------------------------
-OUTPUT CONTRACT (STRICT)
-Return these sections in order.
-
-1) FINDINGS (RAW JSON ONLY — NO MARKDOWN FENCES)
-Return 8–15 JSON objects in a JSON array. Use exactly these keys:
-
-[
-  {{
-    "id": "F1",
-    "title": "…",
-    "source": "Journal / Agency / Site",
-    "publisher": "…",
-    "url": "https://…",
-    "date": "YYYY-MM-DD",
-    "jurisdiction": "BC | Canada | US | Global | Other",
-    "method": "Guideline | Meta-analysis | RCT | Cohort | Cross-sectional | Qualitative | Regulatory | Other",
-    "sample_size": "n=… or unknown",
-    "metric": "What is measured (e.g., 90-day retention)",
-    "effect_size": "e.g., +30% vs control; ARR +7%; OR=1.42 (95% CI 1.1–1.8)",
-    "claim": "One-sentence, decision-ready statement",
-    "reliability": "High | Moderate | Low",
-    "caveats": "Biases/limits/generalizability",
-    "quote": "≤35-word exact quote (optional)",
-    "identifiers": {{"doi": "…", "pmid": "…"}},
-    "last_verified": "YYYY-MM-DD"
-  }}
-]
-
-Rules for Section 1:
-- Output MUST be valid JSON (no trailing commas; double quotes only).
-- 8–15 items. Keep IDs sequential (F1…Fn).
-- Do not wrap JSON in backticks or any other text.
-
-2) EXECUTIVE SUMMARY (10 bullets)
-- Ten crisp bullets synthesizing the findings for "{horizon}".
-- Include magnitudes and reference findings by ID in brackets, e.g., “[F3]”.
-
-3) DECISION IMPLICATIONS (3–5 bullets)
-- What leaders should do next, tied to evidence (reference [Fi]).
-
-4) GAPS & UNCERTAINTIES (3–6 bullets)
-- Missing data, conflicting results, external validity limits (esp. BC/Canada).
-
-5) SEARCH LOG (brief)
-- 3–6 lines: key queries, databases/sites used, date searched (YYYY-MM-DD).
-
-QUALITY CHECK BEFORE YOU SUBMIT
-- Are all numbers reproducible from sources? (No hallucinations.)
-- Are dates/jurisdictions accurate?
-- Are quotes ≤35 words and attributed?
-- Is Section 1 valid JSON with required keys?
-- Did you avoid stigma and PHI?
-
-BEGIN."""
-
-def analyst_prompt(okrs: str) -> str:
-    return f"""ROLE: Analyst + Test Designer (RecoveryOS)
-
-CONTEXT
-Use the Researcher’s findings to extract patterns and design **Top 5 real-world validation tests** that most directly advance these OKRs:
-{okrs}
-
-OUTPUT SECTIONS (IN ORDER)
-
-1) TRENDS & PATTERNS (3–5 items)
-- Validated trends only (no guesses). Each one references evidence by [Fi].
-- Include buyer/funding patterns (who pays?), TAM/SAM and unit economics (CAC/LTV if known).
-- Call out bottlenecks: regulatory, clinical, tech, trust.
-
-2) TOP 5 VALIDATION TESTS (JSON ARRAY ONLY — NO MARKDOWN FENCES)
-Return exactly 5 objects, fields below, ordered by **Priority** (P1 highest). Keep costs small and timeframes fast.
-
-[
-  {{
-    "id": "T1",
-    "hypothesis": "Clear, falsifiable statement tied to OKRs",
-    "test_method": "e.g., landing page A/B test, 10 patient interviews, fake door test",
-    "metric": "Success threshold (e.g., ≥30% click-through; ≥7/10 would pay)",
-    "timeframe_days": 7,
-    "budget_max_usd": 500,
-    "owner": "Product | Clinical Lead | AI | Growth",
-    "priority": "P1 | P2 | P3",
-    "rationale": "Why this test now; reference evidence [F#] and key risks reduced"
-  }}
-]
-
-Constraints:
-- **Fast** (<14 days), **Lean** (≤ $500), **Risk-reducing** (biggest unknowns first).
-- Prefer tests that can run asynchronously and de-identified.
-
-3) PRIORITIZATION RATIONALE (2–4 bullets)
-- Why the ordering (impact × confidence × cost × time), referencing [T#] and [F#].
-
-STYLE
-- Be concise. No fluff. Only actionable insights.
-"""
-
-CRITIC_PROMPT = """ROLE: Critic (Compliance + Red Team)
-Challenge assumptions and feasibility. Flag hidden costs (support load, returns), platform risk, data handling.
-BC/Canada guardrails: informed consent before sharing, data minimization, no PHI in email, crisis disclaimers,
-export/delete rights, encryption in transit/at rest. Provide risks, kill-criteria, escalation triggers.
-"""
-
-STRATEGIST_PROMPT = """ROLE: Strategist
-Produce a 90-day GTM plan with 3 budget variants (Lean / Standard / Aggressive).
-Include: ICP, offer, channels, budget, KPIs (leading/lagging), 30/60/90 milestones,
-and clear stop/scale thresholds.
-"""
-
-def advisor_prompt(okrs: str) -> str:
-    return f"""You are the final Advisor in the RecoveryOS multi-agent pipeline.
-Your job is not to summarize — it is to **decide, align, and reveal trade-offs**.
-
-## OKRs to Align With:
-{okrs}
-
-## Task:
-1. **Evaluate**: Does the Strategist's plan clearly advance these OKRs?
-   - If YES: refine for clarity and actionability.
-   - If NO: **rewrite the core strategy** to align.
-
-2. **Explain Trade-offs**:
-   - What must we sacrifice (time, budget, scope) to hit each OKR?
-   - What happens if we don't invest in X?
-   - What are the hidden costs (e.g., clinician burnout, patient trust)?
-
-3. **Flag Gaps**:
-   - Missing data? Unproven assumptions? Over-reliance on AI?
-   - Is this ethical, trauma-informed, and safe for BC/Canada?
-
-4. **Output Structure**:
-   - Decision: [Go / No-Go / Pivot]
-   - Rationale: 3–5 sentences
-   - Top 3 Trade-offs
-   - Next Actions (owner + deadline)
-   - Risks if we proceed / if we delay
-
-Be concise. Be courageous. Be clinical.
-"""
-
-# ----------------------
-# Helpers
-# ----------------------
-def _contains_phi(text: str) -> bool:
-    patterns = [
-        r"\b\d{3}-\d{3}-\d{4}\b",
-        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
-        r"\b\d{3}-\d{2}-\d{4}\b",
-        r"\bDOB[:\s]*\d{1,2}/\d{1,2}/\d{4}\b",
+    return [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": "High Risk Alert", "emoji": True},
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"🚨 *{level}* — Patient `{uid}`",
+            },
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": f"*Score:* {risk_score:.1f}/10"
+                            + (f" | *Top factor:* {top.get('name')}" if top and top.get("name") else "")
+                }
+            ],
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*Suggested action:* {suggested_action}"},
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*Key factors (top 3):*\n{key_factors_text}"},
+        },
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn",
+                 "text": "⚠️ This is a *support signal*, not a diagnosis. Use clinical judgment. No PHI included."}
+            ],
+        },
     ]
-    return any(re.search(p, text, re.I) for p in patterns)
 
-def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
-    for attempt in range(max_retries):
-        try:
-            resp = client.chat.completions.create(
-                model=model,
-                temperature=0.3,
-                messages=[
-                    {"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": content}
-                ],
-                timeout=15
-            )
-            return resp.choices[0].message.content
-        except RateLimitError:
-            wait = 2 ** attempt
-            time.sleep(wait)
-        except APIError as e:
-            if attempt == max_retries - 1:
-                raise RuntimeError(f"OpenAI API error after {max_retries} attempts: {e}")
-            time.sleep(2)
-    raise RuntimeError("Max retries exceeded")
+@retry(
+    retry=retry_if_exception_type(httpx.RequestError),
+    wait=wait_exponential(multiplier=0.5, min=0.5, max=4),
+    stop=stop_after_attempt(3),
+    reraise=True,
+)
+def _post_to_slack(webhook: str, payload: Dict) -> None:
+    with httpx.Client(timeout=5.0) as client:
+        r = client.post(webhook, json=payload)
+        r.raise_for_status()
 
-# --- JSON extraction for Analyst's Top 5 tests ---
-_JSON_ARRAY_RE = re.compile(r"\[\s*(?:\{[\s\S]*?\})(?:\s*,\s*\{[\s\S]*?\}\s*)*\s*\]")
-
-def _fix_json_like(s: str) -> str:
-    """Best-effort: normalize curly quotes and remove trailing commas."""
-    if not s:
-        return s
-    # Normalize curly quotes to straight quotes
-    s = s.replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'")
-    # Remove trailing commas before } or ]
-    s = re.sub(r",(\s*[}\]])", r"\1", s)
-    return s
-
-def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
+def send_clinician_alert(
+    user_id: str,
+    risk_score: float,
+    factors: List[Dict],
+    suggested_action: str,
+    *,
+    webhook: Optional[str] = None,
+    throttle_minutes: Optional[int] = None,
+) -> None:
     """
-    Extract the JSON array from the Analyst section and return up to 5 test dicts.
-    We look for the first valid JSON array; filter for dicts with expected keys.
+    Synchronous helper suitable for FastAPI BackgroundTasks.
+    De-identified by design. Retries transient network errors.
     """
-    if not text:
-        return []
-    candidates = _JSON_ARRAY_RE.findall(text)
-    for raw in candidates:
-        fixed = _fix_json_like(raw)
-        try:
-            arr = json.loads(fixed)
-        except Exception:
-            continue
-        if isinstance(arr, list):
-            # Sanity filter: must look like test objects
-            required = {"hypothesis", "test_method", "metric"}
-            objs = [o for o in arr if isinstance(o, dict) and required.issubset(o.keys())]
-            if objs:
-                # Normalize common fields/types
-                out: List[Dict[str, Any]] = []
-                for o in objs[:5]:
-                    item = dict(o)
-                    # Coerce types where reasonable
-                    if "timeframe_days" in item:
-                        try:
-                            item["timeframe_days"] = int(item["timeframe_days"])
-                        except Exception:
-                            pass
-                    if "budget_max_usd" in item:
-                        try:
-                            item["budget_max_usd"] = float(item["budget_max_usd"])
-                        except Exception:
-                            pass
-                    out.append(item)
-                return out
-    return []
+    webhook = (webhook or SLACK_WEBHOOK or "").strip()
+    if not webhook:
+        logger.warning("SLACK_WEBHOOK not set — skipping alert")
+        return
 
-# ----------------------
-# Pipeline
-# ----------------------
-def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
-    request_id = str(uuid.uuid4())
-    logger.info(f"Agent pipeline started | ID={request_id} | Topic='{topic}'")
+    # Only send when risk high (configurable)
+    if risk_score < RISK_HIGH_THRESHOLD:
+        logger.info("Risk below threshold — not alerting (score=%.2f < %.2f)", risk_score, RISK_HIGH_THRESHOLD)
+        return
 
-    # Input validation
-    if not topic or len(topic.strip()) < 5:
-        raise ValueError("Topic must be at least 5 characters")
-    if not horizon or not okrs:
-        raise ValueError("Horizon and OKRs are required")
+    # Simple per-user throttle to avoid spam
+    cooldown = timedelta(minutes=(throttle_minutes if throttle_minutes is not None else ALERT_THROTTLE_MINUTES))
+    now = datetime.utcnow()
+    last = _last_sent_at.get(user_id)
+    if last and (now - last) < cooldown:
+        logger.info("Throttled alert for user=%s (last sent %s)", user_id, last.isoformat() + "Z")
+        return
+
+    blocks = _build_blocks(user_id, risk_score, factors, suggested_action)
+    payload = {"blocks": blocks}
 
     try:
-        # 1) Researcher
-        researcher = _chat(researcher_prompt(topic, horizon))
+        _post_to_slack(webhook, payload)
+        _last_sent_at[user_id] = now
+        logger.info("High-risk alert sent | user=%s | score=%.2f", user_id, risk_score)
+    except httpx.HTTPStatusError as e:
+        logger.error("Slack webhook HTTP error %s: %s", e.response.status_code, e.response.text[:300])
+    except httpx.RequestError as e:
+        logger.error("Slack webhook network error: %s", str(e))
+    except Exception as e:
+        logger.error("Slack webhook unexpected error: %s", str(e))
 
-        # 2) Analyst (Top 5 tests)
-        analyst = _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
-        analyst_tests = _parse_analyst_tests(analyst)
+# Convenience: use inside a FastAPI route
+def queue_clinician_alert(background_tasks, *, user_id: str, risk_score: float, factors: List[Dict], suggested_action: str) -> None:
+    background_tasks.add_task(
+        send_clinician_alert,
+        user_id=user_id,
+        risk_score=risk_score,
+        factors=factors,
+        suggested_action=suggested_action,
+    )
 
-        # 3) Critic
-        critic = _chat(f"Researcher + Analyst:\n{researcher}\n\n{analyst}\n\n{CRITIC_PROMPT}")
+__all__ = ["send_clinician_alert", "queue_clinician_alert"]
 
-        # 4) Strategist
-        strategist = _chat(
-            "Use the prior outputs to build the plan.\n"
-            f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\n{STRATEGIST_PROMPT}"
-        )
-
-        # 5) Advisor (decision + trade-offs, aligned to OKRs) — higher quality model
-        advisor_input = (
-            advisor_prompt(okrs)
-            + "\n\nContext:\n"
-            + f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\nStrategist:\n{strategist}"
-        )
-        raw_memo = client.chat.completions.create(
-            model=MODEL_HIGH,
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": SYSTEM},
-                {"role": "user", "content": advisor_input},
-            ],
-        ).choices[0].message.content
-
-        advisor_memo = "[REDACTED] Potential PHI detected." if _contains_phi(raw_memo) else raw_memo
-
-        logger.info(f"Agent pipeline completed | ID={request_id}")
-        return {
-            "request_id": request_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "topic": topic,
-            "horizon": horizon,
-            "okrs": okrs,
-            "researcher": researcher,
-            "analyst": analyst,
-            "analyst_tests": analyst_tests,  # <— parsed Top 5 tests
-            "critic": critic,
-            "strategist": strategist,
-            "advisor_memo": advisor_memo,
-        }
 
     except Exception as e:
         logger.error(f"Agent pipeline failed | ID={request_id} | Error={str(e)}")
