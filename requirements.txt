@@ -5,40 +5,34 @@
 
 # --- Core API stack ---
 fastapi==0.111.0
-uvicorn[standard]==0.30.1     # uvloop, httptools, websockets, watchfiles
-gunicorn==21.2.0              # production process manager
-pydantic==2.7.4               # models / validation
+uvicorn[standard]==0.30.1
+gunicorn==21.2.0
+pydantic==2.7.4
 
 # --- Database (SQLModel + Postgres) ---
 sqlmodel==0.0.18
-psycopg2-binary==2.9.9        # Postgres driver (ok for containers)
+psycopg2-binary==2.9.9
 
 # --- AI & RAG ---
 openai==1.35.0
-sentence-transformers==2.6.1  # local embeddings
-torch==2.3.0                  # required by sentence-transformers
+sentence-transformers==2.6.1
+torch==2.3.0
 numpy==1.26.4
+scikit-learn==1.5.1
+scipy==1.13.1
+transformers==4.44.2
+huggingface-hub==0.23.0
+Pillow==10.3.0
 
-# --- Rate limiting ---
+# --- Rate limiting (no limits pin to avoid conflict) ---
 slowapi==0.1.7
-limits>=2.3,<3.0              # slowapi 0.1.7 requires limits < 3.0
 
-# --- HTTP client (Slack, email, external APIs) ---
+# --- HTTP client / utilities ---
 httpx==0.27.0
-tenacity==8.2.3               # retries for external calls (optional but useful)
-
-# --- Config / settings (optional but recommended) ---
+tenacity==8.2.3
 pydantic-settings==2.4.0
 
 # --- Security & compliance ---
-python-jose[cryptography]==3.3.0  # JWT / JWS (correct package for `from jose import jwt`)
+python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-
-# --- Optional: Email (SendGrid) ---
-# sendgrid==6.9.7
-
-# --- Optional: Dev-only (move to dev-requirements.txt) ---
-# pytest==8.2.0
-# black==24.4.2
-# mypy==1.10.0
 
