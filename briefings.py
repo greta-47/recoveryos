@@ -1,158 +1,237 @@
-# agents.py
-import os
-import time
-import uuid
-import re
-from typing import Dict, Any
+# briefing.py
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from typing import Dict, Any, List
 from datetime import datetime
-from openai import OpenAI, APIError, RateLimitError
 import logging
+import os
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s'
-)
 logger = logging.getLogger("recoveryos")
 
-# Validate API key
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise RuntimeError("OPENAI_API_KEY is not set in environment")
-client = OpenAI(api_key=api_key)
+# ----------------------
+# Optional consent hook (safe if consent.py is absent)
+# ----------------------
+try:
+    from consent import ConsentRecord, ConsentType, ConsentStatus, can_send_weekly  # type: ignore
+    _HAS_CONSENT = True
+except Exception:
+    _HAS_CONSENT = False
+    class ConsentType:  # minimal shim
+        WEEKLY_BRIEFING = "weekly_briefing"
+    def can_send_weekly(_):  # always allow if no consent module
+        return True
 
-# System message
-SYSTEM = """You are a coordinated multi-agent team for RecoveryOS (BC, Canada).
-Agents: Researcher, Analyst, Critic (BC compliance), Strategist, Advisor.
-Core principles:
-- Trauma-informed, professional, decision-ready
-- No clinical diagnosis or crisis advice
-- Cite sources, note assumptions, keep concise
-- Never include PHI or patient identifiers
-- All outputs must be de-identified and audit-safe
-"""
-
-# Prompts
-PROMPTS = {
-    "researcher": lambda topic, horizon: f'''ROLE: Researcher
-TASK: Compile high-signal sources on "{topic}" for the next {horizon}.
-Prioritize: peer-reviewed journals, government health sites (BC/CDC/WHO), clinical guidelines.
-
-Include:
-- Papers, patents, regulatory pages (BC/Canada)
-- Earnings calls (if commercial)
-- Pricing pages, patient reviews (de-identified)
-
-Return:
-1) Findings list: [{{source, date, claim, metric, reliability, excerpt}}] (8–15 items)
-2) 10-bullet executive summary.
-''',
-
-    "analyst": '''ROLE: Analyst
-From the Researcher findings, extract:
-(1) 3–5 trends, (2) buyer/funding patterns, (3) TAM/SAM + unit economics,
-(4) 3 bottlenecks, (5) opportunity map with ROI ranges (note sensitivity to regulation/rates).''',
-
-    "critic": '''ROLE: Critic (Compliance + Red Team)
-Challenge assumptions and feasibility. Flag hidden costs (support load, returns), platform risk, data handling.
-BC/Canada guardrails: informed consent before sharing, data minimization, no PHI in email, crisis disclaimers,
-export/delete rights, encryption in transit/at rest. Provide risks, kill-criteria, escalation triggers.''',
-
-    "strategist": '''ROLE: Strategist
-Produce a 90-day GTM plan with 3 budget variants (Lean / Standard / Aggressive).
-Include: ICP, offer, channels, budget, KPIs (leading/lagging), 30/60/90 milestones,
-and clear stop/scale thresholds.'''
-}
-
-def _contains_phi(text: str) -> bool:
-    patterns = [
-        r"\b\d{3}-\d{3}-\d{4}\b",
-        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
-        r"\b\d{3}-\d{2}-\d{4}\b",
-        r"\bDOB[:\s]*\d{1,2}/\d{1,2}/\d{4}\b",
+# ----------------------
+# Mock Data Source (Replace with DB or API)
+# ----------------------
+def get_patient_trends_last_7d() -> List[Dict[str, Any]]:
+    """
+    De-identified, minimal dataset for weekly briefing.
+    Replace with a real DB query, making sure fields are PHI-safe.
+    """
+    return [
+        {
+            "user_id": "usr-101",                 # de-identified ID
+            "name_display": "Patient J",          # pseudonym only
+            "recovery_days": 54,
+            "trend": {
+                "mood_change": "+0.8",
+                "urge_avg": 2.7,
+                "sleep_improvement": True,
+                "checkin_rate": "85%"
+            },
+            "risk_flags": {
+                "rising_urge": False,
+                "isolation_risk": True,
+                "engagement_drop": False
+            },
+            "ai_insight": "Improved sleep correlates with lower urge scores."
+        },
+        {
+            "user_id": "usr-102",
+            "name_display": "Patient M",
+            "recovery_days": 21,
+            "trend": {
+                "mood_change": "-1.2",
+                "urge_avg": 4.1,
+                "sleep_improvement": False,
+                "checkin_rate": "40%"
+            },
+            "risk_flags": {
+                "rising_urge": True,
+                "isolation_risk": False,
+                "engagement_drop": True
+            },
+            "ai_insight": "Urge scores rising for 4 days. Last check-in 3 days ago."
+        }
     ]
-    return any(re.search(p, text, re.I) for p in patterns)
 
-def _chat(content: str, model: str = "gpt-4o-mini", max_retries: int = 3) -> str:
-    for attempt in range(max_retries):
-        try:
-            resp = client.chat.completions.create(
-                model=model,
-                temperature=0.3,
-                messages=[
-                    {"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": content}
-                ],
-                timeout=15
-            )
-            return resp.choices[0].message.content
-        except RateLimitError:
-            wait = 2 ** attempt
-            time.sleep(wait)
-        except APIError as e:
-            if attempt == max_retries - 1:
-                raise RuntimeError(f"OpenAI API error after {max_retries} attempts: {e}")
-            time.sleep(2)
-    raise RuntimeError("Max retries exceeded")
+# ----------------------
+# Minimal notifier (replace with SendGrid/SES, Slack, etc.)
+# ----------------------
+def send_email_or_notification(subject: str, body: str, recipients: List[str]) -> None:
+    """
+    Replace this with a real email/SMS/push integration.
+    This function must NOT include PHI. Keep content de-identified.
+    """
+    logger.info(f"📬 Simulated send | To: {recipients} | Subject: {subject}")
+    logger.debug(f"Body: {body}")
 
-def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
-    request_id = str(uuid.uuid4())
-    logger.info(f"Agent pipeline started | ID={request_id} | Topic='{topic}'")
-
-    # Input validation
-    if not topic or len(topic.strip()) < 5:
-        raise ValueError("Topic must be at least 5 characters")
-    if not horizon or not okrs:
-        raise ValueError("Horizon and OKRs are required")
-
+# ----------------------
+# Helpers
+# ----------------------
+def _pct_int(s: str) -> int:
     try:
-        # 1) Researcher
-        researcher = _chat(PROMPTS["researcher"](topic, horizon))
+        return int(float(s.strip("%")))
+    except Exception:
+        return 0
 
-        # 2) Analyst
-        analyst = _chat(f"Researcher findings:\n{researcher}\n\n{PROMPTS['analyst']}")
+def _safe_avg_checkin_rate(trends: List[Dict[str, Any]]) -> str:
+    if not trends:
+        return "0%"
+    vals = [_pct_int(p["trend"].get("checkin_rate", "0%")) for p in trends]
+    return f"{int(sum(vals) / max(1, len(vals)))}%"
 
-        # 3) Critic
-        critic = _chat(f"Researcher + Analyst:\n{researcher}\n\n{analyst}\n\n{PROMPTS['critic']}")
+def _filter_by_consent(trends: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    If consent module exists, filter out patients who haven't consented to weekly briefings.
+    In production, you’d fetch actual consent records from your DB.
+    """
+    if not _HAS_CONSENT:
+        return trends
 
-        # 4) Strategist
-        strategist = _chat(
-            f"Use the prior outputs to build the plan.\n"
-            f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\n{PROMPTS['strategist']}"
+    # Example stub: everyone has a "given" consent unless you wire real data
+    filtered: List[Dict[str, Any]] = []
+    for p in trends:
+        # Build a fake consent record for the demo; swap with your DB record
+        cr = ConsentRecord(
+            user_id=p["user_id"],
+            consent_type=ConsentType.WEEKLY_BRIEFING,
+            status=ConsentStatus.GIVEN
         )
+        if can_send_weekly(cr):
+            filtered.append(p)
+        else:
+            logger.info("Excluded from weekly briefing (no consent) | User=%s", p["user_id"])
+    return filtered
 
-        # 5) Advisor memo (higher quality model)
-        raw_memo = client.chat.completions.create(
-            model="gpt-4o",
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": SYSTEM},
-                {"role": "user", "content":
-                    f"Create a decision memo aligned to OKRs: {okrs}.\n"
-                    "Sections: Top Opportunities, Risks/Kill-Criteria, 90-day GTM (3 variants), "
-                    "KPIs, Decision & Rationale, Next Actions. Keep it concise and actionable.\n\n"
-                    f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\nStrategist:\n{strategist}"
-                }
+# ----------------------
+# Router
+# ----------------------
+router = APIRouter(prefix="/briefings", tags=["briefings"])
+
+# ----------------------
+# POST /briefings/weekly:run  (async send)
+# ----------------------
+@router.post("/weekly:run")
+def run_weekly_briefing(background_tasks: BackgroundTasks):
+    """
+    Generate and send a weekly clinical briefing to the care team.
+    Runs asynchronously via BackgroundTasks to avoid request timeout.
+    All content is de-identified and PHI-free by design.
+    """
+    logger.info("Weekly briefing triggered")
+    try:
+        raw = get_patient_trends_last_7d()
+        trends = _filter_by_consent(raw)
+
+        # Prioritization
+        at_risk = [
+            p for p in trends
+            if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")
+        ]
+        improved = [
+            p for p in trends
+            if (p["risk_flags"].get("rising_urge") is False)
+            and (str(p["trend"].get("mood_change", "0")).replace("+", "") not in {"", "0"})
+            and (float(str(p["trend"]["mood_change"]).replace("+", "")) >= 0.5)
+        ]
+
+        briefing: Dict[str, Any] = {
+            "report_date": datetime.utcnow().date().isoformat(),
+            "period": "last_7_days",
+            "summary": {
+                "total_patients_tracked": len(trends),
+                "at_risk_count": len(at_risk),
+                "improved_count": len(improved),
+                "avg_checkin_rate": _safe_avg_checkin_rate(trends),
+            },
+            "at_risk_patients": at_risk,
+            "patients_showing_improvement": improved,
+            "team_insights": [
+                "Sleep quality strongly correlates with urge reduction.",
+                "Patients with <50% check-in rate are more likely to show rising urges.",
+                "Consider a short group session on sleep hygiene."
             ],
-        ).choices[0].message.content
-
-        # PHI check
-        advisor_memo = "[REDACTED] Potential PHI detected." if _contains_phi(raw_memo) else raw_memo
-
-        logger.info(f"Agent pipeline completed | ID={request_id}")
-        return {
-            "request_id": request_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "topic": topic,
-            "horizon": horizon,
-            "okrs": okrs,
-            "researcher": researcher,
-            "analyst": analyst,
-            "critic": critic,
-            "strategist": strategist,
-            "advisor_memo": advisor_memo,
+            "recommended_actions": [
+                "Follow up with at-risk patients within 24h.",
+                "Acknowledge progress with improving patients.",
+                "Review isolation risk protocols."
+            ]
         }
 
+        # Build de-identified message body
+        body = f"""
+Weekly RecoveryOS Briefing ({briefing['period']})
+
+📊 Summary:
+- Tracked: {briefing['summary']['total_patients_tracked']} patients
+- At Risk: {briefing['summary']['at_risk_count']}
+- Showing Improvement: {briefing['summary']['improved_count']}
+- Avg Engagement: {briefing['summary']['avg_checkin_rate']}
+
+🚨 At-Risk Patients:
+{chr(10).join([f"• {p['name_display']} (Urge: {p['trend']['urge_avg']}) – {p['ai_insight']}" for p in at_risk]) or "• None in the last 7 days"}
+
+📈 Improvement Highlights:
+{chr(10).join([f"• {p['name_display']} Mood ↑{p['trend']['mood_change']} – {p['ai_insight']}" for p in improved]) or "• No significant improvements flagged"}
+
+💡 Team Insights:
+{chr(10).join([f"• {insight}" for insight in briefing['team_insights']])}
+
+✅ Recommended Actions:
+{chr(10).join([f"• {action}" for action in briefing['recommended_actions']])}
+
+This briefing is de-identified and for clinical use only.
+        """.strip()
+
+        recipients = os.getenv("BRIEFINGS_RECIPIENTS", "clinical-team@recoveryos.app").split(",")
+        subject = f"RecoveryOS Weekly Briefing – {briefing['report_date']}"
+
+        # Queue async send
+        background_tasks.add_task(send_email_or_notification, subject=subject, body=body, recipients=recipients)
+
+        logger.info("Weekly briefing generated and queued")
+        return {"ok": True, "status": "briefing queued", "report_date": briefing["report_date"]}
+
     except Exception as e:
-        logger.error(f"Agent pipeline failed | ID={request_id} | Error={str(e)}")
-        raise
+        logger.error(f"Weekly briefing failed | Error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Briefing generation failed")
+
+# ----------------------
+# GET /briefings/weekly:preview  (no send)
+# ----------------------
+@router.get("/weekly:preview")
+def preview_weekly_briefing():
+    """
+    Preview the briefing content without sending.
+    Useful for testing or clinician review.
+    """
+    trends = _filter_by_consent(get_patient_trends_last_7d())
+    at_risk = [p for p in trends if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")]
+    improved = [
+        p for p in trends
+        if (p["risk_flags"].get("rising_urge") is False)
+        and (float(str(p["trend"].get("mood_change", "0")).replace("+", "")) >= 0.5)
+    ]
+
+    return {
+        "preview": True,
+        "report_date": datetime.utcnow().date().isoformat(),
+        "patient_count": len(trends),
+        "at_risk_count": len(at_risk),
+        "improved_count": len(improved),
+        "avg_checkin_rate": _safe_avg_checkin_rate(trends),
+        "sample_at_risk": at_risk[:1],
+        "sample_improved": improved[:1],
+    }
+
