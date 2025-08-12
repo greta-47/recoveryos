@@ -6,15 +6,13 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 import logging
 import re
+import os, sys
 
-# --- Internal imports ---
-from agents import run_multi_agent
-from coping import router as coping_router            # <-- added
-from briefing import router as briefing_router        # <-- added
-from admin_clinician import router as clinician_router  # <-- added
+# Ensure current dir is importable
+sys.path.append(os.getcwd())
 
 # ----------------------
-# Logging Setup (for audit & observability)
+# Logging
 # ----------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -24,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger("recoveryos")
 
 # ----------------------
-# App & Middleware
+# App
 # ----------------------
 app = FastAPI(
     title="RecoveryOS API",
@@ -32,33 +30,47 @@ app = FastAPI(
     description="AI-powered relapse prevention platform for addiction recovery"
 )
 
-# Secure CORS (tightened from *)
-# TODO: Replace with your domain in production (e.g., https://recoveryos.app)
 ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:3000",
     "https://recoveryos.app",
-    "https://your-clinic-domain.com"
+    "https://your-clinic-domain.com",
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"]
+    expose_headers=["X-Request-ID"],
 )
 
 # ----------------------
-# Mount Routers (this is where you add them)
+# Optional router loader (won’t crash if a file is missing)
 # ----------------------
-app.include_router(coping_router)      # /coping/...
-app.include_router(briefing_router)    # /briefings/...
-app.include_router(clinician_router)   # /clinician/...
+def _try_include(module_name: str, attr: str = "router", friendly: str = ""):
+    try:
+        mod = __import__(module_name, fromlist=[attr])
+        app.include_router(getattr(mod, attr))
+        logger.info("Loaded router: %s", friendly or module_name)
+    except Exception as e:
+        logger.warning("Router not loaded (%s): %s", friendly or module_name, e)
+
+# Load your routers (top-level files present in your repo)
+_try_include("coping", friendly="coping")
+_try_include("briefings", friendly="briefings")           # <-- plural
+_try_include("admin_clinician", friendly="admin_clinician")
+
+# Agents pipeline import (safe fallback)
+try:
+    from agents import run_multi_agent
+except Exception as e:
+    logger.error("Failed to import agents.run_multi_agent: %s", e)
+    def run_multi_agent(*args, **kwargs):
+        raise HTTPException(status_code=500, detail="Agents module not available")
 
 # ----------------------
-# Models (for simple demo endpoints below)
+# Demo models / routes
 # ----------------------
 class Checkin(BaseModel):
     mood: int = Field(..., ge=1, le=5, description="Mood level: 1 (struggling) to 5 (strong)")
@@ -69,48 +81,28 @@ class Checkin(BaseModel):
 class AgentsIn(BaseModel):
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
-    okrs: str = Field(default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", max_length=500)
+    okrs: str = Field(default="1) 100 beta users 2) 80% engagement 3) Zero safety incidents", max_length=500)
 
-# ----------------------
-# Routes
-# ----------------------
 @app.get("/", response_class=JSONResponse)
 def root():
-    """
-    Health check and service info.
-    """
     return {
         "ok": True,
         "service": "RecoveryOS",
         "version": app.version,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "environment": "development"
+        "environment": os.getenv("ENV", "development"),
     }
 
 @app.get("/healthz", response_class=JSONResponse)
 def health():
-    """
-    Lightweight health check for load balancers and CI.
-    """
-    return {
-        "status": "ok",
-        "app": "RecoveryOS",
-        "timestamp": datetime.utcnow().isoformat() + "Z"
-    }
+    return {"status": "ok", "app": "RecoveryOS", "timestamp": datetime.utcnow().isoformat() + "Z"}
 
 @app.post("/checkins")
 def create_checkin(checkin: Checkin, request: Request):
-    """
-    Receive a daily check-in and return a personalized coping tool.
-    Logs request (without PHI) for observability.
-    """
-    client_ip = request.client.host
+    client_ip = request.client.host if request.client else "unknown"
     request_id = f"req-{hash(f'{client_ip}-{datetime.utcnow().timestamp()}') % 10**8}"
-    
     logger.info(f"Check-in received | ID={request_id} | Urge={checkin.urge} | Mood={checkin.mood}")
 
-    # AI Safety Guardrail: Avoid harmful or shaming language
-    tool = ""
     if checkin.urge >= 4:
         tool = "Urge Surfing — 5-minute guided wave visualization"
     elif checkin.mood <= 2:
@@ -120,51 +112,42 @@ def create_checkin(checkin: Checkin, request: Request):
     else:
         tool = "Breathing — Box breathing 4x4"
 
-    # Log anonymized decision
     logger.info(f"Tool suggested | ID={request_id} | Tool='{tool}'")
-
     return {
         "message": "Check-in received",
         "tool": tool,
-        "data": checkin.dict(),
+        "data": checkin.model_dump(),
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "request_id": request_id
+        "request_id": request_id,
     }
 
 @app.post("/agents/run")
 def agents_run(body: AgentsIn, request: Request):
-    """
-    Runs the multi-agent pipeline: Researcher → Analyst → Critic → Strategist → Advisor
-    Returns the compiled Advisor memo.
-    All outputs are de-identified and sanitized.
-    """
-    request_id = f"agent-{hash(f'{request.client.host}-{datetime.utcnow().timestamp()}') % 10**8}"
+    rid_src = request.client.host if request.client else "unknown"
+    request_id = f"agent-{hash(f'{rid_src}-{datetime.utcnow().timestamp()}') % 10**8}"
     logger.info(f"Agent pipeline started | ID={request_id} | Topic='{body.topic}'")
 
     try:
-        # Sanitize input (prevent prompt injection)
         if re.search(r"password|token|secret|PHI", body.topic, re.I):
             raise HTTPException(status_code=400, detail="Invalid topic — restricted keywords detected")
 
         result = run_multi_agent(body.topic, body.horizon, body.okrs)
 
-        # Ensure outputs are safe and de-identified
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
             if key in result and result[key]:
-                if re.search(r"patient \d+|name:|DOB:", result[key], re.I):
+                if re.search(r"patient \d+|name:|DOB:", str(result[key]), re.I):
                     logger.warning(f"Potential PHI detected in {key} output — redacting")
                     result[key] = "[REDACTED] Output may contain sensitive data."
 
         logger.info(f"Agent pipeline completed | ID={request_id}")
         return {**result, "request_id": request_id, "timestamp": datetime.utcnow().isoformat() + "Z"}
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Agent pipeline failed | ID={request_id} | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Internal agent error — please try again")
 
-# ----------------------
-# Minimal Web UI at /ui
-# ----------------------
 @app.get("/ui", response_class=HTMLResponse)
 def ui():
     return """
@@ -206,20 +189,16 @@ $("run").onclick = async () => {
     horizon: $("horizon").value.trim() || "90 days",
     okrs: $("okrs").value.trim() || "1) 100 beta users 2) 80% engagement 3) Zero safety incidents"
   };
-
   $("run").disabled = true;
   $("status").textContent = "Running Researcher → Analyst → Critic → Strategist…";
   $("result").style.display = "none";
-
   try {
     const res = await fetch("/agents/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    
     const data = await res.json();
     $("status").textContent = "✅ Done.";
     $("result").style.display = "block";
@@ -238,4 +217,3 @@ $("run").onclick = async () => {
 };
 </script>
 """
-
