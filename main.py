@@ -413,7 +413,21 @@ def differential_privacy_analyze(request_data: Dict[str, Any]):
         
         if analysis_type == "emotion_analysis":
             if isinstance(input_data, list):
-                emotion_dict = {f"emotion_{i}": float(val) for i, val in enumerate(input_data)}
+                emotion_dict = {}
+                for i, val in enumerate(input_data):
+                    if isinstance(val, str):
+                        positive_words = ['happy', 'good', 'great', 'excellent', 'wonderful', 'amazing']
+                        negative_words = ['sad', 'bad', 'terrible', 'awful', 'horrible', 'stressed']
+                        
+                        val_lower = val.lower()
+                        score = 0.5  # neutral default
+                        if any(word in val_lower for word in positive_words):
+                            score = 0.8
+                        elif any(word in val_lower for word in negative_words):
+                            score = 0.2
+                        emotion_dict[f"emotion_{i}"] = score
+                    else:
+                        emotion_dict[f"emotion_{i}"] = float(val)
                 result = protector.privatize_emotion_analysis(emotion_dict, "anonymous", epsilon)
             else:
                 result = protector.privatize_emotion_analysis(input_data, "anonymous", epsilon)
@@ -461,13 +475,12 @@ def continual_learning_train(task_data: Dict[str, Any]):
         return {
             "task_id": task_id,
             "training_result": result,
-            "performance_metrics": performance,
-            "knowledge_retention": learner.measure_retention(),
+            "knowledge_retention": performance,
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
     except Exception as e:
-        logger.error(f"Continual learning failed | Error={str(e)}")
-        raise HTTPException(status_code=500, detail="Continual learning failed")
+        logger.error(f"Continual learning failed | Error={str(e)} | TaskData={task_data}")
+        raise HTTPException(status_code=500, detail=f"Continual learning failed: {str(e)}")
 
 @app.post("/elite/homomorphic/compute")
 @track_elite_endpoint("homomorphic")
