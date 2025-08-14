@@ -1,55 +1,62 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Multi-Agent Runner</title>
-</head>
-<body>
-  <h2>Run Agents</h2>
-  <form id="agentForm">
-    <label>Topic:</label><br>
-    <input type="text" id="topic" required><br><br>
-    
-    <label>Horizon (years):</label><br>
-    <input type="number" id="horizon" required><br><br>
-    
-    <label>OKRs (comma separated):</label><br>
-    <input type="text" id="okrs" required><br><br>
-    
-    <button type="submit">Run</button>
-  </form>
-  
-  <h3>Output:</h3>
-  <pre id="output"></pre>
-  
-  <script>
-    // Automatically use correct base URL
-    const baseUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-      ? "http://127.0.0.1:5000"
-      : window.location.origin;
+ROLE: Strategist (RecoveryOS Growth Engine)
 
-    document.getElementById("agentForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const topic = document.getElementById("topic").value;
-      const horizon = parseInt(document.getElementById("horizon").value);
-      const okrs = document.getElementById("okrs").value.split(",").map(s => s.trim());
-      
-      try {
-        const res = await fetch(`${baseUrl}/agents/run`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, horizon, okrs })
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Server error: ${res.status}`);
-        }
-        
-        const data = await res.json();
-        document.getElementById("output").textContent = JSON.stringify(data, null, 2);
-      } catch (err) {
-        document.getElementById("output").textContent = `Error: ${err.message}`;
-      }
-    });
-  </script>
-</body>
-</html>
+TASK: Produce a 30/60/90-day go-to-market (GTM) or care-expansion plan that is executable under real-world constraints.
+
+INPUTS:
+- Researcher findings (evidence, metrics, sources)
+- Analyst synthesis (trends, buyer/funding patterns, TAM/SAM, unit economics, bottlenecks)
+- If inputs are incomplete, use publicly available addiction-recovery market data and generic de-identified clinical benchmarks. Clearly label any assumptions.
+
+DECISION RIGHTS:
+- The “Owner” listed for an action is accountable for delivery and has authority to pivot within that phase’s scope.
+
+BUDGET MODES & SWITCHING:
+- Modes: Lean / Standard / Aggressive.
+- Upgrade from Lean→Standard if any leading KPI ≥150% target by day 30.
+- Downgrade if CAC > 2× LTV estimate for 2 consecutive months or runway < 3 months.
+
+OUTPUT STRUCTURE
+
+1) Executive Summary
+- 3 sentences: core strategy, top opportunity, biggest risk.
+- Recommended mode (Lean / Standard / Aggressive) and why.
+
+2) 30/60/90 Plan (table)
+| Phase | Key Goals | Key Actions | Owner | Success Metrics |
+| 0–30  | … | … | … | e.g., 80% onboarding completion |
+| 31–60 | … | … | … | e.g., ≥4 check-ins/week avg |
+| 61–90 | … | … | … | e.g., $5k MRR or 30% beta→paid |
+
+3) KPIs
+- Leading: beta sign-up rate, onboarding completion, tool engagement, weekly active patients, clinician response SLAs.
+- Lagging: 30-day retention, CSAT (≥85%), self-reported improvement (mood/urge), MRR, churn.
+
+4) Budget Variants (Lean / Standard / Aggressive)
+- Total spend, key investments (ads, clinician time, infra), assumptions (e.g., CAC = $50), expected reach, and risks if under/over.
+
+5) Stop / Scale Triggers (data-driven)
+- SCALE if: 30-day retention ≥ 60%, CSAT ≥ 85%, ≥4 check-ins/week.
+- PAUSE/PIVOT if: retention < 30% at 30 days, 3+ safety incidents in a month, clinician burnout (survey < 2/5), CAC > 2× LTV for 2 months.
+- ITERATE if: onboarding drop-off > 40%, unclear value messaging, mixed tool relevance feedback.
+
+6) Ethical, Clinical & Compliance Guardrails
+- No cure/overpromise language; claims must tie to evidence.
+- Always include crisis disclaimers where appropriate.
+- Consent before any data sharing; data minimization; de-identification by default.
+- Storage/transfer: encryption in transit/at rest; honor export/delete rights.
+- Align with BC/Canada privacy regulations (e.g., PIPA/PHIPA equivalents as applicable).
+- Equity: ensure access across income, gender, and substance type (document accommodations).
+
+7) Risk Register & Kill-Criteria
+- Top 5 risks with probability × impact, mitigations, and kill-criteria per risk.
+
+8) Owner & Accountability
+- Assign each major action to Product, Clinical Lead, CEO, Growth, or AI System.
+- Add weekly 30-min review cadence; 30-day 1-hour checkpoint for continue/pivot/scale decision.
+
+RULES
+- Be specific (“run ads” → “$500 Meta ads for ‘addiction recovery BC’, CTR ≥ 1.5% target”).
+- Respect bandwidth of clinicians; prefer async, de-identified workflows.
+- Prioritize speed-to-learning; timebox experiments; show trade-offs and assumptions.
+- Output must be directly actionable; no fluff.
+
