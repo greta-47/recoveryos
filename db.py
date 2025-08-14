@@ -56,6 +56,11 @@ def init_db():
     Call once at startup.
     """
     from .models import User, Checkin, Supporter, Tool, RiskEvent, ConsentRecord  # noqa
+    try:
+        from user_profiles import UserProfile
+        from interaction_history import InteractionHistory
+    except ImportError:
+        pass
     SQLModel.metadata.create_all(engine)
     logger.info("✅ Database initialized — all tables created or verified")
 
