@@ -320,12 +320,14 @@ def neuromorphic_processing(emotional_inputs: Dict[str, float]):
         raise HTTPException(status_code=500, detail="Neuromorphic processing failed")
 
 @app.post("/elite/graph-analysis")
-def graph_neural_analysis(user_id: str, user_state: Dict[str, float]):
+def graph_neural_analysis(request_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.GRAPH_NEURAL_NETWORKS):
         raise HTTPException(status_code=503, detail="Graph neural networks not enabled")
     
     try:
         analyzer = create_recovery_graph_analyzer()
+        user_id = request_data.get("user_id", "anonymous")
+        user_state = request_data.get("user_state", {})
         analysis = analyzer.analyze_user_recovery_network(user_id, user_state)
         return analysis
     except Exception as e:
@@ -333,13 +335,14 @@ def graph_neural_analysis(user_id: str, user_state: Dict[str, float]):
         raise HTTPException(status_code=500, detail="Graph analysis failed")
 
 @app.post("/elite/quantum-crypto/encrypt")
-def quantum_encrypt(plaintext: str):
+def quantum_encrypt(request_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.QUANTUM_CRYPTO):
         raise HTTPException(status_code=503, detail="Quantum cryptography not enabled")
     
     try:
         crypto = create_quantum_crypto()
         key_id = crypto.generate_keypair()
+        plaintext = request_data.get("plaintext", "")
         result = crypto.encrypt(key_id, plaintext)
         
         if result:
@@ -362,6 +365,101 @@ def explainable_prediction(input_data: Dict[str, Any], prediction: Dict[str, Any
     except Exception as e:
         logger.error(f"Explainable AI failed | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Explainable AI failed")
+
+@app.post("/elite/differential-privacy/analyze")
+def differential_privacy_analyze(data: Dict[str, Any]):
+    if not is_elite_feature_enabled(EliteFeature.DIFFERENTIAL_PRIVACY):
+        raise HTTPException(status_code=503, detail="Differential privacy not enabled")
+    
+    try:
+        protector = create_clinical_privacy_protector()
+        analysis_type = data.get("analysis_type", "emotion_analysis")
+        epsilon = data.get("epsilon", 1.0)
+        input_data = data.get("data", [])
+        
+        if analysis_type == "emotion_analysis":
+            if isinstance(input_data, list):
+                emotion_dict = {f"emotion_{i}": float(val) for i, val in enumerate(input_data)}
+                result = protector.privatize_emotion_analysis(emotion_dict, "anonymous", epsilon)
+            else:
+                result = protector.privatize_emotion_analysis(input_data, "anonymous", epsilon)
+        elif analysis_type == "risk_assessment":
+            if isinstance(input_data, list):
+                risk_factors = [{"name": f"factor_{i}", "score": float(val)} for i, val in enumerate(input_data)]
+                result = protector.privatize_risk_assessment(risk_factors, "anonymous", epsilon)
+            else:
+                result = protector.privatize_risk_assessment(input_data, "anonymous", epsilon)
+        else:
+            result = protector.apply_privacy_mechanism(input_data, epsilon)
+        
+        return {
+            "analysis_type": analysis_type,
+            "privacy_epsilon": epsilon,
+            "result": result,
+            "privacy_guaranteed": True,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    except Exception as e:
+        logger.error(f"Differential privacy analysis failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Differential privacy analysis failed")
+
+@app.post("/elite/continual-learning/train")
+def continual_learning_train(task_data: Dict[str, Any]):
+    if not is_elite_feature_enabled(EliteFeature.CONTINUAL_LEARNING):
+        raise HTTPException(status_code=503, detail="Continual learning not enabled")
+    
+    try:
+        from continual_learning import create_continual_learner
+        learner = create_continual_learner()
+        
+        task_id = task_data.get("task_id", "default_task")
+        training_data = task_data.get("task_data", {})
+        
+        result = learner.learn_new_task(task_id, training_data)
+        performance = learner._evaluate_performance(training_data)
+        
+        return {
+            "task_id": task_id,
+            "training_result": result,
+            "performance_metrics": performance,
+            "knowledge_retention": learner.measure_retention(),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    except Exception as e:
+        logger.error(f"Continual learning failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Continual learning failed")
+
+@app.post("/elite/homomorphic-encryption/compute")
+def homomorphic_compute(computation_data: Dict[str, Any]):
+    if not is_elite_feature_enabled(EliteFeature.HOMOMORPHIC_ENCRYPTION):
+        raise HTTPException(status_code=503, detail="Homomorphic encryption not enabled")
+    
+    try:
+        from homomorphic_encryption import create_homomorphic_processor
+        processor = create_homomorphic_processor()
+        
+        operation = computation_data.get("operation", "secure_aggregation")
+        risk_scores = computation_data.get("risk_scores", [])
+        
+        if operation == "secure_aggregation":
+            result = processor.secure_risk_aggregation(risk_scores)
+        elif operation == "outcome_comparison":
+            group_a = computation_data.get("group_a", [])
+            group_b = computation_data.get("group_b", [])
+            result = processor.secure_outcome_comparison(group_a, group_b)
+        else:
+            result = {"error": f"Unknown operation: {operation}"}
+        
+        return {
+            "operation": operation,
+            "result": result,
+            "privacy_guaranteed": True,
+            "computation_summary": processor.get_computation_summary(),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    except Exception as e:
+        logger.error(f"Homomorphic encryption failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Homomorphic encryption failed")
 
 @app.get("/elite/system-status")
 def elite_system_status():
