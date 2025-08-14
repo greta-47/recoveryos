@@ -1,0 +1,60 @@
+{
+  "BC_CA": {
+    "display_name": "BC, Canada",
+    "regulatory_agencies": [
+      "BC Centre on Substance Use",
+      "Health Canada", 
+      "BCCDC",
+      "NIDA",
+      "WHO",
+      "CIHI",
+      "CADTH",
+      "CMAJ"
+    ],
+    "crisis_line": "1-800-784-2433",
+    "emergency_number": "9-1-1",
+    "compliance_rules": [
+      "informed consent before sharing",
+      "data minimization", 
+      "no PHI in email",
+      "crisis disclaimers",
+      "export/delete rights",
+      "encryption in transit/at rest"
+    ],
+    "jurisdiction_options": ["BC", "Canada", "US", "Global", "Other"]
+  },
+  "US": {
+    "display_name": "United States",
+    "regulatory_agencies": [
+      "NIDA",
+      "SAMHSA", 
+      "CDC",
+      "FDA",
+      "WHO"
+    ],
+    "crisis_line": "988",
+    "emergency_number": "9-1-1",
+    "compliance_rules": [
+      "HIPAA compliance",
+      "informed consent",
+      "data minimization"
+    ],
+    "jurisdiction_options": ["US", "Canada", "Global", "Other"]
+  },
+  "GENERIC": {
+    "display_name": "your region",
+    "regulatory_agencies": [
+      "relevant health agencies",
+      "NIDA",
+      "WHO"
+    ],
+    "crisis_line": "your local crisis line",
+    "emergency_number": "emergency services",
+    "compliance_rules": [
+      "informed consent",
+      "data minimization",
+      "appropriate regulatory compliance"
+    ],
+    "jurisdiction_options": ["Local", "National", "Global", "Other"]
+  }
+}

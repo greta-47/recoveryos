@@ -31,10 +31,53 @@ MODEL_FAST = os.getenv("OPENAI_MODEL_FAST", "gpt-4o-mini")
 MODEL_HIGH = os.getenv("OPENAI_MODEL_HIGH", "gpt-4o")
 
 # ----------------------
+# ----------------------
+def load_jurisdiction_config():
+    """Load jurisdiction configuration from config file or environment variables."""
+    from pathlib import Path
+    
+    jurisdiction_code = os.getenv("JURISDICTION_CODE", "GENERIC")
+    
+    config_path = Path(__file__).parent / "config" / "jurisdictions.json"
+    try:
+        with open(config_path, 'r') as f:
+            jurisdictions = json.load(f)
+        
+        if jurisdiction_code in jurisdictions:
+            config = jurisdictions[jurisdiction_code]
+            return {
+                'display_name': config['display_name'],
+                'agencies': ', '.join(config['regulatory_agencies']),
+                'compliance': ', '.join(config['compliance_rules']),
+                'crisis_line': config['crisis_line'],
+                'emergency_number': config['emergency_number'],
+                'jurisdiction_options': ' | '.join(config['jurisdiction_options'])
+            }
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        logger.warning(f"Could not load jurisdiction config: {e}. Using fallback.")
+    
+    return {
+        'display_name': os.getenv("JURISDICTION_NAME", "your region"),
+        'agencies': os.getenv("JURISDICTION_AGENCIES", "relevant health agencies, NIDA, WHO"),
+        'compliance': os.getenv("JURISDICTION_COMPLIANCE", "informed consent, data minimization, appropriate regulatory compliance"),
+        'crisis_line': os.getenv("CRISIS_LINE", "your local crisis line"),
+        'emergency_number': os.getenv("EMERGENCY_NUMBER", "emergency services"),
+        'jurisdiction_options': os.getenv("JURISDICTION_OPTIONS", "Local | National | Global | Other")
+    }
+
+JURISDICTION_CONFIG = load_jurisdiction_config()
+JURISDICTION_NAME = JURISDICTION_CONFIG['display_name']
+JURISDICTION_AGENCIES = JURISDICTION_CONFIG['agencies']
+JURISDICTION_COMPLIANCE = JURISDICTION_CONFIG['compliance']
+CRISIS_LINE = JURISDICTION_CONFIG['crisis_line']
+EMERGENCY_NUMBER = JURISDICTION_CONFIG['emergency_number']
+JURISDICTION_OPTIONS = JURISDICTION_CONFIG['jurisdiction_options']
+
+# ----------------------
 # System message
 # ----------------------
-SYSTEM = """You are a coordinated multi-agent team for RecoveryOS (BC, Canada).
-Agents: Researcher, Analyst, Critic (BC compliance), Strategist, Advisor.
+SYSTEM = f"""You are a coordinated multi-agent team for RecoveryOS ({JURISDICTION_NAME}).
+Agents: Researcher, Analyst, Critic ({JURISDICTION_NAME} compliance), Strategist, Advisor.
 Core principles:
 - Trauma-informed, professional, decision-ready
 - No clinical diagnosis or crisis advice
@@ -50,11 +93,11 @@ def researcher_prompt(topic: str, horizon: str) -> str:
     return f"""ROLE: Researcher (RecoveryOS Intelligence Unit)
 
 MISSION
-You gather high-signal, decision-grade intelligence on "{topic}" focused on the next {horizon}, with attention to BC/Canada context when relevant.
+You gather high-signal, decision-grade intelligence on "{topic}" focused on the next {horizon}, with attention to {JURISDICTION_NAME} context when relevant.
 
 PRIORITIZE (in order)
 1) Peer-reviewed research (systematic reviews/meta-analyses, RCTs, strong cohort studies)
-2) Clinical guidelines & governmental/agency sources (e.g., BC Centre on Substance Use, Health Canada, BCCDC, NIDA, WHO, CIHI, CADTH, CMAJ)
+2) Clinical guidelines & governmental/agency sources (e.g., {JURISDICTION_AGENCIES})
 3) Official regulatory/commercial documents (regulations, public safety advisories, SEDAR/EDGAR filings, earnings calls)
 4) De-identified patient/community forums (for qualitative signals only; lowest reliability)
 
@@ -66,7 +109,7 @@ EXCLUDE / DOWN-WEIGHT
 RECENCY & SCOPE
 - Prefer items ≤36 months old unless seminal or still definitive.
 - Always include the original publication date (YYYY-MM-DD) and the event date if different.
-- Note jurisdiction; call out when a finding is outside BC/Canada and may not generalize.
+- Note jurisdiction; call out when a finding is outside {JURISDICTION_NAME} and may not generalize.
 
 COMPLIANCE & SAFETY
 - No PHI, no real names, no DOBs, no addresses. Quote ≤35 words max and cite.
@@ -100,7 +143,7 @@ Return 8–15 JSON objects in a JSON array. Use exactly these keys:
     "publisher": "…",
     "url": "https://…",
     "date": "YYYY-MM-DD",
-    "jurisdiction": "BC | Canada | US | Global | Other",
+    "jurisdiction": "{JURISDICTION_OPTIONS}",
     "method": "Guideline | Meta-analysis | RCT | Cohort | Cross-sectional | Qualitative | Regulatory | Other",
     "sample_size": "n=… or unknown",
     "metric": "What is measured (e.g., 90-day retention)",
@@ -127,7 +170,7 @@ Rules for Section 1:
 - What leaders should do next, tied to evidence (reference [Fi]).
 
 4) GAPS & UNCERTAINTIES (3–6 bullets)
-- Missing data, conflicting results, external validity limits (esp. BC/Canada).
+- Missing data, conflicting results, external validity limits (esp. {JURISDICTION_NAME}).
 
 5) SEARCH LOG (brief)
 - 3–6 lines: key queries, databases/sites used, date searched (YYYY-MM-DD).
@@ -183,10 +226,9 @@ STYLE
 - Be concise. No fluff. Only actionable insights.
 """
 
-CRITIC_PROMPT = """ROLE: Critic (Compliance + Red Team)
+CRITIC_PROMPT = f"""ROLE: Critic (Compliance + Red Team)
 Challenge assumptions and feasibility. Flag hidden costs (support load, returns), platform risk, data handling.
-BC/Canada guardrails: informed consent before sharing, data minimization, no PHI in email, crisis disclaimers,
-export/delete rights, encryption in transit/at rest. Provide risks, kill-criteria, escalation triggers.
+{JURISDICTION_NAME} guardrails: {JURISDICTION_COMPLIANCE}. Provide risks, kill-criteria, escalation triggers.
 """
 
 STRATEGIST_PROMPT = """ROLE: Strategist
@@ -214,7 +256,7 @@ Your job is not to summarize — it is to **decide, align, and reveal trade-offs
 
 3. **Flag Gaps**:
    - Missing data? Unproven assumptions? Over-reliance on AI?
-   - Is this ethical, trauma-informed, and safe for BC/Canada?
+   - Is this ethical, trauma-informed, and safe for {JURISDICTION_NAME}?
 
 4. **Output Structure**:
    - Decision: [Go / No-Go / Pivot]
@@ -225,6 +267,16 @@ Your job is not to summarize — it is to **decide, align, and reveal trade-offs
 
 Be concise. Be courageous. Be clinical.
 """
+
+def get_crisis_disclaimer() -> str:
+    """Generate crisis disclaimer with configurable jurisdiction info."""
+    return (
+        "—\n"
+        "This message is part of your RecoveryOS support program and is not monitored 24/7.\n"
+        "If you are in crisis or feel unsafe, please call local emergency services or a crisis line immediately.\n"
+        f"{JURISDICTION_NAME} Crisis Line: {CRISIS_LINE} • "
+        f"If in immediate danger, call {EMERGENCY_NUMBER}.\n"
+    )
 
 # ----------------------
 # Helpers

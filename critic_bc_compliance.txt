@@ -210,12 +210,21 @@ def sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
 # 4) Crisis disclaimer (BC/Canada-safe, de-identified)
 # =========================================================
 
-CRISIS_DISCLAIMER = (
-    "—\n"
-    "This message is part of your RecoveryOS support program and is not monitored 24/7.\n"
-    "If you are in crisis or feel unsafe, please call local emergency services or a crisis line immediately.\n"
-    "BC Crisis Line: 1-800-784-2433 • If in immediate danger, call 9-1-1.\n"
-)
+def get_crisis_disclaimer_from_agents():
+    """Import crisis disclaimer from agents module for consistency."""
+    try:
+        from agents import get_crisis_disclaimer
+        return get_crisis_disclaimer()
+    except ImportError:
+        # Fallback for when agents module is not available
+        return (
+            "—\n"
+            "This message is part of your RecoveryOS support program and is not monitored 24/7.\n"
+            "If you are in crisis or feel unsafe, please call local emergency services or a crisis line immediately.\n"
+            "Crisis Line: [Your local crisis line] • If in immediate danger, call emergency services.\n"
+        )
+
+CRISIS_DISCLAIMER = get_crisis_disclaimer_from_agents()
 
 def append_crisis_disclaimer(text: str) -> str:
     text = (text or "").rstrip()
