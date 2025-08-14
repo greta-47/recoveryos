@@ -1,0 +1,61 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>RecoveryOS – Agents Runner</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:24px;background:#0b1220;color:#e6e9ef}
+  .card{max-width:860px;margin:0 auto;background:#121b2f;border:1px solid #223055;border-radius:16px;padding:16px}
+  label{display:block;margin:10px 0 4px;color:#cbd5e1}
+  input,button{width:100%;padding:12px;border-radius:12px}
+  input{background:#0f1627;border:1px solid #2a3b66;color:#e6e9ef}
+  button{background:#5b8cff;color:#fff;border:none;font-weight:600;cursor:pointer;margin-top:12px}
+  .out{white-space:pre-wrap;background:#0f1627;border:1px dashed #2a3b66;padding:12px;border-radius:12px;margin-top:16px}
+</style>
+<div class="card">
+  <h1>🧠 RecoveryOS – Agents Runner</h1>
+  <label>Topic</label>
+  <input id="topic" placeholder="Top 3 Underserved Niches in Mental Health Tech 2025">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div><label>Horizon</label><input id="horizon" value="90 days"></div>
+    <div><label>OKRs</label><input id="okrs" value="1) 100 beta users 2) 80% engagement 3) Zero safety incidents"></div>
+  </div>
+  <button id="run">Run Agents</button>
+  <div id="status" style="margin-top:8px;color:#94a3b8"></div>
+  <div id="result" class="out" style="display:none"></div>
+</div>
+<script>
+const base = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? "http://127.0.0.1:8000"
+  : location.origin;
+
+document.getElementById("run").onclick = async () => {
+  const payload = {
+    topic: document.getElementById("topic").value.trim() || "RecoveryOS go-to-market strategy",
+    horizon: document.getElementById("horizon").value.trim() || "90 days",
+    okrs: document.getElementById("okrs").value.trim() || "1) 100 beta users 2) 80% engagement 3) Zero safety incidents"
+  };
+  const btn = document.getElementById("run");
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+  btn.disabled = true; status.textContent = "Running Researcher → Analyst → Critic → Strategist…"; result.style.display = "none";
+  try {
+    const res = await fetch(`${base}/agents/run`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    status.textContent = "✅ Done."; result.style.display = "block";
+    result.textContent =
+      "► Researcher\n\n" + (data.researcher || "(no output)") + "\n\n" +
+      "► Analyst\n\n" + (data.analyst || "(no output)") + "\n\n" +
+      "► Critic\n\n" + (data.critic || "(no output)") + "\n\n" +
+      "► Strategist\n\n" + (data.strategist || "(no output)") + "\n\n" +
+      "► Advisor Memo\n\n" + (data.advisor_memo || "(no output)") + "\n\n" +
+      `[Request ID: ${data.request_id} | ${new Date().toLocaleString()}]`;
+  } catch (e) {
+    status.textContent = "❌ Error: " + (e.message || e);
+  } finally { btn.disabled = false; }
+};
+</script>
