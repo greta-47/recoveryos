@@ -119,7 +119,8 @@ def create_checkin(checkin: Checkin, request: Request):
 
 @app.post("/agents/run")
 def agents_run(body: AgentsIn, request: Request):
-    request_id = f"agent-{hash(f'{(request.client.host if request.client else 'unknown')}-{datetime.utcnow().timestamp()}') % 10**8}"
+    client_info = request.client.host if request.client else 'unknown'
+    request_id = f"agent-{hash(f'{client_info}-{datetime.utcnow().timestamp()}') % 10**8}"
     logger.info(f"Agent pipeline started | ID={request_id} | Topic='{body.topic}'")
     try:
         # Prompt injection safety
