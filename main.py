@@ -39,6 +39,17 @@ try:
     from emotion_ai import analyze_emotion_and_respond
     from clinical_agents import analyze_complex_case
     from autonomous_workflows import setup_user_workflows, execute_user_workflows
+    from federated_learning import create_federated_manager
+    from differential_privacy import create_clinical_privacy_protector
+    from causal_ai import create_causal_inference_engine
+    from edge_ai import create_edge_ai_manager
+    from neuromorphic import create_neuromorphic_processor
+    from graph_neural_networks import create_recovery_graph_analyzer
+    from quantum_crypto import create_quantum_crypto
+    from continual_learning import create_continual_learner
+    from homomorphic_encryption import create_homomorphic_processor
+    from explainable_ai import create_explainable_ai_engine
+    from elite_config import get_elite_config, is_elite_feature_enabled, EliteFeature
 except Exception as e:
     logger.warning(f"Advanced AI modules not available: {e}")
     process_multimodal_input = None
@@ -241,6 +252,125 @@ def execute_workflows(user_id: int, context: Dict[str, Any]):
     except Exception as e:
         logger.error(f"Workflow execution failed | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Workflow execution failed")
+
+@app.post("/elite/federated-learning/train")
+def federated_learning_train(client_data: Dict[str, Any]):
+    if not is_elite_feature_enabled(EliteFeature.FEDERATED_LEARNING):
+        raise HTTPException(status_code=503, detail="Federated learning not enabled")
+    
+    try:
+        manager = create_federated_manager()
+        results = manager.federated_round(client_data)
+        return {
+            "global_weights_updated": results is not None,
+            "training_metrics": manager.get_training_metrics(),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    except Exception as e:
+        logger.error(f"Federated learning failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Federated learning failed")
+
+@app.post("/elite/causal-analysis")
+def causal_analysis(user_state: Dict[str, float]):
+    if not is_elite_feature_enabled(EliteFeature.CAUSAL_AI):
+        raise HTTPException(status_code=503, detail="Causal AI not enabled")
+    
+    try:
+        engine = create_causal_inference_engine()
+        analysis = engine.analyze_causal_factors(user_state)
+        return analysis
+    except Exception as e:
+        logger.error(f"Causal analysis failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Causal analysis failed")
+
+@app.post("/elite/edge-ai/deploy")
+def deploy_edge_model(model_type: str):
+    if not is_elite_feature_enabled(EliteFeature.EDGE_AI):
+        raise HTTPException(status_code=503, detail="Edge AI not enabled")
+    
+    try:
+        manager = create_edge_ai_manager()
+        deployment_id = manager.deploy_model(model_type)
+        
+        if deployment_id:
+            client_code = manager.get_client_deployment_code(deployment_id)
+            return {
+                "deployment_id": deployment_id,
+                "client_code": client_code,
+                "status": "deployed",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Model deployment failed")
+    except Exception as e:
+        logger.error(f"Edge AI deployment failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Edge AI deployment failed")
+
+@app.post("/elite/neuromorphic/process")
+def neuromorphic_processing(emotional_inputs: Dict[str, float]):
+    if not is_elite_feature_enabled(EliteFeature.NEUROMORPHIC):
+        raise HTTPException(status_code=503, detail="Neuromorphic processing not enabled")
+    
+    try:
+        processor = create_neuromorphic_processor()
+        results = processor.process_emotional_state(emotional_inputs)
+        return results
+    except Exception as e:
+        logger.error(f"Neuromorphic processing failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Neuromorphic processing failed")
+
+@app.post("/elite/graph-analysis")
+def graph_neural_analysis(user_id: str, user_state: Dict[str, float]):
+    if not is_elite_feature_enabled(EliteFeature.GRAPH_NEURAL_NETWORKS):
+        raise HTTPException(status_code=503, detail="Graph neural networks not enabled")
+    
+    try:
+        analyzer = create_recovery_graph_analyzer()
+        analysis = analyzer.analyze_user_recovery_network(user_id, user_state)
+        return analysis
+    except Exception as e:
+        logger.error(f"Graph analysis failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Graph analysis failed")
+
+@app.post("/elite/quantum-crypto/encrypt")
+def quantum_encrypt(plaintext: str):
+    if not is_elite_feature_enabled(EliteFeature.QUANTUM_CRYPTO):
+        raise HTTPException(status_code=503, detail="Quantum cryptography not enabled")
+    
+    try:
+        crypto = create_quantum_crypto()
+        key_id = crypto.generate_keypair()
+        result = crypto.encrypt(key_id, plaintext)
+        
+        if result:
+            return result
+        else:
+            raise HTTPException(status_code=500, detail="Quantum encryption failed")
+    except Exception as e:
+        logger.error(f"Quantum encryption failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Quantum encryption failed")
+
+@app.post("/elite/explainable-ai")
+def explainable_prediction(input_data: Dict[str, Any], prediction: Dict[str, Any]):
+    if not is_elite_feature_enabled(EliteFeature.EXPLAINABLE_AI):
+        raise HTTPException(status_code=503, detail="Explainable AI not enabled")
+    
+    try:
+        engine = create_explainable_ai_engine()
+        explanation = engine.explain_prediction(input_data, prediction)
+        return explanation
+    except Exception as e:
+        logger.error(f"Explainable AI failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Explainable AI failed")
+
+@app.get("/elite/system-status")
+def elite_system_status():
+    try:
+        config = get_elite_config()
+        return config.get_system_status()
+    except Exception as e:
+        logger.error(f"Elite system status failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="System status unavailable")
 
 # Optional routers
 if coping_router:
