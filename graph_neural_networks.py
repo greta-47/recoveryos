@@ -460,8 +460,8 @@ class RecoveryGraphAnalyzer:
                     source=edge.source,
                     target=edge.target,
                     edge_type=edge.edge_type,
-                    weight=new_weight,
-                    confidence=new_confidence,
+                    weight=float(new_weight),
+                    confidence=float(new_confidence),
                     temporal_lag=edge.temporal_lag
                 )
                 
