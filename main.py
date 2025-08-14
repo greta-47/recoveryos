@@ -50,6 +50,7 @@ try:
     from homomorphic_encryption import create_homomorphic_processor
     from explainable_ai import create_explainable_ai_engine
     from elite_config import get_elite_config, is_elite_feature_enabled, EliteFeature
+    from observability import track_elite_endpoint, elite_observability
 except Exception as e:
     logger.warning(f"Advanced AI modules not available: {e}")
     process_multimodal_input = None
@@ -254,24 +255,37 @@ def execute_workflows(user_id: int, context: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Workflow execution failed")
 
 @app.post("/elite/federated-learning/train")
+@track_elite_endpoint("federated_learning")
 def federated_learning_train(client_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.FEDERATED_LEARNING):
         raise HTTPException(status_code=503, detail="Federated learning not enabled")
     
     try:
         manager = create_federated_manager()
-        results = manager.federated_round(client_data)
+        
+        client_id = client_data.get("client_id", "anonymous_client")
+        client_weights = client_data.get("client_weights", [])
+        
+        if client_id not in manager.clients:
+            manager.register_client(client_id)
+        
+        formatted_data = {client_id: {"weights": client_weights}}
+        results = manager.federated_round(formatted_data)
+        
         return {
             "global_weights_updated": results is not None,
             "training_metrics": manager.get_training_metrics(),
+            "client_id": client_id,
+            "federated_round": manager.aggregator.round_number,
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
     except Exception as e:
         logger.error(f"Federated learning failed | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Federated learning failed")
 
-@app.post("/elite/causal-analysis")
-def causal_analysis(user_state: Dict[str, float]):
+@app.post("/elite/causal-analysis/analyze")
+@track_elite_endpoint("causal_analysis")
+def causal_analysis(user_state: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.CAUSAL_AI):
         raise HTTPException(status_code=503, detail="Causal AI not enabled")
     
@@ -284,20 +298,33 @@ def causal_analysis(user_state: Dict[str, float]):
         raise HTTPException(status_code=500, detail="Causal analysis failed")
 
 @app.post("/elite/edge-ai/deploy")
-def deploy_edge_model(model_type: str):
+@track_elite_endpoint("edge_ai")
+def deploy_edge_model(request_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.EDGE_AI):
         raise HTTPException(status_code=503, detail="Edge AI not enabled")
     
     try:
         manager = create_edge_ai_manager()
-        deployment_id = manager.deploy_model(model_type)
+        model_type = request_data.get("model_type", "emotion")
+        
+        model_type_mapping = {
+            "emotion_classifier": "emotion",
+            "risk_predictor": "risk",
+            "emotion": "emotion",
+            "risk": "risk"
+        }
+        
+        mapped_model_type = model_type_mapping.get(model_type, "emotion")
+        deployment_id = manager.deploy_model(mapped_model_type)
         
         if deployment_id:
             client_code = manager.get_client_deployment_code(deployment_id)
             return {
                 "deployment_id": deployment_id,
+                "model_type": mapped_model_type,
+                "original_request": model_type,
                 "client_code": client_code,
-                "status": "deployed",
+                "deployment_status": "deployed",
                 "timestamp": datetime.utcnow().isoformat() + "Z"
             }
         else:
@@ -307,7 +334,8 @@ def deploy_edge_model(model_type: str):
         raise HTTPException(status_code=500, detail="Edge AI deployment failed")
 
 @app.post("/elite/neuromorphic/process")
-def neuromorphic_processing(emotional_inputs: Dict[str, float]):
+@track_elite_endpoint("neuromorphic")
+def neuromorphic_processing(emotional_inputs: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.NEUROMORPHIC):
         raise HTTPException(status_code=503, detail="Neuromorphic processing not enabled")
     
@@ -319,7 +347,8 @@ def neuromorphic_processing(emotional_inputs: Dict[str, float]):
         logger.error(f"Neuromorphic processing failed | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Neuromorphic processing failed")
 
-@app.post("/elite/graph-analysis")
+@app.post("/elite/graph-neural/analyze")
+@track_elite_endpoint("graph_neural")
 def graph_neural_analysis(request_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.GRAPH_NEURAL_NETWORKS):
         raise HTTPException(status_code=503, detail="Graph neural networks not enabled")
@@ -335,6 +364,7 @@ def graph_neural_analysis(request_data: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Graph analysis failed")
 
 @app.post("/elite/quantum-crypto/encrypt")
+@track_elite_endpoint("quantum_crypto")
 def quantum_encrypt(request_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.QUANTUM_CRYPTO):
         raise HTTPException(status_code=503, detail="Quantum cryptography not enabled")
@@ -353,13 +383,16 @@ def quantum_encrypt(request_data: Dict[str, Any]):
         logger.error(f"Quantum encryption failed | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Quantum encryption failed")
 
-@app.post("/elite/explainable-ai")
-def explainable_prediction(input_data: Dict[str, Any], prediction: Dict[str, Any]):
+@app.post("/elite/explainable-ai/predict")
+@track_elite_endpoint("explainable_ai")
+def explainable_prediction(prediction_request: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.EXPLAINABLE_AI):
         raise HTTPException(status_code=503, detail="Explainable AI not enabled")
     
     try:
         engine = create_explainable_ai_engine()
+        input_data = prediction_request.get("input_data", {})
+        prediction = prediction_request.get("prediction", {})
         explanation = engine.explain_prediction(input_data, prediction)
         return explanation
     except Exception as e:
@@ -367,15 +400,16 @@ def explainable_prediction(input_data: Dict[str, Any], prediction: Dict[str, Any
         raise HTTPException(status_code=500, detail="Explainable AI failed")
 
 @app.post("/elite/differential-privacy/analyze")
-def differential_privacy_analyze(data: Dict[str, Any]):
+@track_elite_endpoint("differential_privacy")
+def differential_privacy_analyze(request_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.DIFFERENTIAL_PRIVACY):
         raise HTTPException(status_code=503, detail="Differential privacy not enabled")
     
     try:
         protector = create_clinical_privacy_protector()
-        analysis_type = data.get("analysis_type", "emotion_analysis")
-        epsilon = data.get("epsilon", 1.0)
-        input_data = data.get("data", [])
+        analysis_type = request_data.get("analysis_type", "emotion_analysis")
+        epsilon = request_data.get("epsilon", 1.0)
+        input_data = request_data.get("data", [])
         
         if analysis_type == "emotion_analysis":
             if isinstance(input_data, list):
@@ -404,6 +438,7 @@ def differential_privacy_analyze(data: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Differential privacy analysis failed")
 
 @app.post("/elite/continual-learning/train")
+@track_elite_endpoint("continual_learning")
 def continual_learning_train(task_data: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.CONTINUAL_LEARNING):
         raise HTTPException(status_code=503, detail="Continual learning not enabled")
@@ -414,6 +449,11 @@ def continual_learning_train(task_data: Dict[str, Any]):
         
         task_id = task_data.get("task_id", "default_task")
         training_data = task_data.get("task_data", {})
+        
+        if isinstance(training_data, dict):
+            training_data = [training_data]
+        elif not isinstance(training_data, list):
+            training_data = [{"data": training_data}]
         
         result = learner.learn_new_task(task_id, training_data)
         performance = learner._evaluate_performance(training_data)
@@ -429,8 +469,9 @@ def continual_learning_train(task_data: Dict[str, Any]):
         logger.error(f"Continual learning failed | Error={str(e)}")
         raise HTTPException(status_code=500, detail="Continual learning failed")
 
-@app.post("/elite/homomorphic-encryption/compute")
-def homomorphic_compute(computation_data: Dict[str, Any]):
+@app.post("/elite/homomorphic/compute")
+@track_elite_endpoint("homomorphic")
+def homomorphic_compute(computation_request: Dict[str, Any]):
     if not is_elite_feature_enabled(EliteFeature.HOMOMORPHIC_ENCRYPTION):
         raise HTTPException(status_code=503, detail="Homomorphic encryption not enabled")
     
@@ -438,14 +479,16 @@ def homomorphic_compute(computation_data: Dict[str, Any]):
         from homomorphic_encryption import create_homomorphic_processor
         processor = create_homomorphic_processor()
         
-        operation = computation_data.get("operation", "secure_aggregation")
-        risk_scores = computation_data.get("risk_scores", [])
+        operation = computation_request.get("operation", "secure_sum")
+        data = computation_request.get("data", [])
         
-        if operation == "secure_aggregation":
-            result = processor.secure_risk_aggregation(risk_scores)
+        if operation == "secure_sum":
+            result = processor.secure_risk_aggregation(data)
+        elif operation == "secure_aggregation":
+            result = processor.secure_risk_aggregation(data)
         elif operation == "outcome_comparison":
-            group_a = computation_data.get("group_a", [])
-            group_b = computation_data.get("group_b", [])
+            group_a = computation_request.get("group_a", [])
+            group_b = computation_request.get("group_b", [])
             result = processor.secure_outcome_comparison(group_a, group_b)
         else:
             result = {"error": f"Unknown operation: {operation}"}
@@ -462,6 +505,7 @@ def homomorphic_compute(computation_data: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Homomorphic encryption failed")
 
 @app.get("/elite/system-status")
+@track_elite_endpoint("system_status")
 def elite_system_status():
     try:
         config = get_elite_config()
@@ -469,6 +513,16 @@ def elite_system_status():
     except Exception as e:
         logger.error(f"Elite system status failed | Error={str(e)}")
         raise HTTPException(status_code=500, detail="System status unavailable")
+
+@app.get("/elite/metrics")
+@track_elite_endpoint("metrics")
+def elite_metrics():
+    """Get comprehensive metrics for all elite endpoints"""
+    try:
+        return elite_observability.get_metrics_summary()
+    except Exception as e:
+        logger.error(f"Elite metrics failed | Error={str(e)}")
+        raise HTTPException(status_code=500, detail="Metrics unavailable")
 
 # Optional routers
 if coping_router:
