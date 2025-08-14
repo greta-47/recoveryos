@@ -1,1 +1,55 @@
-Produce 30/60/90 day plans; KPIs; stop/scale triggers.
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multi-Agent Runner</title>
+</head>
+<body>
+  <h2>Run Agents</h2>
+  <form id="agentForm">
+    <label>Topic:</label><br>
+    <input type="text" id="topic" required><br><br>
+    
+    <label>Horizon (years):</label><br>
+    <input type="number" id="horizon" required><br><br>
+    
+    <label>OKRs (comma separated):</label><br>
+    <input type="text" id="okrs" required><br><br>
+    
+    <button type="submit">Run</button>
+  </form>
+  
+  <h3>Output:</h3>
+  <pre id="output"></pre>
+  
+  <script>
+    // Automatically use correct base URL
+    const baseUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "http://127.0.0.1:5000"
+      : window.location.origin;
+
+    document.getElementById("agentForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const topic = document.getElementById("topic").value;
+      const horizon = parseInt(document.getElementById("horizon").value);
+      const okrs = document.getElementById("okrs").value.split(",").map(s => s.trim());
+      
+      try {
+        const res = await fetch(`${baseUrl}/agents/run`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, horizon, okrs })
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Server error: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById("output").textContent = `Error: ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
