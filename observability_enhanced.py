@@ -41,8 +41,8 @@ class TraceSpan:
     operation_name: str
     start_time: float
     end_time: Optional[float] = None
-    tags: Dict[str, Any] = None
-    logs: List[Dict[str, Any]] = None
+    tags: Optional[Dict[str, Any]] = None
+    logs: Optional[List[Dict[str, Any]]] = None
 
     def __post_init__(self):
         if self.tags is None:
@@ -54,10 +54,14 @@ class TraceSpan:
         self.end_time = time.time()
 
     def log(self, message: str, level: str = "info"):
-        self.logs.append({"timestamp": time.time(), "level": level, "message": message})
+        if self.logs is not None:
+            self.logs.append(
+                {"timestamp": time.time(), "level": level, "message": message}
+            )
 
     def set_tag(self, key: str, value: Any):
-        self.tags[key] = value
+        if self.tags is not None:
+            self.tags[key] = value
 
 
 class DistributedTracer:
@@ -96,7 +100,7 @@ class EnhancedMetrics:
     p99_latency_ms: float = 0.0
     success_rate: float = 1.0
     last_request: Optional[str] = None
-    latency_samples: List[float] = None
+    latency_samples: Optional[List[float]] = None
 
     def __post_init__(self):
         if self.latency_samples is None:
@@ -138,25 +142,24 @@ class PIIRedactor:
         return redacted
 
     @classmethod
-    def redact_dict(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def redact_dict(cls, data: Any) -> Any:
         if not isinstance(data, dict):
             return data
 
-        redacted = {}
+        redacted: Dict[str, Any] = {}
         for key, value in data.items():
             if isinstance(value, str):
                 redacted[key] = cls.redact_pii(value)
             elif isinstance(value, dict):
                 redacted[key] = cls.redact_dict(value)
             elif isinstance(value, list):
-                redacted[key] = [
-                    (
-                        cls.redact_dict(item)
-                        if isinstance(item, dict)
-                        else cls.redact_pii(str(item))
-                    )
-                    for item in value
-                ]
+                redacted_list: List[Any] = []
+                for item in value:
+                    if isinstance(item, dict):
+                        redacted_list.append(cls.redact_dict(item))
+                    else:
+                        redacted_list.append(cls.redact_pii(str(item)))
+                redacted[key] = redacted_list
             else:
                 redacted[key] = value
         return redacted
@@ -177,9 +180,9 @@ class EnhancedObservability:
         endpoint_name: str,
         latency_ms: float,
         success: bool,
-        request_data: Dict[str, Any] = None,
-        error_type: str = None,
-        correlation_id: str = None,
+        request_data: Optional[Dict[str, Any]] = None,
+        error_type: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ):
         """Enhanced request tracking with Prometheus metrics"""
 
@@ -189,16 +192,17 @@ class EnhancedObservability:
         metric = self.metrics[endpoint_name]
         metric.request_count += 1
         metric.total_latency_ms += latency_ms
-        metric.latency_samples.append(latency_ms)
+        if metric.latency_samples is not None:
+            metric.latency_samples.append(latency_ms)
 
-        if len(metric.latency_samples) > 1000:
-            metric.latency_samples = metric.latency_samples[-1000:]
+            if len(metric.latency_samples) > 1000:
+                metric.latency_samples = metric.latency_samples[-1000:]
 
-        sorted_samples = sorted(metric.latency_samples)
-        if sorted_samples:
-            metric.p50_latency_ms = sorted_samples[int(len(sorted_samples) * 0.5)]
-            metric.p95_latency_ms = sorted_samples[int(len(sorted_samples) * 0.95)]
-            metric.p99_latency_ms = sorted_samples[int(len(sorted_samples) * 0.99)]
+            sorted_samples = sorted(metric.latency_samples)
+            if sorted_samples:
+                metric.p50_latency_ms = sorted_samples[int(len(sorted_samples) * 0.5)]
+                metric.p95_latency_ms = sorted_samples[int(len(sorted_samples) * 0.95)]
+                metric.p99_latency_ms = sorted_samples[int(len(sorted_samples) * 0.99)]
 
         if not success:
             metric.error_count += 1
@@ -281,7 +285,7 @@ class EnhancedObservability:
 
     def get_prometheus_metrics(self) -> str:
         """Return Prometheus-formatted metrics"""
-        return generate_latest()
+        return generate_latest().decode("utf-8")
 
 
 enhanced_observability = EnhancedObservability()

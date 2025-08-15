@@ -1,7 +1,7 @@
 import logging
 import time
 import re
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 from dataclasses import dataclass
 from functools import wraps
@@ -46,26 +46,25 @@ class PIIRedactor:
         return redacted
 
     @classmethod
-    def redact_dict(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def redact_dict(cls, data: Any) -> Any:
         """Recursively redact PII from dictionary"""
         if not isinstance(data, dict):
             return data
 
-        redacted = {}
+        redacted: Dict[str, Any] = {}
         for key, value in data.items():
             if isinstance(value, str):
                 redacted[key] = cls.redact_pii(value)
             elif isinstance(value, dict):
                 redacted[key] = cls.redact_dict(value)
             elif isinstance(value, list):
-                redacted[key] = [
-                    (
-                        cls.redact_dict(item)
-                        if isinstance(item, dict)
-                        else cls.redact_pii(str(item))
-                    )
-                    for item in value
-                ]
+                redacted_list: List[Any] = []
+                for item in value:
+                    if isinstance(item, dict):
+                        redacted_list.append(cls.redact_dict(item))
+                    else:
+                        redacted_list.append(cls.redact_pii(str(item)))
+                redacted[key] = redacted_list
             else:
                 redacted[key] = value
         return redacted
@@ -83,7 +82,7 @@ class EliteObservability:
         endpoint_name: str,
         latency_ms: float,
         success: bool,
-        request_data: Dict[str, Any] = None,
+        request_data: Optional[Dict[str, Any]] = None,
     ):
         """Track request metrics"""
         if endpoint_name not in self.metrics:
