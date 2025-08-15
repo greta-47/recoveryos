@@ -451,3 +451,58 @@ INFO:     Application startup complete.
 INFO:     Started server process [43112]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+2025-08-15 00:13:31,293 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-15 00:13:31,294 | INFO | {"timestamp": "2025-08-15T00:13:31.294717Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "continual_learning", "correlation_id": "620288ee-5e90-47a6-9b6a-321bf2a01bbb", "success": true, "latency_ms": 10.55, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41050 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:13:31,298 | INFO | Registered federated client | ClientID=e96581f0c065e544 | UserID=test_client
+2025-08-15 00:13:31,298 | WARNING | Unknown client | ClientID=test_client
+2025-08-15 00:13:31,298 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-15 00:13:31,298 | INFO | {"timestamp": "2025-08-15T00:13:31.298526Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "federated_learning", "correlation_id": "31830635-5fc6-46bb-a045-2cd94dd70c8c", "success": true, "latency_ms": 0.35, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41060 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:13:31,301 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-15 00:13:31,301 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-15 00:13:31,301 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-15 00:13:31,301 | INFO | {"timestamp": "2025-08-15T00:13:31.301860Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "edge_ai", "correlation_id": "d1ea7dcc-e6ef-448c-8e0f-0afb3203fa14", "success": true, "latency_ms": 0.7, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41076 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-15 00:13:31,304 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-15 00:13:31,304 | INFO | {"timestamp": "2025-08-15T00:13:31.304707Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "differential_privacy", "correlation_id": "0c193637-99bc-4875-acb5-ba59000d3a42", "success": true, "latency_ms": 0.22, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41092 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-15 00:13:31,307 | INFO | {"timestamp": "2025-08-15T00:13:31.307650Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "causal_analysis", "correlation_id": "74d0840f-34b8-4596-9d56-a57516ed4056", "success": true, "latency_ms": 0.43, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41106 - "POST /elite/causal-analysis/analyze HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'test_failing_endpoints.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [43112]
+INFO:     Started server process [45254]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'user_profiles.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [45254]
+INFO:     Started server process [47003]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'differential_privacy.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [47003]
+INFO:     Started server process [47272]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'rag.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [47272]
+INFO:     Started server process [47346]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'continual_learning.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [47346]

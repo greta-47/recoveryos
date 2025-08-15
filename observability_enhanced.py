@@ -4,7 +4,7 @@ import json
 import uuid
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from functools import wraps
 import contextvars
 from prometheus_client import Counter, Histogram, Gauge, generate_latest

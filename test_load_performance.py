@@ -9,7 +9,7 @@ import aiohttp
 import time
 import json
 import statistics
-from typing import List, Dict, Any
+from typing import Dict, Any
 from datetime import datetime
 
 

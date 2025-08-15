@@ -1,8 +1,7 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 from datetime import datetime
 import openai
-import os
 
 logger = logging.getLogger("recoveryos")
 
@@ -89,7 +88,6 @@ class ClinicalAgent:
                 raise ValueError(f"Unknown agent type: {self.agent_type}")
 
             case_summary = self._format_case_data(case_data)
-            full_prompt = f"{prompt}\n\nCASE DATA:\n{case_summary}\n\nProvide clinical reasoning and evidence-based pathway suggestions:"
 
             response = openai.ChatCompletion.create(
                 model="gpt-4",

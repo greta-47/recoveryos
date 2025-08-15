@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from datetime import datetime
@@ -11,7 +11,7 @@ import re
 # Import your multi-agent pipeline
 from agents import run_multi_agent
 from fastapi import UploadFile, File
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 
 # Optional routers (only if present)
 try:
@@ -46,8 +46,6 @@ try:
     from neuromorphic import create_neuromorphic_processor
     from graph_neural_networks import create_recovery_graph_analyzer
     from quantum_crypto import create_quantum_crypto
-    from continual_learning import create_continual_learner
-    from homomorphic_encryption import create_homomorphic_processor
     from explainable_ai import create_explainable_ai_engine
     from elite_config import get_elite_config, is_elite_feature_enabled, EliteFeature
     from observability_enhanced import (

@@ -61,8 +61,8 @@ def init_db():
     from .models import User, Checkin, Supporter, Tool, RiskEvent, ConsentRecord  # noqa
 
     try:
-        from user_profiles import UserProfile
-        from interaction_history import InteractionHistory
+        from user_profiles import UserProfile  # noqa: F401
+        from interaction_history import InteractionHistory  # noqa: F401
     except ImportError:
         pass
     SQLModel.metadata.create_all(engine)

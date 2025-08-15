@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Any, List, Optional, Union, Callable
 from datetime import datetime
 import numpy as np
-import hashlib
 from dataclasses import dataclass
 from enum import Enum
 
@@ -66,7 +65,6 @@ class DifferentialPrivacyMechanism:
         self, candidates: List[Any], utility_fn: Callable, sensitivity: float
     ) -> Any:
         utilities = [utility_fn(candidate) for candidate in candidates]
-        max_utility = max(utilities)
 
         probabilities = []
         for utility in utilities:

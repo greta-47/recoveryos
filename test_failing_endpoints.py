@@ -7,8 +7,6 @@ This will help categorize each failure type and capture detailed error informati
 import sys
 import logging
 import traceback
-import json
-from typing import Dict, Any
 
 # Set up detailed logging
 logging.basicConfig(

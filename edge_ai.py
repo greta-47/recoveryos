@@ -1,9 +1,8 @@
 import logging
-from typing import Dict, Any, List, Optional, Union, Callable
+from typing import Dict, Any, List, Optional, Callable
 from datetime import datetime
 import numpy as np
 import json
-import base64
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 

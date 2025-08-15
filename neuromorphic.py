@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, List, Optional, Tuple, Callable
-from datetime import datetime, timedelta
+from datetime import datetime
 import numpy as np
 from dataclasses import dataclass
 from enum import Enum
@@ -320,7 +320,7 @@ class RecoveryNeuromorphicProcessor:
                     value = 1.0 - value
                 inputs[neuron_id] = [value * 3.0] * 80  # Stronger, longer stimulation
 
-        results = risk_net.run_simulation(40.0, inputs)
+        risk_net.run_simulation(40.0, inputs)
 
         final_state = risk_net.get_network_state()
 

@@ -74,10 +74,10 @@ def test_pii_redaction():
         if patterns_found:
             print(f"✅ PASS - Found redaction patterns: {patterns_found}")
         else:
-            print(f"❌ FAIL - No redaction patterns found")
+            print("❌ FAIL - No redaction patterns found")
             all_passed = False
 
-    print(f"\n📝 Test: Dictionary redaction")
+    print("\n📝 Test: Dictionary redaction")
     test_dict = {
         "user_email": "patient@example.com",
         "phone": "555-123-4567",

@@ -1,7 +1,7 @@
 import logging
 import time
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime
 from dataclasses import dataclass
 from functools import wraps
@@ -150,7 +150,7 @@ def track_elite_endpoint(endpoint_name: str):
 
                 result = func(*args, **kwargs)
                 return result
-            except Exception as e:
+            except Exception:
                 success = False
                 raise
             finally:

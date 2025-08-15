@@ -1,11 +1,9 @@
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from datetime import datetime
 import openai
 import base64
 import io
-from PIL import Image
-import os
 
 logger = logging.getLogger("recoveryos")
 

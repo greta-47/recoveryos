@@ -216,7 +216,7 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         logger.warning("No documents provided to ingest.")
         return
 
-    model = _get_model()
+    _get_model()
     dim = _DIM or 384  # fallback
 
     with _STORE_LOCK:
@@ -290,7 +290,7 @@ def retrieve(
     if not query or not query.strip():
         return []
 
-    model = _get_model()
+    _get_model()
     dim = _DIM or 384
 
     if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():

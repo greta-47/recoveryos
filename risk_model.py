@@ -1,4 +1,5 @@
-import json, os
+import json
+import os
 
 DEFAULT_WEIGHTS = {
     "urge": 0.35,

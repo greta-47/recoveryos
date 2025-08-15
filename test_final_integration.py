@@ -8,7 +8,7 @@ Tests all observability components are working correctly
 def test_imports():
     """Test that all required modules can be imported"""
     try:
-        from observability_enhanced import enhanced_observability, PIIRedactor
+        from observability_enhanced import PIIRedactor
         from feature_flags import feature_flags
 
         print("✅ Enhanced observability imported successfully")

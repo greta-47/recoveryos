@@ -1,10 +1,9 @@
 import logging
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List
 from datetime import datetime
 import numpy as np
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-import json
 
 logger = logging.getLogger("recoveryos")
 
@@ -236,12 +235,14 @@ class ClinicalContinualLearner:
         recent_learning = self.learning_history[-10:]
 
         avg_performance = np.mean(
-            [l["performance"]["accuracy"] for l in recent_learning]
+            [learning["performance"]["accuracy"] for learning in recent_learning]
         )
         avg_forgetting = np.mean(
-            [l["catastrophic_forgetting_score"] for l in recent_learning]
+            [learning["catastrophic_forgetting_score"] for learning in recent_learning]
         )
-        avg_retention = np.mean([l["knowledge_retention"] for l in recent_learning])
+        avg_retention = np.mean(
+            [learning["knowledge_retention"] for learning in recent_learning]
+        )
 
         return {
             "total_tasks_learned": len(self.task_memories),
@@ -266,7 +267,7 @@ class ClinicalContinualLearner:
             )
 
         forgetting_scores = [
-            l["catastrophic_forgetting_score"] for l in recent_learning
+            learning["catastrophic_forgetting_score"] for learning in recent_learning
         ]
         if forgetting_scores and np.mean(forgetting_scores) < 0.2:
             insights.append(
@@ -277,7 +278,9 @@ class ClinicalContinualLearner:
                 "High forgetting detected - consider adjusting consolidation parameters"
             )
 
-        retention_scores = [l["knowledge_retention"] for l in recent_learning]
+        retention_scores = [
+            learning["knowledge_retention"] for learning in recent_learning
+        ]
         if retention_scores and np.mean(retention_scores) > 0.8:
             insights.append("Strong knowledge retention across multiple clinical tasks")
 

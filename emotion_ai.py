@@ -121,8 +121,6 @@ class EmotionAI:
             user_profile = context.get("user_profile", {})
             communication_style = user_profile.get("communication_style", "supportive")
 
-            prompt = f"{EMOTIONAL_INTELLIGENCE_PROMPT}\n\nUSER MESSAGE: {text}\n\nCOMMUNICATION STYLE: {communication_style}\n\nProvide a therapeutic response:"
-
             response = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[

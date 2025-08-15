@@ -4,12 +4,8 @@ Comprehensive test suite for elite AI endpoints.
 Includes failing tests that demonstrate bugs and verify fixes.
 """
 
-import pytest
 import sys
-import os
 import requests
-import json
-from typing import Dict, Any
 
 sys.path.append("/home/ubuntu/recoveryos")
 

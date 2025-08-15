@@ -25,7 +25,7 @@ class UserProfile(SQLModel, table=True):
             return {}
         try:
             return json.loads(self.personality_data)
-        except:
+        except (json.JSONDecodeError, TypeError):
             return {}
 
     def set_personality(self, data: Dict[str, Any]):
@@ -37,7 +37,7 @@ class UserProfile(SQLModel, table=True):
             return {}
         try:
             return json.loads(self.preferences_data)
-        except:
+        except (json.JSONDecodeError, TypeError):
             return {}
 
     def set_preferences(self, data: Dict[str, Any]):

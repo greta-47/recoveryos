@@ -1,7 +1,6 @@
 import logging
 from typing import Dict, Any, List, Optional, Union, Tuple
 from datetime import datetime
-import numpy as np
 import secrets
 from dataclasses import dataclass
 

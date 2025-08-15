@@ -5,9 +5,8 @@ Tests metrics, tracing, and PII redaction functionality
 """
 
 import requests
-import json
 import time
-from observability_enhanced import PIIRedactor, enhanced_observability
+from observability_enhanced import PIIRedactor
 from feature_flags import feature_flags
 
 
