@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class RiskEvent(SQLModel, table=True):
+class RiskEvent(SQLModel):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int
     score: float

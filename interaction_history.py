@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class InteractionHistory(SQLModel, table=True):
+class InteractionHistory(SQLModel):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
 

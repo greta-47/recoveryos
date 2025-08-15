@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 
-class UserProfile(SQLModel, table=True):
+class UserProfile(SQLModel):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
 

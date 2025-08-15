@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from ..services.risk_model import score, explain
+from risk_model import score, explain
 
 router = APIRouter(prefix="/risk", tags=["risk"])
 
