@@ -72,7 +72,7 @@ All 3 originally failing elite AI endpoints have been successfully diagnosed, fi
 ```python
 # All endpoints now have comprehensive tracking
 @app.post("/elite/{endpoint}")
-@track_elite_endpoint("endpoint_name")
+@track_elite_endpoint_enhanced("endpoint_name")
 def endpoint_function(request_data: Dict[str, Any]):
     # Automatic metrics, logging, PII redaction
 ```

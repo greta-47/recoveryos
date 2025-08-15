@@ -20,9 +20,9 @@ RAG_DEVICE = os.getenv("RAG_DEVICE", "cpu")  # "cpu" or "cuda"
 RAG_DIR = Path(os.getenv("RAG_STORE_DIR", "rag_store"))
 RAG_DIR.mkdir(parents=True, exist_ok=True)
 
-EMBEDDINGS_FILE = RAG_DIR / "embeddings.npy"   # shape: (N, d) float32 (normalized)
-METADATA_FILE   = RAG_DIR / "metadata.json"    # list[Dict]
-MANIFEST_FILE   = RAG_DIR / "manifest.json"    # {model, dim, count, updated_at}
+EMBEDDINGS_FILE = RAG_DIR / "embeddings.npy"  # shape: (N, d) float32 (normalized)
+METADATA_FILE = RAG_DIR / "metadata.json"  # list[Dict]
+MANIFEST_FILE = RAG_DIR / "manifest.json"  # {model, dim, count, updated_at}
 
 # Thread lock to avoid concurrent writers
 _STORE_LOCK = threading.Lock()
@@ -83,6 +83,7 @@ def _save_manifest(model_name: str, dim: int, count: int) -> None:
 
 def _now_iso() -> str:
     from datetime import datetime
+
     return datetime.utcnow().isoformat() + "Z"
 
 
@@ -128,10 +129,16 @@ def _ensure_store_shapes(dim: int) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
             emb = np.load(EMBEDDINGS_FILE, mmap_mode=None)
             meta = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
             if emb.ndim != 2 or emb.shape[1] != dim:
-                logger.warning("Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.", emb.shape, dim)
+                logger.warning(
+                    "Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.",
+                    emb.shape,
+                    dim,
+                )
                 return np.empty((0, dim), dtype=np.float32), []
             if len(meta) != emb.shape[0]:
-                logger.warning("Metadata length mismatch with embeddings. Rebuilding store.")
+                logger.warning(
+                    "Metadata length mismatch with embeddings. Rebuilding store."
+                )
                 return np.empty((0, dim), dtype=np.float32), []
             return emb.astype(np.float32, copy=False), meta
         except Exception as e:
@@ -150,7 +157,9 @@ def _save_store(emb: np.ndarray, meta: List[Dict[str, Any]], dim: int) -> None:
 
 def _encode_texts(texts: List[str]) -> np.ndarray:
     model = _get_model()
-    vectors = model.encode(texts, show_progress_bar=False, normalize_embeddings=False)  # we normalize ourselves
+    vectors = model.encode(
+        texts, show_progress_bar=False, normalize_embeddings=False
+    )  # we normalize ourselves
     vectors = np.array(vectors, dtype=np.float32)
     return _normalize(vectors)
 
@@ -226,15 +235,17 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
             chunks = _chunk_text(content) if chunk else [content]
             for i, c in enumerate(chunks):
                 texts.append(c)
-                new_meta.append({
-                    "id": f"{doc_id}#{i}" if len(chunks) > 1 else doc_id,
-                    "doc_id": doc_id,
-                    "title": title,
-                    "content": c,
-                    "chunk_index": i,
-                    "source": doc.get("source"),
-                    "tags": doc.get("tags"),
-                })
+                new_meta.append(
+                    {
+                        "id": f"{doc_id}#{i}" if len(chunks) > 1 else doc_id,
+                        "doc_id": doc_id,
+                        "title": title,
+                        "content": c,
+                        "chunk_index": i,
+                        "source": doc.get("source"),
+                        "tags": doc.get("tags"),
+                    }
+                )
 
         if not texts:
             logger.warning("No text content to embed after preprocessing.")
@@ -243,7 +254,9 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         # Encode and normalize
         new_vecs = _encode_texts(texts)  # (M, d)
         if new_vecs.shape[1] != dim:
-            logger.warning("Model dim changed mid-run; rebuilding store from new batch.")
+            logger.warning(
+                "Model dim changed mid-run; rebuilding store from new batch."
+            )
             emb = np.empty((0, new_vecs.shape[1]), dtype=np.float32)
             meta = []
             dim = int(new_vecs.shape[1])
@@ -255,7 +268,12 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         # Save
         _save_store(emb, meta, dim)
 
-        logger.info("✅ Ingested %s chunks from %s docs (total=%s)", len(new_meta), len(documents), emb.shape[0])
+        logger.info(
+            "✅ Ingested %s chunks from %s docs (total=%s)",
+            len(new_meta),
+            len(documents),
+            emb.shape[0],
+        )
 
 
 def retrieve(
@@ -282,7 +300,9 @@ def retrieve(
     try:
         with _STORE_LOCK:
             emb = np.load(EMBEDDINGS_FILE).astype(np.float32, copy=False)
-            meta: List[Dict[str, Any]] = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
+            meta: List[Dict[str, Any]] = json.loads(
+                METADATA_FILE.read_text(encoding="utf-8")
+            )
             if emb.ndim != 2 or emb.shape[1] != dim or len(meta) != emb.shape[0]:
                 logger.warning("Store corrupted or mismatched; returning empty results")
                 return []
@@ -308,7 +328,13 @@ def retrieve(
             results.append(item)
 
         top = max((r["score"] for r in results), default=0.0)
-        logger.info("RAG retrieved %s results | k=%s | top=%.3f | query='%s'", len(results), k, top, query[:120])
+        logger.info(
+            "RAG retrieved %s results | k=%s | top=%.3f | query='%s'",
+            len(results),
+            k,
+            top,
+            query[:120],
+        )
         return results
 
     except Exception as e:
@@ -337,18 +363,18 @@ if __name__ == "__main__":
         {
             "id": "harm-reduction-101",
             "title": "Harm Reduction Principles",
-            "content": "Harm reduction meets patients where they are. It prioritizes safety, dignity, and incremental progress over abstinence-only goals. Key practices: needle exchange, naloxone access, non-judgmental engagement."
+            "content": "Harm reduction meets patients where they are. It prioritizes safety, dignity, and incremental progress over abstinence-only goals. Key practices: needle exchange, naloxone access, non-judgmental engagement.",
         },
         {
             "id": "de-escalation",
             "title": "De-escalation Techniques",
-            "content": "Use a soft tone, non-threatening posture, and active listening. Offer choices to restore sense of control. Validate feelings without agreeing. 'I see this is really hard' is better than 'Calm down.'"
+            "content": "Use a soft tone, non-threatening posture, and active listening. Offer choices to restore sense of control. Validate feelings without agreeing. 'I see this is really hard' is better than 'Calm down.'",
         },
         {
             "id": "urge-surfing",
             "title": "Urge Surfing Technique",
-            "content": "Teach patients to visualize cravings as waves: they rise, peak, and fall. Encourage riding the urge without acting. Mindfulness and breath are key tools."
-        }
+            "content": "Teach patients to visualize cravings as waves: they rise, peak, and fall. Encourage riding the urge without acting. Mindfulness and breath are key tools.",
+        },
     ]
 
     # Ingest once (append-safe)
@@ -358,4 +384,3 @@ if __name__ == "__main__":
     hits = retrieve("How do I help a patient with strong urges?")
     for r in hits:
         print(f"📄 {r['title']} (Score: {r['score']:.2f})\n{r['content']}\n")
-

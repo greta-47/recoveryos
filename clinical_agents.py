@@ -72,92 +72,96 @@ SAFETY GUARDRAILS:
 
 Provide trauma-informed clinical reasoning and evidence-based pathway suggestions."""
 
+
 class ClinicalAgent:
     def __init__(self, agent_type: str):
         self.agent_type = agent_type
         self.prompts = {
             "dual_diagnosis": DUAL_DIAGNOSIS_PROMPT,
             "poly_substance": POLY_SUBSTANCE_PROMPT,
-            "trauma_informed": TRAUMA_INFORMED_PROMPT
+            "trauma_informed": TRAUMA_INFORMED_PROMPT,
         }
-    
+
     def analyze_case(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
         try:
             prompt = self.prompts.get(self.agent_type, "")
             if not prompt:
                 raise ValueError(f"Unknown agent type: {self.agent_type}")
-            
+
             case_summary = self._format_case_data(case_data)
             full_prompt = f"{prompt}\n\nCASE DATA:\n{case_summary}\n\nProvide clinical reasoning and evidence-based pathway suggestions:"
-            
+
             response = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": case_summary}
+                    {"role": "user", "content": case_summary},
                 ],
                 temperature=0.3,
-                max_tokens=1000
+                max_tokens=1000,
             )
-            
+
             analysis = response.choices[0].message.content
-            
+
             return {
                 "agent_type": self.agent_type,
                 "analysis": analysis,
                 "timestamp": datetime.utcnow().isoformat() + "Z",
-                "case_id": case_data.get("case_id", "unknown")
+                "case_id": case_data.get("case_id", "unknown"),
             }
-            
+
         except Exception as e:
-            logger.error(f"Clinical agent analysis failed | Agent={self.agent_type} | Error={str(e)}")
+            logger.error(
+                f"Clinical agent analysis failed | Agent={self.agent_type} | Error={str(e)}"
+            )
             return {
                 "agent_type": self.agent_type,
                 "analysis": "Clinical analysis unavailable - please consult with healthcare provider",
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat() + "Z"
+                "timestamp": datetime.utcnow().isoformat() + "Z",
             }
-    
+
     def _format_case_data(self, case_data: Dict[str, Any]) -> str:
         formatted = []
-        
+
         if "demographics" in case_data:
             formatted.append(f"Demographics: {case_data['demographics']}")
-        
+
         if "substance_use" in case_data:
             formatted.append(f"Substance Use: {case_data['substance_use']}")
-        
+
         if "mental_health" in case_data:
             formatted.append(f"Mental Health: {case_data['mental_health']}")
-        
+
         if "trauma_history" in case_data:
             formatted.append(f"Trauma History: {case_data['trauma_history']}")
-        
+
         if "current_symptoms" in case_data:
             formatted.append(f"Current Symptoms: {case_data['current_symptoms']}")
-        
+
         if "risk_factors" in case_data:
             formatted.append(f"Risk Factors: {case_data['risk_factors']}")
-        
+
         return "\n".join(formatted) if formatted else "Limited case data available"
+
 
 def analyze_complex_case(case_data: Dict[str, Any]) -> Dict[str, Any]:
     results = {}
-    
+
     if case_data.get("has_dual_diagnosis"):
         agent = ClinicalAgent("dual_diagnosis")
         results["dual_diagnosis"] = agent.analyze_case(case_data)
-    
+
     if case_data.get("has_poly_substance"):
         agent = ClinicalAgent("poly_substance")
         results["poly_substance"] = agent.analyze_case(case_data)
-    
+
     if case_data.get("has_trauma"):
         agent = ClinicalAgent("trauma_informed")
         results["trauma_informed"] = agent.analyze_case(case_data)
-    
+
     return {
         "complex_case_analysis": results,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "case_id": case_data.get("case_id", "unknown")
+        "case_id": case_data.get("case_id", "unknown"),
     }

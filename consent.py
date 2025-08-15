@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger("recoveryos")
 
+
 # ----------------------
 # Consent Types & Status
 # ----------------------
@@ -88,7 +89,11 @@ class ConsentRecord:
         """True if consent is currently valid."""
         now = now or datetime.utcnow()
 
-        if self.status in (ConsentStatus.WITHDRAWN, ConsentStatus.EXPIRED, ConsentStatus.PENDING):
+        if self.status in (
+            ConsentStatus.WITHDRAWN,
+            ConsentStatus.EXPIRED,
+            ConsentStatus.PENDING,
+        ):
             return False
 
         if self.expires_at and now >= self.expires_at:
@@ -160,7 +165,9 @@ def can_use(consent: Optional[ConsentRecord], expected_type: ConsentType) -> boo
     Returns False if no record, wrong type, withdrawn, pending, or expired.
     """
     if not consent:
-        logger.warning("Consent check failed | Reason=no_record | Expected=%s", expected_type.value)
+        logger.warning(
+            "Consent check failed | Reason=no_record | Expected=%s", expected_type.value
+        )
         return False
 
     if consent.consent_type != expected_type:
@@ -227,4 +234,3 @@ if __name__ == "__main__":
     patient_consent.withdraw(reason="User toggled off in settings")
     print("Active after withdraw? ->", patient_consent.is_active())
     print("Can send weekly after withdraw? ->", can_send_weekly(patient_consent))
-

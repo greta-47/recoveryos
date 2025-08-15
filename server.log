@@ -1,41 +1,38 @@
 INFO:     Will watch for changes in these directories: ['/home/ubuntu/recoveryos']
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [26197] using StatReload
-INFO:     Started server process [26313]
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [34969] using StatReload
+INFO:     Started server process [35015]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     127.0.0.1:46188 - "GET /healthz HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46192 - "GET /elite/system-status HTTP/1.1" 200 OK
-2025-08-14 22:46:15,141 | WARNING | Insufficient privacy budget | User=anonymous
-INFO:     127.0.0.1:46196 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46200 - "POST /elite/causal-analysis HTTP/1.1" 200 OK
-2025-08-14 22:46:15,184 | INFO | Initialized neuromorphic recovery networks
-INFO:     127.0.0.1:46210 - "POST /elite/neuromorphic/process HTTP/1.1" 200 OK
-2025-08-14 22:46:15,205 | INFO | Initialized recovery knowledge graph | Nodes=16 | Edges=16
-INFO:     127.0.0.1:46220 - "POST /elite/graph-analysis HTTP/1.1" 200 OK
-2025-08-14 22:46:16,374 | INFO | Generated quantum-resistant keypair | Algorithm=kyber | KeyID=42d26573de68dc3f
-INFO:     127.0.0.1:46226 - "POST /elite/quantum-crypto/encrypt HTTP/1.1" 200 OK
-2025-08-14 22:46:16,598 | INFO | Generated homomorphic keypair | KeyID=b3931362eb87185d
-INFO:     127.0.0.1:55852 - "POST /elite/homomorphic-encryption/compute HTTP/1.1" 200 OK
-2025-08-14 22:46:16,611 | ERROR | Explanation method causal failed | Error=max() iterable argument is empty
-INFO:     127.0.0.1:55862 - "POST /elite/explainable-ai HTTP/1.1" 200 OK
-2025-08-14 22:46:16,632 | INFO | Learning new task | TaskID=stress_prediction
-2025-08-14 22:46:16,632 | ERROR | Continual learning failed | Error='ClinicalContinualLearner' object has no attribute 'measure_retention'
-INFO:     127.0.0.1:55868 - "POST /elite/continual-learning/train HTTP/1.1" 500 Internal Server Error
-2025-08-14 22:47:30,265 | WARNING | Unknown client | ClientID=client_weights
-2025-08-14 22:47:30,265 | WARNING | Unknown client | ClientID=client_id
-2025-08-14 22:47:30,265 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
-INFO:     127.0.0.1:34922 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34936 - "POST /elite/edge-ai/deploy HTTP/1.1" 422 Unprocessable Entity
-2025-08-14 22:47:30,310 | INFO | Agent pipeline started | ID=agent-83536350 | Topic='I am feeling stressed about my recovery'
-2025-08-14 22:47:30,310 | INFO | Agent pipeline started | ID=242454dc-1c9b-4906-92aa-29f0a4bbe5df | Topic='I am feeling stressed about my recovery'
-2025-08-14 22:47:30,671 | INFO | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 401 Unauthorized"
-2025-08-14 22:47:32,846 | INFO | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 401 Unauthorized"
-2025-08-14 22:47:34,986 | INFO | HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 401 Unauthorized"
-2025-08-14 22:47:34,986 | ERROR | Agent pipeline failed | ID=242454dc-1c9b-4906-92aa-29f0a4bbe5df | Error=OpenAI API error after 3 attempts: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-test-**********************************ment. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}
-2025-08-14 22:47:34,987 | ERROR | Agent pipeline failed | ID=agent-83536350 | Error=OpenAI API error after 3 attempts: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-test-**********************************ment. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}
-INFO:     127.0.0.1:34938 - "POST /agents/run HTTP/1.1" 500 Internal Server Error
-2025-08-14 22:47:34,998 | INFO | Check-in received | ID=req-5489423 | Urge=2 | Mood=5
-2025-08-14 22:47:34,998 | INFO | Tool suggested | ID=req-5489423 | Tool='Breathing — Box breathing 4x4'
-INFO:     127.0.0.1:34948 - "POST /checkins HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52558 - "GET /elite/system-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37618 - "GET /healthz HTTP/1.1" 200 OK
+2025-08-14 23:31:05,335 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:31:05,336 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=5.79ms | Data={}
+INFO:     127.0.0.1:37620 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:31:05,352 | INFO | Registered federated client | ClientID=a69109d78c0a8c72 | UserID=test_client
+2025-08-14 23:31:05,352 | WARNING | Unknown client | ClientID=test_client
+2025-08-14 23:31:05,352 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:31:05,352 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.64ms | Data={}
+INFO:     127.0.0.1:37628 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:31:05,374 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:31:05,374 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:31:05,374 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:31:05,374 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.62ms | Data={}
+INFO:     127.0.0.1:37632 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:31:05,807 | INFO | Elite endpoint request | Endpoint=metrics | Success=True | Latency=0.05ms | Data={}
+INFO:     127.0.0.1:37634 - "GET /elite/metrics HTTP/1.1" 200 OK
+2025-08-14 23:31:05,827 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:31:05,828 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.23ms | Data={}
+INFO:     127.0.0.1:37640 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'observability_enhanced.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [35015]
+INFO:     Started server process [37402]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37402]
+INFO:     Stopping reloader process [34969]

@@ -87,7 +87,7 @@ PII_PATTERNS = [
 #### Metrics Collection
 ```python
 # Real-time performance tracking
-@track_elite_endpoint("endpoint_name")
+@track_elite_endpoint_enhanced("endpoint_name")
 def endpoint_function():
     # Automatic latency, success rate, error tracking
 ```

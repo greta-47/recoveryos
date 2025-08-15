@@ -1,0 +1,453 @@
+nohup: ignoring input
+INFO:     Will watch for changes in these directories: ['/home/ubuntu/recoveryos']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [37741] using StatReload
+INFO:     Started server process [37789]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2025-08-14 23:51:01,038 | INFO | Learning new task | TaskID=baseline_test
+2025-08-14 23:51:01,039 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=13.78ms | Data={}
+INFO:     127.0.0.1:45292 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:51:01,048 | INFO | Registered federated client | ClientID=bc7c3712267e8d42 | UserID=baseline_client
+2025-08-14 23:51:01,049 | WARNING | Unknown client | ClientID=baseline_client
+2025-08-14 23:51:01,049 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:51:01,049 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.59ms | Data={}
+INFO:     127.0.0.1:45300 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:51:01,070 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:51:01,070 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:51:01,070 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:51:01,071 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.89ms | Data={}
+INFO:     127.0.0.1:45312 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52704 - "GET /healthz HTTP/1.1" 200 OK
+2025-08-14 23:53:31,969 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:53:31,970 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=2.37ms | Data={}
+INFO:     127.0.0.1:52708 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:31,975 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:53:31,975 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.44ms | Data={}
+INFO:     127.0.0.1:52722 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:31,979 | INFO | Registered federated client | ClientID=81693917b204d441 | UserID=test_client
+2025-08-14 23:53:31,979 | WARNING | Unknown client | ClientID=test_client
+2025-08-14 23:53:31,980 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:53:31,980 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.49ms | Data={}
+INFO:     127.0.0.1:52738 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:31,983 | INFO | Registered federated client | ClientID=b188970f57d79140 | UserID=anonymous_client
+2025-08-14 23:53:31,983 | WARNING | Unknown client | ClientID=anonymous_client
+2025-08-14 23:53:31,984 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:53:31,984 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.41ms | Data={}
+INFO:     127.0.0.1:52742 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:31,987 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:53:31,988 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:53:31,988 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:53:31,988 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.70ms | Data={}
+INFO:     127.0.0.1:52754 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:31,991 | INFO | Compiled risk model | ModelID=risk_edge_v1
+2025-08-14 23:53:31,991 | INFO | Loaded JS model | ModelID=risk_edge_v1
+2025-08-14 23:53:31,991 | INFO | Deployed edge model | ID=risk_edge_v1_javascript
+2025-08-14 23:53:31,992 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.55ms | Data={}
+INFO:     127.0.0.1:52760 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:31,995 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:53:31,995 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:53:31,995 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:53:31,996 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.61ms | Data={}
+INFO:     127.0.0.1:52770 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:31,999 | INFO | Elite endpoint request | Endpoint=metrics | Success=True | Latency=0.04ms | Data={}
+INFO:     127.0.0.1:52776 - "GET /elite/metrics HTTP/1.1" 200 OK
+2025-08-14 23:53:32,002 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:53:32,002 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.15ms | Data={}
+INFO:     127.0.0.1:52788 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:32,005 | INFO | Registered federated client | ClientID=f1158bf5df3ef6ab | UserID=test
+2025-08-14 23:53:32,005 | WARNING | Unknown client | ClientID=test
+2025-08-14 23:53:32,005 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:53:32,005 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.30ms | Data={}
+INFO:     127.0.0.1:52804 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:32,008 | INFO | Elite endpoint request | Endpoint=causal_analysis | Success=True | Latency=0.33ms | Data={}
+INFO:     127.0.0.1:52820 - "POST /elite/causal-analysis/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:32,010 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:53:32,010 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:53:32,010 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:53:32,011 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.61ms | Data={}
+INFO:     127.0.0.1:52832 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:32,013 | INFO | Learning new task | TaskID=test
+2025-08-14 23:53:32,014 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.35ms | Data={}
+INFO:     127.0.0.1:52838 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:32,016 | INFO | Initialized neuromorphic recovery networks
+2025-08-14 23:53:32,022 | INFO | Elite endpoint request | Endpoint=neuromorphic | Success=True | Latency=5.89ms | Data={}
+INFO:     127.0.0.1:52854 - "POST /elite/neuromorphic/process HTTP/1.1" 200 OK
+2025-08-14 23:53:32,024 | INFO | Initialized recovery knowledge graph | Nodes=16 | Edges=16
+2025-08-14 23:53:32,026 | INFO | Elite endpoint request | Endpoint=graph_neural | Success=True | Latency=1.58ms | Data={}
+INFO:     127.0.0.1:52870 - "POST /elite/graph-neural/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:32,036 | INFO | Generated quantum-resistant keypair | Algorithm=kyber | KeyID=9aab1a5b917b0d83
+2025-08-14 23:53:32,038 | INFO | Elite endpoint request | Endpoint=quantum_crypto | Success=True | Latency=9.46ms | Data={}
+INFO:     127.0.0.1:52872 - "POST /elite/quantum-crypto/encrypt HTTP/1.1" 200 OK
+2025-08-14 23:53:32,040 | ERROR | Explanation method shap failed | Error=unsupported operand type(s) for -: 'list' and 'list'
+2025-08-14 23:53:32,040 | ERROR | Explanation method causal failed | Error=max() iterable argument is empty
+2025-08-14 23:53:32,040 | INFO | Elite endpoint request | Endpoint=explainable_ai | Success=True | Latency=0.32ms | Data={}
+INFO:     127.0.0.1:52888 - "POST /elite/explainable-ai/predict HTTP/1.1" 200 OK
+2025-08-14 23:53:32,043 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:53:32,043 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.14ms | Data={}
+INFO:     127.0.0.1:52900 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:32,256 | INFO | Generated homomorphic keypair | KeyID=bce5ab1a8c3ca244
+2025-08-14 23:53:32,260 | INFO | Elite endpoint request | Endpoint=homomorphic | Success=True | Latency=209.53ms | Data={}
+INFO:     127.0.0.1:52910 - "POST /elite/homomorphic/compute HTTP/1.1" 200 OK
+2025-08-14 23:53:34,115 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:53:34,116 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.92ms | Data={}
+INFO:     127.0.0.1:52916 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:34,123 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:53:34,124 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.57ms | Data={}
+INFO:     127.0.0.1:52920 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:34,129 | INFO | Registered federated client | ClientID=0cea42c7f13eba2f | UserID=test_client
+2025-08-14 23:53:34,129 | WARNING | Unknown client | ClientID=test_client
+2025-08-14 23:53:34,129 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:53:34,129 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.46ms | Data={}
+INFO:     127.0.0.1:52922 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:34,134 | INFO | Registered federated client | ClientID=72a7d0400b68d443 | UserID=anonymous_client
+2025-08-14 23:53:34,134 | WARNING | Unknown client | ClientID=anonymous_client
+2025-08-14 23:53:34,134 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:53:34,134 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.46ms | Data={}
+INFO:     127.0.0.1:52938 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:34,139 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:53:34,139 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:53:34,139 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:53:34,139 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.72ms | Data={}
+INFO:     127.0.0.1:52940 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:34,144 | INFO | Compiled risk model | ModelID=risk_edge_v1
+2025-08-14 23:53:34,144 | INFO | Loaded JS model | ModelID=risk_edge_v1
+2025-08-14 23:53:34,144 | INFO | Deployed edge model | ID=risk_edge_v1_javascript
+2025-08-14 23:53:34,145 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.50ms | Data={}
+INFO:     127.0.0.1:52944 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:34,150 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:53:34,150 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:53:34,150 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:53:34,150 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.50ms | Data={}
+INFO:     127.0.0.1:52950 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:34,155 | INFO | Elite endpoint request | Endpoint=metrics | Success=True | Latency=0.08ms | Data={}
+INFO:     127.0.0.1:52954 - "GET /elite/metrics HTTP/1.1" 200 OK
+2025-08-14 23:53:34,160 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:53:34,160 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.20ms | Data={}
+INFO:     127.0.0.1:52960 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:34,164 | INFO | Registered federated client | ClientID=bcb1b401b290010b | UserID=test
+2025-08-14 23:53:34,164 | WARNING | Unknown client | ClientID=test
+2025-08-14 23:53:34,164 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:53:34,165 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.32ms | Data={}
+INFO:     127.0.0.1:52962 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:34,168 | INFO | Elite endpoint request | Endpoint=causal_analysis | Success=True | Latency=0.29ms | Data={}
+INFO:     127.0.0.1:52968 - "POST /elite/causal-analysis/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:34,171 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:53:34,171 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:53:34,171 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:53:34,171 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.50ms | Data={}
+INFO:     127.0.0.1:52978 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:53:34,174 | INFO | Learning new task | TaskID=test
+2025-08-14 23:53:34,175 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.63ms | Data={}
+INFO:     127.0.0.1:52984 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:53:34,178 | INFO | Initialized neuromorphic recovery networks
+2025-08-14 23:53:34,184 | INFO | Elite endpoint request | Endpoint=neuromorphic | Success=True | Latency=5.76ms | Data={}
+INFO:     127.0.0.1:52990 - "POST /elite/neuromorphic/process HTTP/1.1" 200 OK
+2025-08-14 23:53:34,187 | INFO | Initialized recovery knowledge graph | Nodes=16 | Edges=16
+2025-08-14 23:53:34,188 | INFO | Elite endpoint request | Endpoint=graph_neural | Success=True | Latency=0.65ms | Data={}
+INFO:     127.0.0.1:52994 - "POST /elite/graph-neural/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:34,197 | INFO | Generated quantum-resistant keypair | Algorithm=kyber | KeyID=01dca1b37b1d98a5
+2025-08-14 23:53:34,198 | INFO | Elite endpoint request | Endpoint=quantum_crypto | Success=True | Latency=7.20ms | Data={}
+INFO:     127.0.0.1:52996 - "POST /elite/quantum-crypto/encrypt HTTP/1.1" 200 OK
+2025-08-14 23:53:34,202 | ERROR | Explanation method shap failed | Error=unsupported operand type(s) for -: 'list' and 'list'
+2025-08-14 23:53:34,202 | ERROR | Explanation method causal failed | Error=max() iterable argument is empty
+2025-08-14 23:53:34,202 | INFO | Elite endpoint request | Endpoint=explainable_ai | Success=True | Latency=0.26ms | Data={}
+INFO:     127.0.0.1:53004 - "POST /elite/explainable-ai/predict HTTP/1.1" 200 OK
+2025-08-14 23:53:34,206 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:53:34,206 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.13ms | Data={}
+INFO:     127.0.0.1:53016 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:53:34,270 | INFO | Generated homomorphic keypair | KeyID=9b08c16c1ccd2da6
+2025-08-14 23:53:34,275 | INFO | Elite endpoint request | Endpoint=homomorphic | Success=True | Latency=66.41ms | Data={}
+INFO:     127.0.0.1:53026 - "POST /elite/homomorphic/compute HTTP/1.1" 200 OK
+2025-08-14 23:56:14,381 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:56:14,382 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=1.18ms | Data={}
+INFO:     127.0.0.1:33890 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:14,388 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:56:14,389 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.60ms | Data={}
+INFO:     127.0.0.1:33898 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:14,394 | INFO | Registered federated client | ClientID=5d86cd07eadea4c3 | UserID=test_client
+2025-08-14 23:56:14,394 | WARNING | Unknown client | ClientID=test_client
+2025-08-14 23:56:14,394 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:56:14,394 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.48ms | Data={}
+INFO:     127.0.0.1:33912 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:14,399 | INFO | Registered federated client | ClientID=9194b30a4ceb5c6c | UserID=anonymous_client
+2025-08-14 23:56:14,399 | WARNING | Unknown client | ClientID=anonymous_client
+2025-08-14 23:56:14,399 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:56:14,400 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.45ms | Data={}
+INFO:     127.0.0.1:33918 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:14,405 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:56:14,405 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:56:14,405 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:56:14,405 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.86ms | Data={}
+INFO:     127.0.0.1:33928 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:14,411 | INFO | Compiled risk model | ModelID=risk_edge_v1
+2025-08-14 23:56:14,411 | INFO | Loaded JS model | ModelID=risk_edge_v1
+2025-08-14 23:56:14,412 | INFO | Deployed edge model | ID=risk_edge_v1_javascript
+2025-08-14 23:56:14,412 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.51ms | Data={}
+INFO:     127.0.0.1:33930 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:14,418 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:56:14,418 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:56:14,418 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:56:14,418 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.58ms | Data={}
+INFO:     127.0.0.1:33946 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:14,423 | INFO | Elite endpoint request | Endpoint=metrics | Success=True | Latency=0.06ms | Data={}
+INFO:     127.0.0.1:33960 - "GET /elite/metrics HTTP/1.1" 200 OK
+2025-08-14 23:56:14,429 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:56:14,429 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.22ms | Data={}
+INFO:     127.0.0.1:33976 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:14,433 | INFO | Registered federated client | ClientID=8bf21fc18962ab4e | UserID=test
+2025-08-14 23:56:14,434 | WARNING | Unknown client | ClientID=test
+2025-08-14 23:56:14,434 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:56:14,434 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.43ms | Data={}
+INFO:     127.0.0.1:33986 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:14,437 | INFO | Elite endpoint request | Endpoint=causal_analysis | Success=True | Latency=0.33ms | Data={}
+INFO:     127.0.0.1:33990 - "POST /elite/causal-analysis/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:14,441 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:56:14,441 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:56:14,441 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:56:14,441 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.55ms | Data={}
+INFO:     127.0.0.1:33994 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:14,445 | INFO | Learning new task | TaskID=test
+2025-08-14 23:56:14,445 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.48ms | Data={}
+INFO:     127.0.0.1:33996 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:14,448 | INFO | Initialized neuromorphic recovery networks
+2025-08-14 23:56:14,453 | INFO | Elite endpoint request | Endpoint=neuromorphic | Success=True | Latency=5.16ms | Data={}
+INFO:     127.0.0.1:34004 - "POST /elite/neuromorphic/process HTTP/1.1" 200 OK
+2025-08-14 23:56:14,457 | INFO | Initialized recovery knowledge graph | Nodes=16 | Edges=16
+2025-08-14 23:56:14,458 | INFO | Elite endpoint request | Endpoint=graph_neural | Success=True | Latency=0.75ms | Data={}
+INFO:     127.0.0.1:34012 - "POST /elite/graph-neural/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:14,469 | INFO | Generated quantum-resistant keypair | Algorithm=kyber | KeyID=19f599142bcb9303
+2025-08-14 23:56:14,470 | INFO | Elite endpoint request | Endpoint=quantum_crypto | Success=True | Latency=9.01ms | Data={}
+INFO:     127.0.0.1:34026 - "POST /elite/quantum-crypto/encrypt HTTP/1.1" 200 OK
+2025-08-14 23:56:14,473 | ERROR | Explanation method shap failed | Error=unsupported operand type(s) for -: 'list' and 'list'
+2025-08-14 23:56:14,474 | ERROR | Explanation method causal failed | Error=max() iterable argument is empty
+2025-08-14 23:56:14,474 | INFO | Elite endpoint request | Endpoint=explainable_ai | Success=True | Latency=0.37ms | Data={}
+INFO:     127.0.0.1:34028 - "POST /elite/explainable-ai/predict HTTP/1.1" 200 OK
+2025-08-14 23:56:14,477 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:56:14,477 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.20ms | Data={}
+INFO:     127.0.0.1:34042 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:14,549 | INFO | Generated homomorphic keypair | KeyID=d8d14305603b3de7
+2025-08-14 23:56:14,553 | INFO | Elite endpoint request | Endpoint=homomorphic | Success=True | Latency=72.30ms | Data={}
+INFO:     127.0.0.1:34044 - "POST /elite/homomorphic/compute HTTP/1.1" 200 OK
+2025-08-14 23:56:44,528 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:56:44,529 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.52ms | Data={}
+INFO:     127.0.0.1:48210 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:44,535 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-14 23:56:44,535 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.54ms | Data={}
+INFO:     127.0.0.1:48218 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:44,540 | INFO | Registered federated client | ClientID=9ed6f2baf1f71175 | UserID=test_client
+2025-08-14 23:56:44,540 | WARNING | Unknown client | ClientID=test_client
+2025-08-14 23:56:44,540 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:56:44,540 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.33ms | Data={}
+INFO:     127.0.0.1:48222 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:44,545 | INFO | Registered federated client | ClientID=6fdcdeb00183ce74 | UserID=anonymous_client
+2025-08-14 23:56:44,545 | WARNING | Unknown client | ClientID=anonymous_client
+2025-08-14 23:56:44,545 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:56:44,545 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.34ms | Data={}
+INFO:     127.0.0.1:48236 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:44,549 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:56:44,550 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:56:44,550 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:56:44,550 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.44ms | Data={}
+INFO:     127.0.0.1:48242 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:44,554 | INFO | Compiled risk model | ModelID=risk_edge_v1
+2025-08-14 23:56:44,554 | INFO | Loaded JS model | ModelID=risk_edge_v1
+2025-08-14 23:56:44,555 | INFO | Deployed edge model | ID=risk_edge_v1_javascript
+2025-08-14 23:56:44,555 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.49ms | Data={}
+INFO:     127.0.0.1:48248 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:44,559 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:56:44,559 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:56:44,559 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:56:44,560 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.60ms | Data={}
+INFO:     127.0.0.1:48250 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:44,565 | INFO | Elite endpoint request | Endpoint=metrics | Success=True | Latency=0.07ms | Data={}
+INFO:     127.0.0.1:48256 - "GET /elite/metrics HTTP/1.1" 200 OK
+2025-08-14 23:56:44,570 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:56:44,570 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.19ms | Data={}
+INFO:     127.0.0.1:48258 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:44,575 | INFO | Registered federated client | ClientID=dbc10411d1784b9e | UserID=test
+2025-08-14 23:56:44,575 | WARNING | Unknown client | ClientID=test
+2025-08-14 23:56:44,575 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-14 23:56:44,575 | INFO | Elite endpoint request | Endpoint=federated_learning | Success=True | Latency=0.37ms | Data={}
+INFO:     127.0.0.1:48266 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:44,578 | INFO | Elite endpoint request | Endpoint=causal_analysis | Success=True | Latency=0.30ms | Data={}
+INFO:     127.0.0.1:48280 - "POST /elite/causal-analysis/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:44,582 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-14 23:56:44,582 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-14 23:56:44,582 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-14 23:56:44,582 | INFO | Elite endpoint request | Endpoint=edge_ai | Success=True | Latency=0.65ms | Data={}
+INFO:     127.0.0.1:48292 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-14 23:56:44,585 | INFO | Learning new task | TaskID=test
+2025-08-14 23:56:44,586 | INFO | Elite endpoint request | Endpoint=continual_learning | Success=True | Latency=0.44ms | Data={}
+INFO:     127.0.0.1:48306 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-14 23:56:44,590 | INFO | Initialized neuromorphic recovery networks
+2025-08-14 23:56:44,594 | INFO | Elite endpoint request | Endpoint=neuromorphic | Success=True | Latency=4.70ms | Data={}
+INFO:     127.0.0.1:48320 - "POST /elite/neuromorphic/process HTTP/1.1" 200 OK
+2025-08-14 23:56:44,598 | INFO | Initialized recovery knowledge graph | Nodes=16 | Edges=16
+2025-08-14 23:56:44,598 | INFO | Elite endpoint request | Endpoint=graph_neural | Success=True | Latency=0.54ms | Data={}
+INFO:     127.0.0.1:48328 - "POST /elite/graph-neural/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:44,609 | INFO | Generated quantum-resistant keypair | Algorithm=kyber | KeyID=9ad45da166844126
+2025-08-14 23:56:44,611 | INFO | Elite endpoint request | Endpoint=quantum_crypto | Success=True | Latency=9.26ms | Data={}
+INFO:     127.0.0.1:48342 - "POST /elite/quantum-crypto/encrypt HTTP/1.1" 200 OK
+2025-08-14 23:56:44,614 | ERROR | Explanation method shap failed | Error=unsupported operand type(s) for -: 'list' and 'list'
+2025-08-14 23:56:44,614 | ERROR | Explanation method causal failed | Error=max() iterable argument is empty
+2025-08-14 23:56:44,614 | INFO | Elite endpoint request | Endpoint=explainable_ai | Success=True | Latency=0.26ms | Data={}
+INFO:     127.0.0.1:48354 - "POST /elite/explainable-ai/predict HTTP/1.1" 200 OK
+2025-08-14 23:56:44,618 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-14 23:56:44,618 | INFO | Elite endpoint request | Endpoint=differential_privacy | Success=True | Latency=0.14ms | Data={}
+INFO:     127.0.0.1:48356 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-14 23:56:44,670 | INFO | Generated homomorphic keypair | KeyID=d58dd9804a5045b2
+2025-08-14 23:56:44,674 | INFO | Elite endpoint request | Endpoint=homomorphic | Success=True | Latency=53.09ms | Data={}
+INFO:     127.0.0.1:48368 - "POST /elite/homomorphic/compute HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37789]
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/base_events.py", line 686, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 71, in serve
+    await self._serve(sockets)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 78, in _serve
+    config.load()
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/config.py", line 436, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/ubuntu/recoveryos/main.py", line 259, in <module>
+    @track_elite_endpoint("federated_learning")
+     ^^^^^^^^^^^^^^^^^^^^
+NameError: name 'track_elite_endpoint' is not defined
+WARNING:  StatReload detected changes in 'main.py'. Reloading...
+Process SpawnProcess-3:
+Traceback (most recent call last):
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/base_events.py", line 686, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 71, in serve
+    await self._serve(sockets)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 78, in _serve
+    config.load()
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/config.py", line 436, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/ubuntu/recoveryos/main.py", line 456, in <module>
+    @track_elite_endpoint("continual_learning")
+     ^^^^^^^^^^^^^^^^^^^^
+NameError: name 'track_elite_endpoint' is not defined
+WARNING:  StatReload detected changes in 'main.py'. Reloading...
+Process SpawnProcess-4:
+Traceback (most recent call last):
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/asyncio/base_events.py", line 686, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 71, in serve
+    await self._serve(sockets)
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/server.py", line 78, in _serve
+    config.load()
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/config.py", line 436, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.pyenv/versions/3.12.8/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/ubuntu/recoveryos/main.py", line 522, in <module>
+    @track_elite_endpoint("system_status")
+     ^^^^^^^^^^^^^^^^^^^^
+NameError: name 'track_elite_endpoint' is not defined
+WARNING:  StatReload detected changes in 'main.py'. Reloading...
+INFO:     Started server process [42016]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'admin_clinician.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [42016]
+WARNING:  StatReload detected changes in 'users.py'. Reloading...
+INFO:     Started server process [43080]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [43112]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
