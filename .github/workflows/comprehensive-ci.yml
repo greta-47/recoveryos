@@ -39,7 +39,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-key-for-ci' }}
         run: |
-          pytest test_elite_endpoints.py -v --cov=test_elite_endpoints --cov-report=xml --cov-report=html --cov-fail-under=80
+          pytest test_elite_endpoints.py -v --cov=main --cov=observability_enhanced --cov=feature_flags --cov-report=xml --cov-report=html --cov-fail-under=80
           
       - name: Run E2E tests
         env:
