@@ -337,7 +337,7 @@ class ExplainableAIEngine:
         return result
 
     def _build_consensus(self, explanations: Dict[str, Any]) -> Dict[str, Any]:
-        feature_votes = {}
+        feature_votes: Dict[str, List[float]] = {}
         reasoning_points = []
 
         for method, explanation in explanations.items():
@@ -356,7 +356,7 @@ class ExplainableAIEngine:
             consensus_importance[feature] = np.mean(votes)
 
         top_factors = sorted(
-            consensus_importance.items(), key=lambda x: abs(x[1]), reverse=True
+            consensus_importance.items(), key=lambda x: float(abs(x[1])), reverse=True
         )[:3]
 
         return {
@@ -416,8 +416,8 @@ class ExplainableAIEngine:
 
         recent_explanations = self.explanation_history[-10:]
 
-        method_usage = {}
-        avg_quality = {}
+        method_usage: Dict[str, int] = {}
+        avg_quality: Dict[str, List[float]] = {}
 
         for exp in recent_explanations:
             for method in exp.get("explanations", {}).keys():
@@ -429,8 +429,8 @@ class ExplainableAIEngine:
                     avg_quality[metric] = []
                 avg_quality[metric].append(value)
 
-        for metric in avg_quality:
-            avg_quality[metric] = np.mean(avg_quality[metric])
+        for metric in list(avg_quality.keys()):
+            avg_quality[metric] = [float(np.mean(avg_quality[metric]))]
 
         return {
             "total_explanations": len(self.explanation_history),

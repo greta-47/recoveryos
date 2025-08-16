@@ -71,8 +71,9 @@ class DifferentialPrivacyMechanism:
             prob = np.exp((self.epsilon * utility) / (2 * sensitivity))
             probabilities.append(prob)
 
-        probabilities = np.array(probabilities)
-        probabilities /= probabilities.sum()
+        probabilities_array = np.array(probabilities)
+        probabilities_array /= probabilities_array.sum()
+        probabilities = probabilities_array.tolist()
 
         return np.random.choice(candidates, p=probabilities)
 
@@ -80,7 +81,7 @@ class DifferentialPrivacyMechanism:
         self, queries: List[Callable], threshold: float, max_responses: int = 1
     ) -> List[Optional[float]]:
         noisy_threshold = threshold + self.laplace_noise((1,))[0]
-        responses = []
+        responses: List[Optional[float]] = []
         response_count = 0
 
         for query in queries:
@@ -252,7 +253,7 @@ class PrivacyAudit:
         total_queries = len(self.protector.query_history)
         unique_users = len(set(q["user_id"] for q in self.protector.query_history))
 
-        query_types = {}
+        query_types: Dict[str, int] = {}
         for query in self.protector.query_history:
             query_type = query["query_type"]
             query_types[query_type] = query_types.get(query_type, 0) + 1

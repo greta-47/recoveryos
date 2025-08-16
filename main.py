@@ -11,18 +11,18 @@ import re
 # Import your multi-agent pipeline
 from agents import run_multi_agent
 from fastapi import UploadFile, File
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union, List
 
 # Optional routers (only if present)
 try:
     from coping import router as coping_router
 except Exception:
-    coping_router = None
+    coping_router = None  # type: ignore[assignment]
 
 try:
     from briefing import router as briefing_router
 except Exception:
-    briefing_router = None
+    briefing_router = None  # type: ignore[assignment]
 
 # ----------------------
 # Logging Setup
@@ -55,11 +55,11 @@ try:
     from feature_flags import feature_flags
 except Exception as e:
     logger.warning(f"Advanced AI modules not available: {e}")
-    process_multimodal_input = None
-    analyze_emotion_and_respond = None
-    analyze_complex_case = None
-    setup_user_workflows = None
-    execute_user_workflows = None
+    process_multimodal_input = None  # type: ignore[assignment]
+    analyze_emotion_and_respond = None  # type: ignore[assignment]
+    analyze_complex_case = None  # type: ignore[assignment]
+    setup_user_workflows = None  # type: ignore[assignment]
+    execute_user_workflows = None  # type: ignore[assignment]
 
 
 # ----------------------
@@ -222,7 +222,7 @@ def agents_run(body: AgentsIn, request: Request):
 
 @app.post("/ai/emotion-analysis")
 def emotion_analysis(body: EmotionalAnalysisIn):
-    if not analyze_emotion_and_respond:
+    if analyze_emotion_and_respond is None:
         raise HTTPException(status_code=503, detail="Emotional AI not available")
 
     try:
@@ -236,7 +236,7 @@ def emotion_analysis(body: EmotionalAnalysisIn):
 
 @app.post("/ai/clinical-analysis")
 def clinical_analysis(body: ClinicalCaseIn):
-    if not analyze_complex_case:
+    if analyze_complex_case is None:
         raise HTTPException(status_code=503, detail="Clinical AI not available")
 
     try:
@@ -249,14 +249,18 @@ def clinical_analysis(body: ClinicalCaseIn):
 
 @app.post("/ai/multimodal-upload")
 async def multimodal_upload(file: UploadFile = File(...)):
-    if not process_multimodal_input:
+    if process_multimodal_input is None:
         raise HTTPException(
             status_code=503, detail="Multimodal processing not available"
         )
 
     try:
         file_data = await file.read()
-        result = process_multimodal_input(file_data, file.filename, file.content_type)
+        result = process_multimodal_input(
+            file_data,
+            file.filename or "unknown",
+            file.content_type or "application/octet-stream",
+        )
         return {**result, "timestamp": datetime.utcnow().isoformat() + "Z"}
     except Exception as e:
         logger.error(f"Multimodal processing failed | Error={str(e)}")
@@ -265,7 +269,7 @@ async def multimodal_upload(file: UploadFile = File(...)):
 
 @app.post("/workflows/setup/{user_id}")
 def setup_workflows(user_id: int, preferences: Dict[str, Any]):
-    if not setup_user_workflows:
+    if setup_user_workflows is None:
         raise HTTPException(
             status_code=503, detail="Autonomous workflows not available"
         )
@@ -285,7 +289,7 @@ def setup_workflows(user_id: int, preferences: Dict[str, Any]):
 
 @app.post("/workflows/execute/{user_id}")
 def execute_workflows(user_id: int, context: Dict[str, Any]):
-    if not execute_user_workflows:
+    if execute_user_workflows is None:
         raise HTTPException(
             status_code=503, detail="Autonomous workflows not available"
         )
@@ -468,6 +472,7 @@ def differential_privacy_analyze(request_data: Dict[str, Any]):
         analysis_type = request_data.get("analysis_type", "emotion_analysis")
         epsilon = request_data.get("epsilon", 1.0)
         input_data = request_data.get("data", [])
+        result: Union[Dict[str, float], List[Dict[str, Any]], Dict[str, str]] = {}
 
         if analysis_type == "emotion_analysis":
             if isinstance(input_data, list):
@@ -513,19 +518,25 @@ def differential_privacy_analyze(request_data: Dict[str, Any]):
                     {"name": f"factor_{i}", "score": float(val)}
                     for i, val in enumerate(input_data)
                 ]
-                result = protector.privatize_risk_assessment(
+                risk_result = protector.privatize_risk_assessment(
                     risk_factors, "anonymous", epsilon
                 )
+                result = risk_result
             else:
-                result = protector.privatize_risk_assessment(
+                risk_result = protector.privatize_risk_assessment(
                     input_data, "anonymous", epsilon
                 )
+                result = risk_result
         else:
-            result = protector.apply_privacy_mechanism(input_data, epsilon)
+            if isinstance(input_data, dict):
+                stats_result = protector.privatize_aggregated_stats(input_data, epsilon)
+                result = stats_result
+            else:
+                result = {"error": "Unsupported data type for privacy analysis"}
 
         return {
             "analysis_type": analysis_type,
-            "privacy_epsilon": epsilon,
+            "privacy_epsilon": float(epsilon),
             "result": result,
             "privacy_guaranteed": True,
             "timestamp": datetime.utcnow().isoformat() + "Z",

@@ -363,7 +363,7 @@ class EdgeModelCompiler:
             model_id=f"{model.model_id}_q{bits}",
             model_type=model.model_type,
             javascript_code=model.javascript_code,
-            model_weights=quantized_weights,
+            model_weights=None,
             input_shape=model.input_shape,
             output_shape=model.output_shape,
             quantized=True,
@@ -548,8 +548,8 @@ class EdgeAIManager:
         recent_stats = self.inference_stats[-100:]  # Last 100 inferences
 
         latencies = [s["latency_ms"] for s in recent_stats]
-        engine_counts = {}
-        model_counts = {}
+        engine_counts: Dict[str, int] = {}
+        model_counts: Dict[str, int] = {}
 
         for stat in recent_stats:
             engine_counts[stat["engine_type"]] = (

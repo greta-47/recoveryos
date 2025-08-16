@@ -1,7 +1,6 @@
 import logging
 from typing import Dict, Any
 from datetime import datetime
-import openai
 
 logger = logging.getLogger("recoveryos")
 
@@ -89,7 +88,10 @@ class ClinicalAgent:
 
             case_summary = self._format_case_data(case_data)
 
-            response = openai.ChatCompletion.create(
+            from openai import OpenAI
+
+            client = OpenAI()
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": prompt},

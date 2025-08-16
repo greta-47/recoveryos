@@ -258,7 +258,7 @@ def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
                 ],
                 timeout=15,
             )
-            return resp.choices[0].message.content
+            return resp.choices[0].message.content or ""
         except RateLimitError:
             wait = 2**attempt
             time.sleep(wait)
@@ -379,6 +379,7 @@ def run_multi_agent(
             )
             .choices[0]
             .message.content
+            or ""
         )
 
         advisor_memo = (

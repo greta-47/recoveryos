@@ -16,7 +16,7 @@ from datetime import datetime
 class LoadTester:
     def __init__(self, base_url: str = "http://localhost:8001"):
         self.base_url = base_url
-        self.results = {}
+        self.results: Dict[str, Any] = {}
 
     async def test_endpoint(
         self,
