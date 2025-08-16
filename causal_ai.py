@@ -451,7 +451,7 @@ class CounterfactualReasoning:
                 )
                 confidences.append(avg_confidence)
 
-        return float(np.mean(confidences)) if confidences else 0.5
+        return float(np.mean(np.array(confidences))) if confidences else 0.5
 
 
 class CausalInferenceEngine:
@@ -605,7 +605,7 @@ class CausalInferenceEngine:
                 "Longitudinal causal analysis shows patterns in recovery factors."
             )
 
-        common_factors = {}
+        common_factors: Dict[str, int] = {}
         for analysis in analyses:
             for factor in analysis.get("top_risk_factors", []):
                 factor_name = factor["factor"]

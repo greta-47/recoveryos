@@ -1,7 +1,6 @@
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
-import openai
 import base64
 import io
 
@@ -61,7 +60,10 @@ class MultimodalProcessor:
         try:
             base64_image = base64.b64encode(image_data).decode("utf-8")
 
-            response = openai.ChatCompletion.create(
+            from openai import OpenAI
+
+            client = OpenAI()
+            response = client.chat.completions.create(
                 model="gpt-4-vision-preview",
                 messages=[
                     {
@@ -80,7 +82,7 @@ class MultimodalProcessor:
                 max_tokens=1000,
             )
 
-            analysis = response.choices[0].message.content
+            analysis = response.choices[0].message.content or ""
 
             extracted_text = self._extract_text_from_analysis(analysis)
             mood_data = self._extract_mood_data(analysis)
@@ -111,10 +113,15 @@ class MultimodalProcessor:
             audio_file = io.BytesIO(audio_data)
             audio_file.name = filename or "audio.mp3"
 
-            transcript = openai.Audio.transcribe("whisper-1", audio_file)
-            transcription = transcript["text"]
+            from openai import OpenAI
 
-            response = openai.ChatCompletion.create(
+            client = OpenAI()
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", file=audio_file
+            )
+            transcription = transcript.text
+
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": AUDIO_ANALYSIS_PROMPT},
@@ -127,7 +134,7 @@ class MultimodalProcessor:
                 max_tokens=800,
             )
 
-            analysis = response.choices[0].message.content
+            analysis = response.choices[0].message.content or ""
 
             emotional_tone = self._analyze_audio_emotion(transcription)
             safety_flags = self._check_safety_flags(analysis)

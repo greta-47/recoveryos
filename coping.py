@@ -10,7 +10,13 @@ try:
     from alerts import queue_clinician_alert
 except Exception:  # fallback if alerts.py missing during local tests
 
-    def queue_clinician_alert(*args, **kwargs):
+    def queue_clinician_alert(  # type: ignore[misc]
+        background_tasks,
+        user_id: str,
+        risk_score: float,
+        factors: list,
+        suggested_action: str,
+    ):
         pass
 
 

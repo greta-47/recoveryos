@@ -16,11 +16,23 @@ try:
     _HAS_CONSENT = True
 except Exception:
     _HAS_CONSENT = False
+    from typing import Any
 
-    class ConsentType:  # minimal shim
+if not _HAS_CONSENT:
+
+    class ConsentRecord:  # type: ignore[no-redef]
+        def __init__(self, user_id: str, consent_type: str, status: str):
+            self.user_id = user_id
+            self.consent_type = consent_type
+            self.status = status
+
+    class ConsentType:  # type: ignore[no-redef]
         WEEKLY_BRIEFING = "weekly_briefing"
 
-    def can_send_weekly(_):  # always allow if no consent module
+    class ConsentStatus:  # type: ignore[no-redef]
+        GIVEN = "given"
+
+    def can_send_weekly(user_consent: Any) -> bool:  # type: ignore[misc]
         return True
 
 

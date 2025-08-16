@@ -1,7 +1,6 @@
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
-import openai
 import re
 
 logger = logging.getLogger("recoveryos")
@@ -121,7 +120,10 @@ class EmotionAI:
             user_profile = context.get("user_profile", {})
             communication_style = user_profile.get("communication_style", "supportive")
 
-            response = openai.ChatCompletion.create(
+            from openai import OpenAI
+
+            client = OpenAI()
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": EMOTIONAL_INTELLIGENCE_PROMPT},
@@ -134,7 +136,7 @@ class EmotionAI:
                 max_tokens=300,
             )
 
-            return response.choices[0].message.content.strip()
+            return (response.choices[0].message.content or "").strip()
 
         except Exception as e:
             logger.error(f"Therapeutic response generation failed | Error={str(e)}")
