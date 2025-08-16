@@ -362,10 +362,10 @@ class GraphNeuralNetwork:
 
             node_features.append(features)
 
-        node_features = np.array(node_features)
+        node_features_array = np.array(node_features)
         adjacency = graph.get_adjacency_matrix()
 
-        predictions = self.forward(node_features, adjacency)
+        predictions = self.forward(node_features_array, adjacency)
 
         results = {}
         for i, node_id in enumerate(node_order):
@@ -427,7 +427,7 @@ class RecoveryGraphAnalyzer:
             self.knowledge_graph, user_state
         )
 
-        influence_analysis = {}
+        influence_analysis: Dict[str, Dict[str, float]] = {}
         for factor in user_state.keys():
             if factor in self.knowledge_graph.nodes:
                 influence_analysis[factor] = {}
@@ -602,8 +602,8 @@ class RecoveryGraphAnalyzer:
 
         recent_analyses = self.analysis_history[-10:]
 
-        common_risk_factors = defaultdict(int)
-        common_interventions = defaultdict(int)
+        common_risk_factors: Dict[str, int] = defaultdict(int)
+        common_interventions: Dict[str, int] = defaultdict(int)
 
         for analysis in recent_analyses:
             for path in analysis.get("critical_paths", []):

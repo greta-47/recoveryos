@@ -305,7 +305,7 @@ class ClinicalHomomorphicProcessor:
         total_computations = len(self.clinical_computations)
         recent_computations = self.clinical_computations[-5:]
 
-        computation_types = {}
+        computation_types: Dict[str, int] = {}
         for comp in recent_computations:
             if "aggregated_risk" in comp:
                 computation_types["risk_aggregation"] = (

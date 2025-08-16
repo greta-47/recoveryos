@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class Supporter(SQLModel):
+class Supporter(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     patient_id: int
     email: str

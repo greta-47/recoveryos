@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class Checkin(SQLModel):
+class Checkin(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int
     mood: int

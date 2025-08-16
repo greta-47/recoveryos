@@ -76,7 +76,7 @@ class ConsentRecord:
 
         # Expiration handling
         if expires_at is not None:
-            self.expires_at = expires_at
+            self.expires_at: Optional[datetime] = expires_at
         elif ttl_days is not None:
             self.expires_at = self.given_at + timedelta(days=int(ttl_days))
         else:

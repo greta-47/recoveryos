@@ -506,3 +506,101 @@ INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
 INFO:     Finished server process [47346]
+INFO:     Started server process [48522]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2025-08-15 00:40:11,285 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-15 00:40:11,286 | INFO | {"timestamp": "2025-08-15T00:40:11.286857Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "continual_learning", "correlation_id": "9abb67c8-f87b-4cc6-b327-a12587cac133", "success": true, "latency_ms": 15.38, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41928 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:40:11,291 | INFO | Learning new task | TaskID=stress_prediction
+2025-08-15 00:40:11,292 | INFO | {"timestamp": "2025-08-15T00:40:11.292112Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "continual_learning", "correlation_id": "a67d06b1-c829-4175-8481-f5a5864e6bf8", "success": true, "latency_ms": 0.56, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41938 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:40:11,295 | INFO | Registered federated client | ClientID=0ce6851513f88c4e | UserID=test_client
+2025-08-15 00:40:11,295 | WARNING | Unknown client | ClientID=test_client
+2025-08-15 00:40:11,295 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-15 00:40:11,296 | INFO | {"timestamp": "2025-08-15T00:40:11.296130Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "federated_learning", "correlation_id": "13119ff1-bcfc-4431-a125-b959fbd9939d", "success": true, "latency_ms": 0.58, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41952 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:40:11,299 | INFO | Registered federated client | ClientID=14c4280a3c226db9 | UserID=anonymous_client
+2025-08-15 00:40:11,299 | WARNING | Unknown client | ClientID=anonymous_client
+2025-08-15 00:40:11,299 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-15 00:40:11,299 | INFO | {"timestamp": "2025-08-15T00:40:11.299752Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "federated_learning", "correlation_id": "16bb9305-631c-45c2-a589-f7707ea4dfdc", "success": true, "latency_ms": 0.47, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41964 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:40:11,304 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-15 00:40:11,304 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-15 00:40:11,304 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-15 00:40:11,305 | INFO | {"timestamp": "2025-08-15T00:40:11.304987Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "edge_ai", "correlation_id": "1cbbe8e5-c9ab-464c-ab35-51b6e06f9aa4", "success": true, "latency_ms": 0.76, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41976 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-15 00:40:11,308 | INFO | Compiled risk model | ModelID=risk_edge_v1
+2025-08-15 00:40:11,308 | INFO | Loaded JS model | ModelID=risk_edge_v1
+2025-08-15 00:40:11,308 | INFO | Deployed edge model | ID=risk_edge_v1_javascript
+2025-08-15 00:40:11,308 | INFO | {"timestamp": "2025-08-15T00:40:11.308893Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "edge_ai", "correlation_id": "3475892b-e16e-4a2f-8e39-a767e6d132c2", "success": true, "latency_ms": 0.5, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41984 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-15 00:40:11,312 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-15 00:40:11,312 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-15 00:40:11,312 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-15 00:40:11,312 | INFO | {"timestamp": "2025-08-15T00:40:11.312647Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "edge_ai", "correlation_id": "e418c4ad-ee5d-4e77-b722-f4fc60be3fe2", "success": true, "latency_ms": 0.57, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41992 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-15 00:40:11,315 | INFO | {"timestamp": "2025-08-15T00:40:11.315966Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "elite_metrics", "correlation_id": "beca7879-bd2c-4100-aa6e-32b41420dd11", "success": true, "latency_ms": 0.08, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:41996 - "GET /elite/metrics HTTP/1.1" 200 OK
+2025-08-15 00:40:11,319 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-15 00:40:11,319 | INFO | {"timestamp": "2025-08-15T00:40:11.319513Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "differential_privacy", "correlation_id": "92cf414e-8437-4a0f-ba2e-d46dc7f6a0bf", "success": true, "latency_ms": 0.22, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42006 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-15 00:40:11,322 | INFO | Registered federated client | ClientID=53fda26124630d29 | UserID=test
+2025-08-15 00:40:11,322 | WARNING | Unknown client | ClientID=test
+2025-08-15 00:40:11,322 | WARNING | Insufficient clients for aggregation | Have=0 | Need=3
+2025-08-15 00:40:11,322 | INFO | {"timestamp": "2025-08-15T00:40:11.322945Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "federated_learning", "correlation_id": "6f891ea9-29a9-4d17-9fbc-150f7e9ff488", "success": true, "latency_ms": 0.29, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42018 - "POST /elite/federated-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:40:11,325 | INFO | {"timestamp": "2025-08-15T00:40:11.325639Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "causal_analysis", "correlation_id": "6532fa62-8c3a-46c1-96c2-0bd423f992be", "success": true, "latency_ms": 0.38, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42026 - "POST /elite/causal-analysis/analyze HTTP/1.1" 200 OK
+2025-08-15 00:40:11,328 | INFO | Compiled emotion model | ModelID=emotion_edge_v1
+2025-08-15 00:40:11,328 | INFO | Loaded JS model | ModelID=emotion_edge_v1
+2025-08-15 00:40:11,328 | INFO | Deployed edge model | ID=emotion_edge_v1_javascript
+2025-08-15 00:40:11,328 | INFO | {"timestamp": "2025-08-15T00:40:11.328583Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "edge_ai", "correlation_id": "ed7cd7a8-5bee-4090-a076-ee48bcb12834", "success": true, "latency_ms": 0.56, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42036 - "POST /elite/edge-ai/deploy HTTP/1.1" 200 OK
+2025-08-15 00:40:11,330 | INFO | Learning new task | TaskID=test
+2025-08-15 00:40:11,331 | INFO | {"timestamp": "2025-08-15T00:40:11.331528Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "continual_learning", "correlation_id": "53b0ccea-4926-4343-89e7-e51077e9ee31", "success": true, "latency_ms": 0.58, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42040 - "POST /elite/continual-learning/train HTTP/1.1" 200 OK
+2025-08-15 00:40:11,334 | INFO | Initialized neuromorphic recovery networks
+2025-08-15 00:40:11,339 | INFO | {"timestamp": "2025-08-15T00:40:11.338997Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "neuromorphic", "correlation_id": "49817e93-96aa-435d-9f73-3d6b52157437", "success": true, "latency_ms": 5.01, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42048 - "POST /elite/neuromorphic/process HTTP/1.1" 200 OK
+2025-08-15 00:40:11,341 | INFO | Initialized recovery knowledge graph | Nodes=16 | Edges=16
+2025-08-15 00:40:11,342 | INFO | {"timestamp": "2025-08-15T00:40:11.342609Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "graph_neural", "correlation_id": "7059e000-3f4d-4eb7-b3bd-a23534f1b8e0", "success": true, "latency_ms": 1.1, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42052 - "POST /elite/graph-neural/analyze HTTP/1.1" 200 OK
+2025-08-15 00:40:11,352 | INFO | Generated quantum-resistant keypair | Algorithm=kyber | KeyID=d7620afc55e15ac6
+2025-08-15 00:40:11,354 | INFO | {"timestamp": "2025-08-15T00:40:11.354132Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "quantum_crypto", "correlation_id": "825e5efe-17b8-4a3c-a0c2-76e33e8ff28f", "success": true, "latency_ms": 8.9, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42054 - "POST /elite/quantum-crypto/encrypt HTTP/1.1" 200 OK
+2025-08-15 00:40:11,356 | ERROR | Explanation method shap failed | Error=unsupported operand type(s) for -: 'list' and 'list'
+2025-08-15 00:40:11,356 | ERROR | Explanation method causal failed | Error=max() iterable argument is empty
+2025-08-15 00:40:11,357 | INFO | {"timestamp": "2025-08-15T00:40:11.357212Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "explainable_ai", "correlation_id": "3ea92cfe-ce2c-429c-bdbb-92b13027f612", "success": true, "latency_ms": 0.51, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42064 - "POST /elite/explainable-ai/predict HTTP/1.1" 200 OK
+2025-08-15 00:40:11,359 | WARNING | Insufficient privacy budget | User=anonymous
+2025-08-15 00:40:11,359 | INFO | {"timestamp": "2025-08-15T00:40:11.359779Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "differential_privacy", "correlation_id": "ffb67225-780c-4818-9176-d155804e66df", "success": true, "latency_ms": 0.2, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42068 - "POST /elite/differential-privacy/analyze HTTP/1.1" 200 OK
+2025-08-15 00:40:11,542 | INFO | Generated homomorphic keypair | KeyID=b1f91d1b29a45c73
+2025-08-15 00:40:11,545 | INFO | {"timestamp": "2025-08-15T00:40:11.545935Z", "level": "INFO", "service": "recoveryos", "version": "v1.0.0", "environment": "staging", "endpoint": "homomorphic", "correlation_id": "fd411de7-09f7-4fb1-b969-80face1c8cf3", "success": true, "latency_ms": 183.72, "request_data": {}, "error_type": null}
+INFO:     127.0.0.1:42078 - "POST /elite/homomorphic/compute HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'observability.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [48522]
+INFO:     Started server process [54399]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'observability_enhanced.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54399]
+INFO:     Started server process [54719]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'observability_enhanced.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54719]
+INFO:     Started server process [54912]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+                                                                                                                                                                                                   

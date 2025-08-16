@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from enum import Enum
 
@@ -64,7 +64,7 @@ class AutonomousWorkflow:
         self.workflow_type = workflow_type
         self.status = WorkflowStatus.ACTIVE
         self.created_at = datetime.utcnow()
-        self.last_executed = None
+        self.last_executed: Optional[datetime] = None
         self.execution_count = 0
         self.guardrails = CLINICAL_GUARDRAILS
 
@@ -116,7 +116,7 @@ class AutonomousWorkflow:
             return {"status": "error", "message": str(e)}
 
     def _check_guardrails(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        results = {
+        results: Dict[str, Any] = {
             "escalation_required": False,
             "triggered_guardrails": [],
             "escalation_level": "none",
