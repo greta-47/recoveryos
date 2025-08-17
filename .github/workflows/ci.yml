@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint & Test (Python)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [ "3.11", "3.12" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade pip
+          # Pick one: ruff (fast) or flake8 (classic). Here we use ruff:
+          pip install ruff pytest
+          # If you want black formatting checks too, uncomment:
+          # pip install black
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      # If you enabled Black above, add this:
+      # - name: Format check (black)
+      #   run: black --check .
+
+      - name: Run tests (pytest)
+        run: |
+          # If you don't have tests yet, this will still pass
+          # (pytest returns 0 when it finds 0 tests)
+          pytest -q
+
+  # --- Optional next-step jobs (uncomment as you grow) ------------------------
+  # sbom:
+  #   name: Generate SBOM (cyclonedx)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: CycloneDX/gh-python-generate-sbom@v3
+  #       with:
+  #         format: json
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: sbom
+  #         path: bom.json
+
+  # container-scan:
+  #   name: Container Scan (Trivy)
+  #   needs: [lint-and-test]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Build image
+  #       run: docker build -t local/app:ci .
+  #     - name: Scan image
+  #       uses: aquasecurity/trivy-action@0.24.0
+  #       with:
+  #         image-ref: local/app:ci
+  #         format: 'table'
+  #         exit-code: '1'  # fail on high/critical
+  #         vuln-type: 'os,library'
