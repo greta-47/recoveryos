@@ -1,8 +1,6 @@
-# main.py
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
+from app.main import app
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from datetime import datetime
 import logging
@@ -62,34 +60,6 @@ except Exception as e:
     execute_user_workflows = None  # type: ignore[assignment]
 
 
-# ----------------------
-# App & Middleware
-# ----------------------
-app = FastAPI(
-    title="RecoveryOS API",
-    version="0.1.0",
-    description="AI-powered relapse prevention platform for addiction recovery",
-)
-
-# Secure CORS (tight)
-ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://recoveryos.app",
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["POST", "GET"],
-    allow_headers=["*"],
-    expose_headers=["X-Request-ID"],
-)
-
-# Serve static UI (e.g., /ui/agents.html)
-app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
 
 
 # ----------------------

@@ -18,6 +18,8 @@ services:
     environment:
       - PORT=8000
       - ENV=production
+      - ENFORCE_HTTPS=true
+      - CSP_REPORT_ONLY=false
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/recoveryos
     env_file:
       - .env
@@ -27,6 +29,15 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
     # Override Dockerfile HEALTHCHECK (which used curl) with a Python-based check
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/healthz', timeout=3).getcode()==200 else sys.exit(1)\""]
@@ -48,6 +59,8 @@ services:
     environment:
       - PORT=8000
       - ENV=development
+      - ENFORCE_HTTPS=false
+      - CSP_REPORT_ONLY=true
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/recoveryos
     env_file:
       - .env
