@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 from .settings import Settings
@@ -29,6 +30,6 @@ app.add_middleware(SecurityHeadersMiddleware, settings=settings)
 def health() -> dict:
     return {"ok": True}
 
+
 # Serve static UI (e.g., /ui/agents.html)
-from fastapi.staticfiles import StaticFiles
 app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")

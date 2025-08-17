@@ -21,7 +21,7 @@ def build_csp(settings: Settings) -> str:
         "script-src": "'self'",
         "style-src": "'self' 'unsafe-inline'",  # allow inline styles if your UI needs it
         "font-src": "'self' data:",
-        "connect-src": "'self' https:",         # API calls/websockets to HTTPS origins only
+        "connect-src": "'self' https:",  # API calls/websockets to HTTPS origins only
         "form-action": "'self'",
     }
 
@@ -111,7 +111,11 @@ class EnforceHTTPSMiddleware:
         scheme = _scheme_from_scope(scope)
 
         host = _get_header(scope, b"host") or ""
-        is_localhost = host.startswith("localhost") or host.startswith("127.0.0.1") or host.startswith("0.0.0.0")
+        is_localhost = (
+            host.startswith("localhost")
+            or host.startswith("127.0.0.1")
+            or host.startswith("0.0.0.0")
+        )
 
         if scheme != "https" and not is_localhost:
             resp = PlainTextResponse(
