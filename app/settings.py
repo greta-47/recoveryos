@@ -2,29 +2,28 @@ from __future__ import annotations
 
 import os
 from typing import List
-from pydantic import BaseSettings, AnyHttpUrl, validator
+
+from pydantic import AnyHttpUrl, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    """
-    Strongly-typed environment.
-    ENV: "dev" | "prod" | "staging"
-    ENFORCE_HTTPS: reject non-HTTPS when true
-    CSP_REPORT_ONLY: send CSP in report-only mode when true
-    ALLOWED_ORIGINS: comma-separated list for CORS
-    """
     ENV: str = os.getenv("ENV", "dev")
     ENFORCE_HTTPS: bool = os.getenv("ENFORCE_HTTPS", "false").lower() == "true"
     CSP_REPORT_ONLY: bool = os.getenv("CSP_REPORT_ONLY", "false").lower() == "true"
     ALLOWED_ORIGINS: List[AnyHttpUrl] | None = None
 
-    @validator("ALLOWED_ORIGINS", pre=True)
-    def _parse_allowed_origins(cls, v, values):
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def _parse_allowed_origins(cls, v):
+        # If provided explicitly, accept list or comma-separated string
         if v:
             if isinstance(v, list):
                 return v
             return [o.strip() for o in str(v).split(",") if o.strip()]
-        # Defaults
-        if values.get("ENV", "dev") == "dev":
+
+        # Default sets depending on environment
+        if os.getenv("ENV", "dev") == "dev":
             return [
                 "http://localhost:3000",
                 "http://localhost:5173",
@@ -32,12 +31,6 @@ class Settings(BaseSettings):
                 "http://127.0.0.1:3000",
                 "http://127.0.0.1:8000",
             ]
-        return [
-            "https://recoveryos.org",
-            "https://www.recoveryos.org",
-        ]
+        return ["https://recoveryos.org", "https://www.recoveryos.org"]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
