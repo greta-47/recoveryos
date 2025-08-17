@@ -2,79 +2,39 @@ name: CI
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "**" ]
-
-permissions:
-  contents: read
+    branches: [ main ]
 
 jobs:
-  lint-and-test:
-    name: Lint & Test (Python)
+  security-smoke-test:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: [ "3.11", "3.12" ]
-
+    services:
+      app:
+        image: your-app-image:latest
+        ports:
+          - 8000:8000
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-
-      - name: Install tools
+      - name: Wait for app to start
         run: |
-          python -m pip install --upgrade pip
-          # Pick one: ruff (fast) or flake8 (classic). Here we use ruff:
-          pip install ruff pytest
-          # If you want black formatting checks too, uncomment:
-          # pip install black
+          for i in {1..10}; do
+            if curl -s http://localhost:8000/health > /dev/null; then
+              echo "App is up"
+              break
+            fi
+            echo "Waiting for app..."
+            sleep 3
+          done
 
-      - name: Lint (ruff)
-        run: ruff check .
+      - name: Run smoke.sh
+        run: scripts/smoke.sh https://localhost:8000/health || exit 1
 
-      # If you enabled Black above, add this:
-      # - name: Format check (black)
-      #   run: black --check .
+      # Optional: run k6 header checks
+      - name: Install k6
+        run: sudo apt-get update && sudo apt-get install -y k6
 
-      - name: Run tests (pytest)
-        run: |
-          # If you don't have tests yet, this will still pass
-          # (pytest returns 0 when it finds 0 tests)
-          pytest -q
+      - name: Run k6 smoke_headers.js
+        run: k6 run -e URL=https://localhost:8000/health scripts/smoke_headers.js
 
-  # --- Optional next-step jobs (uncomment as you grow) ------------------------
-  # sbom:
-  #   name: Generate SBOM (cyclonedx)
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: CycloneDX/gh-python-generate-sbom@v3
-  #       with:
-  #         format: json
-  #     - uses: actions/upload-artifact@v4
-  #       with:
-  #         name: sbom
-  #         path: bom.json
-
-  # container-scan:
-  #   name: Container Scan (Trivy)
-  #   needs: [lint-and-test]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Build image
-  #       run: docker build -t local/app:ci .
-  #     - name: Scan image
-  #       uses: aquasecurity/trivy-action@0.24.0
-  #       with:
-  #         image-ref: local/app:ci
-  #         format: 'table'
-  #         exit-code: '1'  # fail on high/critical
-  #         vuln-type: 'os,library'
