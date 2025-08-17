@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.responses import PlainTextResponse
-from typing import Iterable, Mapping, Optional
+from typing import Iterable, Optional
 
 from .settings import Settings
 
