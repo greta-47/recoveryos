@@ -217,8 +217,12 @@ def root():
     }
 
 
-@app.get("/healthz", response_class=JSONResponse)
+@app.get("/health", response_class=JSONResponse)
 def health():
+    return {"ok": True}
+
+@app.get("/healthz", response_class=JSONResponse)
+def healthz():
     return {
         "status": "ok",
         "app": "RecoveryOS",
