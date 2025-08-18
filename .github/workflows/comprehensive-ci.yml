@@ -139,10 +139,29 @@ jobs:
         uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: 'recoveryos:ci'
-          format: 'table'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           exit-code: '0'
+      - name: Upload Trivy scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-results
+          path: trivy-results.sarif
+      - name: Check for critical vulnerabilities
+        if: always()
+        run: |
+          if [ -f trivy-results.sarif ]; then
+            # Check if SARIF contains any CRITICAL severity findings (ignore HIGH for now)
+            if grep -q '"level": "error"' trivy-results.sarif && grep -q '"security-severity": "9\|10"' trivy-results.sarif; then
+              echo "❌ Critical severity vulnerabilities found in container scan"
+              echo "Review the uploaded SARIF artifact for details"
+              exit 1
+            fi
+            echo "✅ No critical vulnerabilities found in container scan"
+          fi
 
   deploy_to_staging:
     name: Deploy to Staging

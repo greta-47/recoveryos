@@ -1,14 +1,14 @@
 # ================================
 # RecoveryOS API — Production (deterministic builds)
 # ================================
-FROM python:3.11.9-slim
+FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
     PIP_NO_CACHE_DIR=1
 
-# System deps (psycopg2, curl for healthcheck, build tools)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# System deps (psycopg2, curl for healthcheck, build tools) + security updates
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
       build-essential curl libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
