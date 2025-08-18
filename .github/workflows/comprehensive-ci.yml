@@ -10,7 +10,6 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  PIP_NO_CACHE_DIR: "1"
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-key-for-ci' }}
 
 permissions:
