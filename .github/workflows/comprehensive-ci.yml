@@ -109,7 +109,7 @@ jobs:
   build_and_container_scan:
     name: Build & Container Scan
     if: >
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push') ||
       (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-22.04
     needs: [code_quality_formatting, unit_e2e_tests, security_scans]
