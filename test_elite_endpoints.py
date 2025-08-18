@@ -5,18 +5,20 @@ Includes failing tests that demonstrate bugs and verify fixes.
 """
 
 import sys
-import requests
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-sys.path.append("/home/ubuntu/recoveryos")
+from fastapi.testclient import TestClient
+from main import app
 
-BASE_URL = "http://localhost:8001"
+client = TestClient(app)
 
 
 class TestContinualLearning:
     def test_continual_learning_with_correct_format(self):
         """Test continual learning with correct List[Dict] format"""
-        response = requests.post(
-            f"{BASE_URL}/elite/continual-learning/train",
+        response = client.post(
+            "/elite/continual-learning/train",
             json={
                 "task_data": [{"stress_patterns": [0.8, 0.6, 0.9]}],
                 "task_id": "stress_prediction",
@@ -30,8 +32,8 @@ class TestContinualLearning:
 
     def test_continual_learning_with_dict_format(self):
         """Test continual learning handles Dict format (auto-conversion)"""
-        response = requests.post(
-            f"{BASE_URL}/elite/continual-learning/train",
+        response = client.post(
+            "/elite/continual-learning/train",
             json={
                 "task_data": {"stress_patterns": [0.8, 0.6, 0.9]},
                 "task_id": "stress_prediction",
@@ -46,8 +48,8 @@ class TestContinualLearning:
 class TestFederatedLearning:
     def test_federated_learning_single_client(self):
         """Test federated learning with single client data"""
-        response = requests.post(
-            f"{BASE_URL}/elite/federated-learning/train",
+        response = client.post(
+            "/elite/federated-learning/train",
             json={"client_weights": [0.1, 0.2, 0.3], "client_id": "test_client"},
         )
         assert response.status_code == 200
@@ -58,8 +60,8 @@ class TestFederatedLearning:
 
     def test_federated_learning_anonymous_client(self):
         """Test federated learning with anonymous client"""
-        response = requests.post(
-            f"{BASE_URL}/elite/federated-learning/train",
+        response = client.post(
+            "/elite/federated-learning/train",
             json={"client_weights": [0.4, 0.5, 0.6]},
         )
         assert response.status_code == 200
@@ -71,8 +73,8 @@ class TestFederatedLearning:
 class TestEdgeAI:
     def test_edge_ai_emotion_classifier(self):
         """Test edge AI with emotion_classifier model type"""
-        response = requests.post(
-            f"{BASE_URL}/elite/edge-ai/deploy",
+        response = client.post(
+            "/elite/edge-ai/deploy",
             json={"model_type": "emotion_classifier"},
         )
         assert response.status_code == 200
@@ -83,8 +85,8 @@ class TestEdgeAI:
 
     def test_edge_ai_risk_predictor(self):
         """Test edge AI with risk_predictor model type"""
-        response = requests.post(
-            f"{BASE_URL}/elite/edge-ai/deploy", json={"model_type": "risk_predictor"}
+        response = client.post(
+            "/elite/edge-ai/deploy", json={"model_type": "risk_predictor"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -93,8 +95,8 @@ class TestEdgeAI:
 
     def test_edge_ai_default_emotion(self):
         """Test edge AI with default emotion model"""
-        response = requests.post(
-            f"{BASE_URL}/elite/edge-ai/deploy", json={"model_type": "emotion"}
+        response = client.post(
+            "/elite/edge-ai/deploy", json={"model_type": "emotion"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -104,7 +106,7 @@ class TestEdgeAI:
 class TestObservability:
     def test_metrics_endpoint(self):
         """Test that metrics endpoint works"""
-        response = requests.get(f"{BASE_URL}/elite/metrics")
+        response = client.get("/elite/metrics")
         assert response.status_code == 200
         data = response.json()
         assert "endpoints" in data
@@ -113,8 +115,8 @@ class TestObservability:
 
     def test_pii_redaction(self):
         """Test PII redaction in differential privacy endpoint"""
-        response = requests.post(
-            f"{BASE_URL}/elite/differential-privacy/analyze",
+        response = client.post(
+            "/elite/differential-privacy/analyze",
             json={
                 "data": ["john.doe@email.com", "123-45-6789", "Normal emotional state"],
                 "analysis_type": "emotion_analysis",
@@ -158,7 +160,7 @@ class TestAllEliteEndpoints:
         ]
 
         for endpoint, payload in endpoints:
-            response = requests.post(f"{BASE_URL}{endpoint}", json=payload)
+            response = client.post(endpoint, json=payload)
             assert (
                 response.status_code == 200
             ), f"Endpoint {endpoint} failed with status {response.status_code}"

@@ -5,11 +5,32 @@ import json
 import sys
 
 
-def test_sarif_parsing(sarif_file):
-    print(f"Testing SARIF parsing logic with {sarif_file}...")
-
-    with open(sarif_file) as f:
-        sarif = json.load(f)
+def test_sarif_parsing():
+    """Test SARIF parsing logic with a mock SARIF structure"""
+    sarif = {
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "rules": [
+                            {
+                                "id": "CVE-2025-32434",
+                                "properties": {"security-severity": "9.5"}
+                            },
+                            {
+                                "id": "CVE-2025-12345", 
+                                "properties": {"security-severity": "7.0"}
+                            }
+                        ]
+                    }
+                },
+                "results": [
+                    {"ruleId": "CVE-2025-32434"},
+                    {"ruleId": "CVE-2025-12345"}
+                ]
+            }
+        ]
+    }
 
     for run in sarif.get("runs", []):
         rules = run.get("tool", {}).get("driver", {}).get("rules", [])
@@ -36,12 +57,12 @@ def test_sarif_parsing(sarif_file):
 
         if critical_found:
             print("RESULT: Would exit 1 (critical vulnerabilities found)")
-            return 1
+            assert False, "Critical vulnerabilities found"
         else:
             print("RESULT: Would exit 0 (no critical vulnerabilities)")
 
     print("No critical vulnerabilities found")
-    return 0
+    assert True
 
 
 if __name__ == "__main__":
