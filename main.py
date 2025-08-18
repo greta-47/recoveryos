@@ -221,6 +221,7 @@ def root():
 def health():
     return {"ok": True}
 
+
 @app.get("/healthz", response_class=JSONResponse)
 def healthz():
     return {
