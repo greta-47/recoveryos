@@ -154,9 +154,21 @@ jobs:
         if: always()
         run: |
           if [ -f trivy-results.sarif ]; then
-            # Check if SARIF contains any CRITICAL severity findings (ignore HIGH for now)
-            if grep -q '"level": "error"' trivy-results.sarif && grep -q '"security-severity": "9\|10"' trivy-results.sarif; then
-              echo "❌ Critical severity vulnerabilities found in container scan"
+            # Check if SARIF contains any CRITICAL severity findings (security-severity 9.0 or 10.0)
+            if python3 -c "
+          import json, sys
+          with open('trivy-results.sarif') as f:
+              sarif = json.load(f)
+          for run in sarif.get('runs', []):
+              for result in run.get('results', []):
+                  props = result.get('properties', {})
+                  severity = props.get('security-severity')
+                  if severity and float(severity) >= 9.0:
+                      print('CRITICAL vulnerability found')
+                      sys.exit(1)
+          print('No critical vulnerabilities found')
+          "; then
+              echo "❌ Critical severity vulnerabilities (9.0+) found in container scan"
               echo "Review the uploaded SARIF artifact for details"
               exit 1
             fi
