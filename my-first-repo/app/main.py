@@ -31,4 +31,3 @@ app.add_middleware(SecurityHeadersMiddleware, settings=settings)
 @app.get("/health", tags=["infra"])
 def health() -> dict:
     return {"ok": True}
-
