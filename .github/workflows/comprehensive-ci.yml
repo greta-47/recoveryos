@@ -153,17 +153,26 @@ jobs:
         if: always()
         run: |
           if [ -f trivy-results.sarif ]; then
-            # Check if SARIF contains any CRITICAL severity findings (security-severity 9.0 or 10.0)
+            # Check if SARIF contains any CRITICAL severity findings (security-severity >= 9.0)
             if python3 -c "
           import json, sys
           with open('trivy-results.sarif') as f:
               sarif = json.load(f)
           for run in sarif.get('runs', []):
+              # Build rule lookup table
+              rules = run.get('tool', {}).get('driver', {}).get('rules', [])
+              rule_lookup = {}
+              for rule in rules:
+                  rule_id = rule.get('id')
+                  props = rule.get('properties', {})
+                  if rule_id and 'security-severity' in props:
+                      rule_lookup[rule_id] = float(props['security-severity'])
+              
+              # Check results against rules
               for result in run.get('results', []):
-                  props = result.get('properties', {})
-                  severity = props.get('security-severity')
-                  if severity and float(severity) >= 9.0:
-                      print('CRITICAL vulnerability found')
+                  rule_id = result.get('ruleId')
+                  if rule_id in rule_lookup and rule_lookup[rule_id] >= 9.0:
+                      print(f'CRITICAL vulnerability found: {rule_id} (severity {rule_lookup[rule_id]})')
                       sys.exit(1)
           print('No critical vulnerabilities found')
           "; then
