@@ -127,10 +127,10 @@ class LoadTester:
                 async with session.get(f"{self.base_url}/health") as response:
                     if response.status != 200:
                         print(f"❌ Server not responding at {self.base_url}")
-                        return False
+                        assert False, f"Server not responding at {self.base_url}"
             except Exception as e:
                 print(f"❌ Cannot connect to server: {e}")
-                return False
+                assert False, f"Cannot connect to server: {e}"
 
             print(f"🔗 Connected to server at {self.base_url}")
 
@@ -142,7 +142,7 @@ class LoadTester:
                     duration_minutes=2,  # Shortened for testing
                 )
 
-        return True
+        assert True
 
     def generate_report(self):
         """Generate performance test report"""

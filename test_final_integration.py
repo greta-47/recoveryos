@@ -21,10 +21,10 @@ def test_imports():
         enhanced_enabled = feature_flags.is_enabled("enhanced_observability")
         print(f"✅ Feature flag test: enhanced_observability = {enhanced_enabled}")
 
-        return True
+        assert True
     except Exception as e:
         print(f"❌ Import test failed: {e}")
-        return False
+        assert False, f"Import test failed: {e}"
 
 
 if __name__ == "__main__":

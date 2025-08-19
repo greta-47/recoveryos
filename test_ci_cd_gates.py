@@ -112,16 +112,16 @@ def test_vulnerability_blocking():
                 print(
                     "❌ Vulnerability blocking: FAIL - HIGH vulnerabilities should block CI"
                 )
-                return False
+                assert False, "HIGH vulnerabilities should block CI"
             else:
                 print("✅ Vulnerability blocking: PASS - No HIGH vulnerabilities found")
-                return True
+                assert True
         except Exception as e:
             print(f"❌ Error reading audit report: {e}")
-            return False
+            assert False, f"Error reading audit report: {e}"
     else:
         print("❌ Audit report not found")
-        return False
+        assert False, "Audit report not found"
 
 
 def main():

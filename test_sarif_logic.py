@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Test the SARIF parsing logic locally before pushing to CI"""
 
-import json
 import sys
 
 
-def test_sarif_parsing():
+def test_sarif_parsing(sarif_file=None):
     """Test SARIF parsing logic with a mock SARIF structure"""
     sarif = {
         "runs": [
@@ -67,5 +66,4 @@ def test_sarif_parsing():
 
 if __name__ == "__main__":
     sarif_file = sys.argv[1] if len(sys.argv) > 1 else "trivy-test.sarif"
-    exit_code = test_sarif_parsing(sarif_file)
-    sys.exit(exit_code)
+    test_sarif_parsing(sarif_file)

@@ -38,18 +38,18 @@ def test_metrics_endpoint():
 
             if len(found_metrics) == len(expected_metrics):
                 print("✅ Metrics endpoint: PASS - All expected metrics found")
-                return True
+                assert True
             else:
                 print(
                     f"❌ Metrics endpoint: FAIL - Missing metrics: {set(expected_metrics) - set(found_metrics)}"
                 )
-                return False
+                assert False, f"Missing metrics: {set(expected_metrics) - set(found_metrics)}"
         else:
             print(f"❌ Metrics endpoint: FAIL - HTTP {response.status_code}")
-            return False
+            assert False, f"HTTP {response.status_code}"
     except Exception as e:
         print(f"❌ Metrics endpoint: FAIL - {e}")
-        return False
+        assert False, str(e)
 
 
 def test_elite_metrics_endpoint():
@@ -64,23 +64,23 @@ def test_elite_metrics_endpoint():
             if feature_flags.is_enabled("enhanced_observability"):
                 if "endpoints" in data and "total_requests" in data:
                     print("✅ Elite metrics: PASS - Enhanced metrics returned")
-                    return True
+                    assert True
                 else:
                     print("❌ Elite metrics: FAIL - Invalid metrics format")
-                    return False
+                    assert False, "Invalid metrics format"
             else:
                 if "message" in data and "not enabled" in data["message"]:
                     print("✅ Elite metrics: PASS - Feature flag disabled correctly")
-                    return True
+                    assert True
                 else:
                     print("❌ Elite metrics: FAIL - Feature flag not working")
-                    return False
+                    assert False, "Feature flag not working"
         else:
             print(f"❌ Elite metrics: FAIL - HTTP {response.status_code}")
-            return False
+            assert False, f"HTTP {response.status_code}"
     except Exception as e:
         print(f"❌ Elite metrics: FAIL - {e}")
-        return False
+        assert False, str(e)
 
 
 def test_pii_redaction():
@@ -122,7 +122,7 @@ def test_pii_redaction():
             print(f"   Expected patterns: {test_case['expected_redacted']}")
             all_passed = False
 
-    return all_passed
+    assert all_passed, "Some PII redaction tests failed"
 
 
 def test_feature_flags():
@@ -141,10 +141,10 @@ def test_feature_flags():
         canary_enabled = feature_flags.is_enabled("canary_deployment")
         print(f"Canary Deployment: {'✅ ENABLED' if canary_enabled else '❌ DISABLED'}")
 
-        return True
+        assert True
     except Exception as e:
         print(f"❌ Feature flags: FAIL - {e}")
-        return False
+        assert False, str(e)
 
 
 def test_correlation_ids():
@@ -162,13 +162,13 @@ def test_correlation_ids():
 
         if correlation_id:
             print(f"✅ Correlation IDs: PASS - ID: {correlation_id}")
-            return True
+            assert True
         else:
             print("❌ Correlation IDs: FAIL - No correlation ID in response")
-            return False
+            assert False, "No correlation ID in response"
     except Exception as e:
         print(f"❌ Correlation IDs: FAIL - {e}")
-        return False
+        assert False, str(e)
 
 
 def main():

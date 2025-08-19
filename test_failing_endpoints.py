@@ -57,12 +57,12 @@ def test_continual_learning():
         except Exception as e:
             print(f"❌ Wrong format fails: {e}")
 
-        return "CONTRACT_ERROR: training_data should be List[Dict[str, Any]], not Dict[str, Any]"
+        assert False, "CONTRACT_ERROR: training_data should be List[Dict[str, Any]], not Dict[str, Any]"
 
     except Exception as e:
         print(f"❌ Error: {e}")
         traceback.print_exc()
-        return f"ERROR: {e}"
+        assert False, f"ERROR: {e}"
 
 
 def test_federated_learning():
@@ -110,12 +110,12 @@ def test_federated_learning():
         except Exception as e:
             print(f"❌ Wrong format fails: {e}")
 
-        return "CONTRACT_ERROR: client_data should be Dict[client_id, data], not single client data"
+        assert False, "CONTRACT_ERROR: client_data should be Dict[client_id, data], not single client data"
 
     except Exception as e:
         print(f"❌ Error: {e}")
         traceback.print_exc()
-        return f"ERROR: {e}"
+        assert False, f"ERROR: {e}"
 
 
 def test_edge_ai():
@@ -148,12 +148,12 @@ def test_edge_ai():
             client_code = manager.get_client_deployment_code(result)
             print(f"✅ Client code length: {len(client_code) if client_code else 0}")
 
-        return "SUCCESS: Edge AI module works correctly"
+        assert True
 
     except Exception as e:
         print(f"❌ Error: {e}")
         traceback.print_exc()
-        return f"ERROR: {e}"
+        assert False, f"ERROR: {e}"
 
 
 def main():

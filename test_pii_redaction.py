@@ -105,10 +105,10 @@ def test_pii_redaction():
     print(f"\n{'='*50}")
     if all_passed:
         print("🎉 All PII redaction tests PASSED")
-        return True
+        assert True
     else:
         print("⚠️  Some PII redaction tests FAILED")
-        return False
+        assert False, "Some PII redaction tests failed"
 
 
 if __name__ == "__main__":
