@@ -6,6 +6,7 @@ Includes failing tests that demonstrate bugs and verify fixes.
 
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi.testclient import TestClient
@@ -95,9 +96,7 @@ class TestEdgeAI:
 
     def test_edge_ai_default_emotion(self):
         """Test edge AI with default emotion model"""
-        response = client.post(
-            "/elite/edge-ai/deploy", json={"model_type": "emotion"}
-        )
+        response = client.post("/elite/edge-ai/deploy", json={"model_type": "emotion"})
         assert response.status_code == 200
         data = response.json()
         assert data["model_type"] == "emotion"

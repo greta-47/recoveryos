@@ -43,7 +43,9 @@ def test_metrics_endpoint():
                 print(
                     f"❌ Metrics endpoint: FAIL - Missing metrics: {set(expected_metrics) - set(found_metrics)}"
                 )
-                assert False, f"Missing metrics: {set(expected_metrics) - set(found_metrics)}"
+                assert (
+                    False
+                ), f"Missing metrics: {set(expected_metrics) - set(found_metrics)}"
         else:
             print(f"❌ Metrics endpoint: FAIL - HTTP {response.status_code}")
             assert False, f"HTTP {response.status_code}"

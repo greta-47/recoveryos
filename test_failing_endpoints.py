@@ -57,7 +57,9 @@ def test_continual_learning():
         except Exception as e:
             print(f"❌ Wrong format fails: {e}")
 
-        assert False, "CONTRACT_ERROR: training_data should be List[Dict[str, Any]], not Dict[str, Any]"
+        assert (
+            False
+        ), "CONTRACT_ERROR: training_data should be List[Dict[str, Any]], not Dict[str, Any]"
 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -110,7 +112,9 @@ def test_federated_learning():
         except Exception as e:
             print(f"❌ Wrong format fails: {e}")
 
-        assert False, "CONTRACT_ERROR: client_data should be Dict[client_id, data], not single client data"
+        assert (
+            False
+        ), "CONTRACT_ERROR: client_data should be Dict[client_id, data], not single client data"
 
     except Exception as e:
         print(f"❌ Error: {e}")

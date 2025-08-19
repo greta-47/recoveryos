@@ -14,19 +14,16 @@ def test_sarif_parsing(sarif_file=None):
                         "rules": [
                             {
                                 "id": "CVE-2025-32434",
-                                "properties": {"security-severity": "9.5"}
+                                "properties": {"security-severity": "9.5"},
                             },
                             {
-                                "id": "CVE-2025-12345", 
-                                "properties": {"security-severity": "7.0"}
-                            }
+                                "id": "CVE-2025-12345",
+                                "properties": {"security-severity": "7.0"},
+                            },
                         ]
                     }
                 },
-                "results": [
-                    {"ruleId": "CVE-2025-32434"},
-                    {"ruleId": "CVE-2025-12345"}
-                ]
+                "results": [{"ruleId": "CVE-2025-32434"}, {"ruleId": "CVE-2025-12345"}],
             }
         ]
     }
