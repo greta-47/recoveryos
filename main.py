@@ -260,7 +260,7 @@ def create_checkin(checkin: Checkin, request: Request):
 
 
 @app.post("/agents/run")
-def agents_run(body: AgentsIn, request: Request):
+async def agents_run(body: AgentsIn, request: Request):
     # (MERGE RESOLVED) unified variant using consistent f-strings
     client_host = request.client.host if request.client else "unknown"
     request_id = (
@@ -275,7 +275,7 @@ def agents_run(body: AgentsIn, request: Request):
             )
 
         user_context = {"user_id": "anonymous"}
-        result = run_multi_agent(body.topic, body.horizon, body.okrs, user_context)
+        result = await run_multi_agent(body.topic, body.horizon, body.okrs, user_context)
 
         # De-identification scan
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:

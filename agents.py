@@ -1,12 +1,12 @@
 # agents.py
 import os
-import time
+import asyncio
 import uuid
 import re
 import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from openai import OpenAI, APIError, RateLimitError
+from openai import AsyncOpenAI, APIError, RateLimitError
 import logging
 
 # ----------------------
@@ -23,7 +23,7 @@ logger = logging.getLogger("recoveryos")
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise RuntimeError("OPENAI_API_KEY is not set in environment")
-client = OpenAI(api_key=api_key)
+client = AsyncOpenAI(api_key=api_key)
 
 # Allow env overrides for models
 MODEL_FAST = os.getenv("OPENAI_MODEL_FAST", "gpt-4o-mini")
@@ -246,10 +246,10 @@ def _contains_phi(text: str) -> bool:
     return any(re.search(p, text, re.I) for p in patterns)
 
 
-def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
+async def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
     for attempt in range(max_retries):
         try:
-            resp = client.chat.completions.create(
+            resp = await client.chat.completions.create(
                 model=model,
                 temperature=0.3,
                 messages=[
@@ -261,13 +261,13 @@ def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
             return resp.choices[0].message.content or ""
         except RateLimitError:
             wait = 2**attempt
-            time.sleep(wait)
+            await asyncio.sleep(wait)
         except APIError as e:
             if attempt == max_retries - 1:
                 raise RuntimeError(
                     f"OpenAI API error after {max_retries} attempts: {e}"
                 )
-            time.sleep(2)
+            await asyncio.sleep(2)
     raise RuntimeError("Max retries exceeded")
 
 
@@ -325,7 +325,7 @@ def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
 # ----------------------
 # Pipeline
 # ----------------------
-def run_multi_agent(
+async def run_multi_agent(
     topic: str, horizon: str, okrs: str, user_context: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     request_id = str(uuid.uuid4())
@@ -345,19 +345,19 @@ def run_multi_agent(
                 context_info = f"\nUser Context: Communication style: {profile.get('communication_style', 'supportive')}, Recovery goals: {profile.get('recovery_goals', 'general')}"
 
         # 1) Researcher
-        researcher = _chat(researcher_prompt(topic, horizon) + context_info)
+        researcher = await _chat(researcher_prompt(topic, horizon) + context_info)
 
         # 2) Analyst (Top 5 tests)
-        analyst = _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
+        analyst = await _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
         analyst_tests = _parse_analyst_tests(analyst)
 
         # 3) Critic
-        critic = _chat(
+        critic = await _chat(
             f"Researcher + Analyst:\n{researcher}\n\n{analyst}\n\n{CRITIC_PROMPT}"
         )
 
         # 4) Strategist
-        strategist = _chat(
+        strategist = await _chat(
             "Use the prior outputs to build the plan.\n"
             f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\n{STRATEGIST_PROMPT}"
         )
@@ -368,19 +368,15 @@ def run_multi_agent(
             + "\n\nContext:\n"
             + f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\nStrategist:\n{strategist}"
         )
-        raw_memo = (
-            client.chat.completions.create(
-                model=MODEL_HIGH,
-                temperature=0.2,
-                messages=[
-                    {"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": advisor_input},
-                ],
-            )
-            .choices[0]
-            .message.content
-            or ""
+        resp = await client.chat.completions.create(
+            model=MODEL_HIGH,
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": SYSTEM},
+                {"role": "user", "content": advisor_input},
+            ],
         )
+        raw_memo = resp.choices[0].message.content or ""
 
         advisor_memo = (
             "[REDACTED] Potential PHI detected."
