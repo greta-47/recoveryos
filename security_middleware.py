@@ -73,6 +73,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "upgrade-insecure-requests"           # Upgrade HTTP to HTTPS
         ]
         
+        report_uri = os.getenv("CSP_REPORT_URI")
+        if report_uri:
+            policy_parts.append(f"report-uri {report_uri}")
+        
         return "; ".join(policy_parts)
 
 
