@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import requests
 import time
+import pytest
 from observability_enhanced import PIIRedactor
 from feature_flags import feature_flags
 
@@ -18,6 +19,13 @@ from feature_flags import feature_flags
 def test_metrics_endpoint():
     """Test Prometheus metrics endpoint"""
     print("📊 Testing Metrics Endpoint...")
+
+    try:
+        response = requests.get("http://localhost:8001/health", timeout=2)
+        if response.status_code != 200:
+            pytest.skip("Server not available at localhost:8001")
+    except Exception:
+        pytest.skip("Server not available at localhost:8001")
 
     try:
         response = requests.get("http://localhost:8001/metrics", timeout=10)
@@ -57,6 +65,13 @@ def test_metrics_endpoint():
 def test_elite_metrics_endpoint():
     """Test elite metrics endpoint with feature flag integration"""
     print("📈 Testing Elite Metrics Endpoint...")
+
+    try:
+        response = requests.get("http://localhost:8001/health", timeout=2)
+        if response.status_code != 200:
+            pytest.skip("Server not available at localhost:8001")
+    except Exception:
+        pytest.skip("Server not available at localhost:8001")
 
     try:
         response = requests.get("http://localhost:8001/elite/metrics", timeout=10)
@@ -152,6 +167,13 @@ def test_feature_flags():
 def test_correlation_ids():
     """Test correlation ID generation and tracking"""
     print("🔗 Testing Correlation IDs...")
+
+    try:
+        response = requests.get("http://localhost:8001/health", timeout=2)
+        if response.status_code != 200:
+            pytest.skip("Server not available at localhost:8001")
+    except Exception:
+        pytest.skip("Server not available at localhost:8001")
 
     try:
         response = requests.post(

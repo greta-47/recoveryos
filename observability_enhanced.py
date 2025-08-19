@@ -114,17 +114,19 @@ class PIIRedactor:
         (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "[EMAIL_REDACTED]"),
         (r"\b\d{3}-\d{2}-\d{4}\b", "[SSN_REDACTED]"),
         (r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b", "[CARD_REDACTED]"),
+        (r"\b\d{3}-\d{3}-\d{4}\b", "[PHONE_REDACTED]"),
+        (r"\b555-\d{3}-\d{4}\b", "[PHONE_REDACTED]"),
         (r"\b\d{10,11}\b", "[PHONE_REDACTED]"),
         (
             r"\b\d{1,5}\s\w+\s(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd)\b",
             "[ADDRESS_REDACTED]",
         ),
         (r"\b(?:patient|client)[-_]?id[-_]?\d+\b", "[PATIENT_ID_REDACTED]"),
+        (r"\bMRN\d+\b", "[MEDICAL_RECORD_REDACTED]"),
         (
             r"\b(?:medical|record|chart)[-_]?(?:number|num|id)[-_]?\d+\b",
             "[MEDICAL_RECORD_REDACTED]",
         ),
-        (r"\b\d{3}-\d{3}-\d{4}\b", "[PHONE_REDACTED]"),
         (
             r"\b(?:dob|birth)[-_]?date[-_]?\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b",
             "[DOB_REDACTED]",
