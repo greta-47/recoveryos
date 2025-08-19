@@ -58,7 +58,9 @@ def test_continual_learning():
         except Exception as e:
             print(f"❌ Wrong format fails: {e}")
 
-        pytest.skip("CONTRACT_ERROR: training_data should be List[Dict[str, Any]], not Dict[str, Any] - this is expected validation behavior")
+        pytest.skip(
+            "CONTRACT_ERROR: training_data should be List[Dict[str, Any]], not Dict[str, Any] - this is expected validation behavior"
+        )
 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -111,7 +113,9 @@ def test_federated_learning():
         except Exception as e:
             print(f"❌ Wrong format fails: {e}")
 
-        pytest.skip("CONTRACT_ERROR: client_data should be Dict[client_id, data], not single client data - this is expected validation behavior")
+        pytest.skip(
+            "CONTRACT_ERROR: client_data should be Dict[client_id, data], not single client data - this is expected validation behavior"
+        )
 
     except Exception as e:
         print(f"❌ Error: {e}")

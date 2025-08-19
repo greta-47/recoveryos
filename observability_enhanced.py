@@ -131,6 +131,7 @@ class PIIRedactor:
             r"\b(?:dob|birth)[-_]?date[-_]?\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b",
             "[DOB_REDACTED]",
         ),
+        (r"\bDOB:\s*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", "[DOB_REDACTED]"),
     ]
 
     @classmethod
