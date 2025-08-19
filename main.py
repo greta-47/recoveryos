@@ -26,6 +26,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 
+from security_middleware import SecurityHeadersMiddleware, HTTPSEnforcementMiddleware, get_security_config
+
 # Import your multi-agent pipeline
 try:
     from agents import run_multi_agent
@@ -101,6 +103,19 @@ def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(title=APP_NAME, version=APP_VERSION, description="AI-powered relapse prevention platform")
+
+security_config = get_security_config()
+
+if security_config["enable_https_enforcement"]:
+    app.add_middleware(
+        HTTPSEnforcementMiddleware,
+        allow_localhost=security_config["allow_localhost"]
+    )
+
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    csp_mode=security_config["csp_mode"]
+)
 
 app.add_middleware(
     CORSMiddleware,
