@@ -96,16 +96,17 @@ def now_iso() -> str:
 # ---------------------------------------------------------------------------
 CSP_POLICY = {
     "default-src": "'self'",
-    "img-src": ["*", "data:"],
+    "img-src": ["'self'", "data:", "https://fastapi.tiangolo.com"],
     "connect-src": "'self'",
     "script-src": "'self'",
     "style-src": ["'self'", "'unsafe-inline'"],
     "script-src-elem": [
         "https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-bundle.js",
-        "'sha256-1I8qOd6RIfaPInCv8Ivv4j+J0C6d7I8+th40S5U/TVc='",
+        "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",
     ],
     "style-src-elem": [
         "https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui.css",
+        "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css",
     ],
 }
 
