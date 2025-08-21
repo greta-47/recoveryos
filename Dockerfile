@@ -25,8 +25,19 @@ COPY --chown=root:root requirements.lock.txt /wheels/requirements.lock.txt
 # Build wheels with cache
 RUN --mount=type=cache,target=/root/.cache/pip \
     sh -euc 'python -m pip install --upgrade pip setuptools wheel pip-tools && \
-             echo ">> Using requirements.txt (avoiding hash conflicts)"; \
-             pip wheel --wheel-dir=/wheels/dist -r /wheels/requirements.txt'
+             if [ -s /wheels/requirements.lock.txt ]; then \
+               echo ">> Attempting requirements.lock.txt (hash-locked)"; \
+               if pip wheel --wheel-dir=/wheels/dist --require-hashes -r /wheels/requirements.lock.txt; then \
+                 echo ">> Successfully used requirements.lock.txt"; \
+               else \
+                 echo ">> requirements.lock.txt failed, falling back to requirements.txt"; \
+                 rm -rf /wheels/dist/* && \
+                 pip wheel --wheel-dir=/wheels/dist -r /wheels/requirements.txt; \
+               fi; \
+             else \
+               echo ">> Using requirements.txt"; \
+               pip wheel --wheel-dir=/wheels/dist -r /wheels/requirements.txt; \
+             fi'
 
 ########## Stage 2: slim runtime ##########
 FROM python:3.11.9-slim AS runtime
@@ -42,9 +53,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     WORKERS=1 \
     TIMEOUT=45
 
-# Minimal runtime deps only (curl for healthcheck)
+# Minimal runtime deps only (curl for healthcheck, libpq5 for psycopg2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl ca-certificates \
+      curl ca-certificates libpq5 \
  && rm -rf /var/lib/apt/lists/*
 
 # Non-root user
