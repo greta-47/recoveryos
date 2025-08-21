@@ -25,6 +25,8 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 # Import your multi-agent pipeline
 try:
@@ -50,6 +52,7 @@ APP_NAME = os.getenv("APP_NAME", "RecoveryOS API")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 API_KEY = os.getenv("API_KEY")
 ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o]
+CSP_MODE = os.getenv("CSP_MODE", "report-only")
 
 # ---------------------------------------------------------------------------
 # Structured logging
@@ -89,6 +92,56 @@ def now_iso() -> str:
     return datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
 
 # ---------------------------------------------------------------------------
+# Security Middleware
+# ---------------------------------------------------------------------------
+CSP_POLICY = {
+    "default-src": "'self'",
+    "img-src": ["*", "data:"],
+    "connect-src": "'self'",
+    "script-src": "'self'",
+    "style-src": ["'self'", "'unsafe-inline'"],
+    "script-src-elem": [
+        "https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-bundle.js",
+        "'sha256-1I8qOd6RIfaPInCv8Ivv4j+J0C6d7I8+th40S5U/TVc='",
+    ],
+    "style-src-elem": [
+        "https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui.css",
+    ],
+}
+
+def parse_csp_policy(policy: dict) -> str:
+    policies = []
+    for directive, values in policy.items():
+        if isinstance(values, list):
+            values = " ".join(values)
+        policies.append(f"{directive} {values}")
+    return "; ".join(policies)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: FastAPI, csp_mode: str = "enforce"):
+        super().__init__(app)
+        self.csp_mode = csp_mode
+    
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        response = await call_next(request)
+        
+        headers = {
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff", 
+            "Referrer-Policy": "no-referrer",
+        }
+        
+        csp_policy = parse_csp_policy(CSP_POLICY)
+        if self.csp_mode == "report-only":
+            headers["Content-Security-Policy-Report-Only"] = csp_policy
+        else:
+            headers["Content-Security-Policy"] = csp_policy
+            
+        response.headers.update(headers)
+        return response
+
+# ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
 def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
@@ -110,6 +163,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Request-ID"]
 )
+
+app.add_middleware(SecurityHeadersMiddleware, csp_mode=CSP_MODE)
 
 if os.path.isdir("ui"):
     app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
