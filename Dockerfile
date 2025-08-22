@@ -24,11 +24,9 @@ COPY --chown=root:root requirements.lock.txt /wheels/requirements.lock.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     sh -euc 'python -m pip install --upgrade pip setuptools wheel pip-tools && \
-             if [ -s /wheels/requirements.lock.txt ] && grep -q -- "--hash=" /wheels/requirements.lock.txt; then \
-               echo ">> Using requirements.lock.txt with hashes"; \
-               pip wheel --wheel-dir=/wheels/dist --require-hashes -r /wheels/requirements.lock.txt; \
-             elif [ -s /wheels/requirements.lock.txt ]; then \
-               echo ">> Using requirements.lock.txt (no hashes detected)"; \
+             if [ -s /wheels/requirements.lock.txt ]; then \
+               echo ">> Using requirements.lock.txt (try hashes, then fallback)"; \
+               pip wheel --wheel-dir=/wheels/dist --require-hashes -r /wheels/requirements.lock.txt || \
                pip wheel --wheel-dir=/wheels/dist -r /wheels/requirements.lock.txt; \
              else \
                echo ">> Using requirements.txt"; \
