@@ -1,0 +1,32 @@
+import os
+from fastapi.testclient import TestClient
+import importlib
+
+
+def test_csp_header_present_and_strict(tmp_path, monkeypatch):
+    monkeypatch.setenv("CSP_APP_ORIGIN", "https://app.my-domain.com")
+    monkeypatch.setenv("CSP_CDN_LIST", "https://cdn.example.com, https://static.example.org")
+    monkeypatch.delenv("CSP_REPORT_ONLY", raising=False)
+
+    mod = importlib.import_module("main")
+    importlib.reload(mod)
+    client = TestClient(mod.app)
+    r = client.get("/healthz")
+    assert r.status_code == 200
+    h = r.headers.get("content-security-policy")
+    assert h is not None
+    assert "'unsafe-inline'" not in h.lower()
+    assert "'unsafe-eval'" not in h.lower()
+    assert "https://app.my-domain.com" in h
+    assert "https://cdn.example.com" in h
+
+
+def test_csp_report_only(monkeypatch):
+    monkeypatch.setenv("CSP_REPORT_ONLY", "true")
+    mod = importlib.import_module("main")
+    importlib.reload(mod)
+    client = TestClient(mod.app)
+    r = client.get("/healthz")
+    assert r.status_code == 200
+    assert r.headers.get("content-security-policy") is None
+    assert r.headers.get("content-security-policy-report-only") is not None
