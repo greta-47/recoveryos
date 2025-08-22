@@ -22,13 +22,46 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install pytest==8.2.2
 
+<<<<<<< Updated upstream
+||||||| constructed merge base
+      - name: Install dev tooling
+        run: |
+          pip install ruff==0.4.8 black==24.4.2 isort==5.13.2
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format check (black)
+        run: black --check .
+
+      - name: Import sort check (isort)
+        run: isort --check-only .
+
+=======
+      - name: Install dev tooling
+        run: |
+          pip install ruff==0.4.8 black==24.4.2 isort==5.13.2
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format check (black)
+        run: black --check .
+
+      - name: Import sort check (isort)
+        run: isort --check-only .
+
+>>>>>>> Stashed changes
       - name: Lint and syntax check
         run: |
           python -m py_compile $(find . -name "*.py")
 
       - name: Verify Dockerfile builds
         run: docker build .
+      - name: Run tests
+        run: pytest -q
+
 
       - name: Confirm app starts
         run: |

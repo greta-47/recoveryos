@@ -25,6 +25,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
+from security_middleware import ContentSecurityPolicyMiddleware
 
 # Import your multi-agent pipeline
 try:
@@ -110,7 +111,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Request-ID"]
 )
-
+app.add_middleware(ContentSecurityPolicyMiddleware)
 if os.path.isdir("ui"):
     app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
 
