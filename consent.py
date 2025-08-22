@@ -1,12 +1,13 @@
 # consent.py
 from __future__ import annotations
 
-from enum import Enum
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
 import logging
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("recoveryos")
+
 
 # ----------------------
 # Consent Types & Status
@@ -227,4 +228,3 @@ if __name__ == "__main__":
     patient_consent.withdraw(reason="User toggled off in settings")
     print("Active after withdraw? ->", patient_consent.is_active())
     print("Can send weekly after withdraw? ->", can_send_weekly(patient_consent))
-

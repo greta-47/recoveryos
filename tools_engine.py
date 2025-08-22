@@ -1,4 +1,4 @@
-def suggest_tool(mood:int, urge:int, sleep_hours:float, isolation:int):
+def suggest_tool(mood: int, urge: int, sleep_hours: float, isolation: int):
     if urge >= 4:
         return "Urge Surfing — 5-minute guided wave visualization"
     if mood <= 2:
