@@ -7,12 +7,13 @@ doesn't degrade response times significantly.
 """
 
 import asyncio
-import aiohttp
-import time
-import statistics
-import os
-from typing import Dict, List, Any
 import json
+import os
+import statistics
+import time
+from typing import Any, Dict
+
+import aiohttp
 
 
 class LoadTester:
@@ -24,7 +25,9 @@ class LoadTester:
         self.headers = {"X-API-Key": self.api_key, "Content-Type": "application/json"}
         self.results = {}
     
-    async def single_request(self, session: aiohttp.ClientSession, endpoint: str, method: str = "GET", data: dict = None) -> Dict[str, Any]:
+    async def single_request(
+        self, session: aiohttp.ClientSession, endpoint: str, method: str = "GET", data: dict = None
+    ) -> Dict[str, Any]:
         """Make a single request and measure response time"""
         start_time = time.time()
         try:
@@ -57,9 +60,19 @@ class LoadTester:
                 "error": str(e)
             }
     
-    async def load_test_endpoint(self, endpoint: str, concurrent_requests: int = 10, total_requests: int = 100, method: str = "GET", data: dict = None) -> Dict[str, Any]:
+    async def load_test_endpoint(
+        self,
+        endpoint: str,
+        concurrent_requests: int = 10,
+        total_requests: int = 100,
+        method: str = "GET",
+        data: dict = None,
+    ) -> Dict[str, Any]:
         """Load test a specific endpoint"""
-        print(f"🚀 Load testing {method} {endpoint} with {concurrent_requests} concurrent requests, {total_requests} total")
+        print(
+            f"🚀 Load testing {method} {endpoint} with {concurrent_requests} concurrent requests, "
+            f"{total_requests} total"
+        )
         
         async with aiohttp.ClientSession() as session:
             semaphore = asyncio.Semaphore(concurrent_requests)
@@ -96,8 +109,16 @@ class LoadTester:
                     "max_ms": max(response_times) if response_times else 0,
                     "avg_ms": statistics.mean(response_times) if response_times else 0,
                     "median_ms": statistics.median(response_times) if response_times else 0,
-                    "p95_ms": statistics.quantiles(response_times, n=20)[18] if len(response_times) > 20 else (max(response_times) if response_times else 0),
-                    "p99_ms": statistics.quantiles(response_times, n=100)[98] if len(response_times) > 100 else (max(response_times) if response_times else 0)
+                    "p95_ms": (
+                        statistics.quantiles(response_times, n=20)[18]
+                        if len(response_times) > 20
+                        else (max(response_times) if response_times else 0)
+                    ),
+                    "p99_ms": (
+                        statistics.quantiles(response_times, n=100)[98]
+                        if len(response_times) > 100
+                        else (max(response_times) if response_times else 0)
+                    ),
                 }
             }
             
@@ -192,9 +213,15 @@ class LoadTester:
         if analysis.get("elite_health_overhead"):
             overhead = analysis["elite_health_overhead"]
             if overhead["acceptable"]:
-                report.append(f"✅ **PASS**: Elite endpoints add {overhead['overhead_ms']:.2f}ms ({overhead['overhead_percent']:.1f}%) overhead - within acceptable limits")
+                report.append(
+                    f"✅ **PASS**: Elite endpoints add {overhead['overhead_ms']:.2f}ms "
+                    f"({overhead['overhead_percent']:.1f}%) overhead - within acceptable limits"
+                )
             else:
-                report.append(f"❌ **FAIL**: Elite endpoints add {overhead['overhead_ms']:.2f}ms ({overhead['overhead_percent']:.1f}%) overhead - exceeds acceptable limits")
+                report.append(
+                    f"❌ **FAIL**: Elite endpoints add {overhead['overhead_ms']:.2f}ms "
+                    f"({overhead['overhead_percent']:.1f}%) overhead - exceeds acceptable limits"
+                )
         
         report.append("")
         report.append("## Detailed Results")
@@ -225,7 +252,9 @@ class LoadTester:
             success_rate = result['success_rate']
             
             status = "✅" if avg_ms < 500 and p95_ms < 1000 and success_rate > 0.99 else "❌"
-            report.append(f"{status} {endpoint}: {avg_ms:.1f}ms avg, {p95_ms:.1f}ms p95, {success_rate:.2%} success")
+            report.append(
+                f"{status} {endpoint}: {avg_ms:.1f}ms avg, {p95_ms:.1f}ms p95, {success_rate:.2%} success"
+            )
         
         return "\n".join(report)
 
