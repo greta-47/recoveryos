@@ -349,7 +349,6 @@ def run_multi_agent(
                     f"Communication style: {profile.get('communication_style', 'supportive')}, "
                     f"Recovery goals: {profile.get('recovery_goals', 'general')}"
                 )
-
         # 1) Researcher
         researcher = _chat(researcher_prompt(topic, horizon) + context_info)
 
