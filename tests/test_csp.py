@@ -1,6 +1,6 @@
-import os
-from fastapi.testclient import TestClient
 import importlib
+
+from fastapi.testclient import TestClient
 
 
 def test_csp_header_present_and_strict(tmp_path, monkeypatch):
