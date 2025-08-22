@@ -60,20 +60,24 @@ COPY --from=builder --chown=appuser:appuser /wheels/dist /wheels
 RUN --mount=type=cache,target=/root/.cache/pip \
     sh -euc 'pip install --no-cache-dir /wheels/* && rm -rf /wheels'
 
-# Optional prestart hook + clean PID1 signal handling
+# App source
+COPY --chown=appuser:appuser . /app
+
+# Optional prestart hook + clean PID1 signal handling (create as root, then chown)
 RUN echo '#!/usr/bin/env sh' > /app/entrypoint.sh && \
     echo 'set -euo pipefail' >> /app/entrypoint.sh && \
     echo '# Optional: run DB migrations, warmups, etc.' >> /app/entrypoint.sh && \
-    echo 'if [ -x /app/prestart.sh ]; then /app/prestart.sh; fi' >> /app/entrypoint.sh && \
+    echo 'if [ -x /app/prestart.sh ]; then' >> /app/entrypoint.sh && \
+    echo '  /app/prestart.sh' >> /app/entrypoint.sh && \
+    echo 'fi' >> /app/entrypoint.sh && \
     echo 'exec gunicorn -k uvicorn.workers.UvicornWorker \' >> /app/entrypoint.sh && \
     echo '  --bind 0.0.0.0:${PORT} \' >> /app/entrypoint.sh && \
     echo '  --workers ${WORKERS} \' >> /app/entrypoint.sh && \
     echo '  --timeout ${TIMEOUT} \' >> /app/entrypoint.sh && \
     echo '  main:app' >> /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
+    chmod +x /app/entrypoint.sh && \
+    chown appuser:appuser /app/entrypoint.sh
 
-# App source
-COPY --chown=appuser:appuser . /app
 USER appuser
 
 # Healthcheck (simple & reliable)

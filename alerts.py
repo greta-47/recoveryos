@@ -93,8 +93,7 @@ def _build_blocks(
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "⚠️ This is a *support signal*, not a diagnosis. "
-                    "Use clinical judgment. No PHI included.",
+                    "text": "⚠️ This is a *support signal*, not a diagnosis. Use clinical judgment. No PHI included.",
                 }
             ],
         },
@@ -133,17 +132,11 @@ def send_clinician_alert(
 
     # Only send when risk high (configurable)
     if risk_score < RISK_HIGH_THRESHOLD:
-        logger.info(
-            "Risk below threshold — not alerting (score=%.2f < %.2f)",
-            risk_score,
-            RISK_HIGH_THRESHOLD,
-        )
+        logger.info("Risk below threshold — not alerting (score=%.2f < %.2f)", risk_score, RISK_HIGH_THRESHOLD)
         return
 
     # Simple per-user throttle to avoid spam
-    cooldown = timedelta(
-        minutes=(throttle_minutes if throttle_minutes is not None else ALERT_THROTTLE_MINUTES)
-    )
+    cooldown = timedelta(minutes=(throttle_minutes if throttle_minutes is not None else ALERT_THROTTLE_MINUTES))
     now = datetime.utcnow()
     last = _last_sent_at.get(user_id)
     if last and (now - last) < cooldown:
@@ -158,9 +151,7 @@ def send_clinician_alert(
         _last_sent_at[user_id] = now
         logger.info("High-risk alert sent | user=%s | score=%.2f", user_id, risk_score)
     except httpx.HTTPStatusError as e:
-        logger.error(
-            "Slack webhook HTTP error %s: %s", e.response.status_code, e.response.text[:300]
-        )
+        logger.error("Slack webhook HTTP error %s: %s", e.response.status_code, e.response.text[:300])
     except httpx.RequestError as e:
         logger.error("Slack webhook network error: %s", str(e))
     except Exception as e:

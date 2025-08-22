@@ -18,7 +18,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from hashlib import blake2b
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -50,11 +50,7 @@ except Exception:
 APP_NAME = os.getenv("APP_NAME", "RecoveryOS API")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 API_KEY = os.getenv("API_KEY")
-ALLOWED_ORIGINS = [
-    o
-    for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
-    if o
-]
+ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o]
 
 
 # ---------------------------------------------------------------------------
@@ -111,9 +107,7 @@ def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI(
-    title=APP_NAME, version=APP_VERSION, description="AI-powered relapse prevention platform"
-)
+app = FastAPI(title=APP_NAME, version=APP_VERSION, description="AI-powered relapse prevention platform")
 
 app.add_middleware(
     CORSMiddleware,
@@ -141,9 +135,7 @@ class Checkin(BaseModel):
 class AgentsIn(BaseModel):
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
-    okrs: str = Field(
-        default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", max_length=500
-    )
+    okrs: str = Field(default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", max_length=500)
 
 
 # ---------------------------------------------------------------------------
@@ -182,23 +174,11 @@ async def add_request_id(request: Request, call_next):
     except Exception:
         logger.exception(
             "unhandled_error",
-            extra={
-                "extra": {
-                    "path": request.url.path,
-                    "request_id": request_id,
-                    "client_fp": client_fp,
-                }
-            },
+            extra={"extra": {"path": request.url.path, "request_id": request_id, "client_fp": client_fp}},
         )
         return JSONResponse(
             status_code=500,
-            content={
-                "error": {
-                    "type": "server_error",
-                    "message": "Unexpected error",
-                    "request_id": request_id,
-                }
-            },
+            content={"error": {"type": "server_error", "message": "Unexpected error", "request_id": request_id}},
         )
 
 
@@ -287,12 +267,10 @@ def agents_run(body: AgentsIn, request: Request):
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
             if key in result and isinstance(result[key], str):
                 if re.search(r"patient \\d+|name:|DOB:", result[key], re.I):
-                    logger.warning(
-                        "PHI detected", extra={"extra": {"request_id": request_id, "field": key}}
-                    )
+                    logger.warning("PHI detected", extra={"extra": {"request_id": request_id, "field": key}})
                     result[key] = "[REDACTED] Output may contain sensitive data."
         return {**result, "request_id": request_id, "timestamp": now_iso()}
-    except Exception:
+    except Exception as e:
         logger.exception("agent_error", extra={"extra": {"request_id": request_id}})
         raise HTTPException(status_code=500, detail="Internal agent error — please try again")
 
@@ -320,10 +298,4 @@ except Exception:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", "8000")),
-        reload=True,
-        proxy_headers=True,
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")), reload=True, proxy_headers=True)

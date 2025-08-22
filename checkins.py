@@ -137,15 +137,13 @@ class SuggestionOut(BaseModel):
 
     message: str = Field(..., description="Personalized encouragement or acknowledgment")
     tool: str = Field(..., description="Coping skill or resource (e.g., 'Box breathing 4x4')")
-    category: Literal[
-        "grounding", "breathing", "distraction", "connection", "professional-help"
-    ] = Field(..., description="Type of coping strategy")
+    category: Literal["grounding", "breathing", "distraction", "connection", "professional-help"] = Field(
+        ..., description="Type of coping strategy"
+    )
     urgency_level: Literal["low", "moderate", "high"] = Field(
         "low", description="Urgency based on inputs (for routing)"
     )
-    follow_up_suggestion: Optional[str] = Field(
-        None, description="Next step (e.g., 'Text your sponsor')"
-    )
+    follow_up_suggestion: Optional[str] = Field(None, description="Next step (e.g., 'Text your sponsor')")
     timestamp: str = Field(
         default_factory=lambda: datetime.utcnow().isoformat() + "Z",
         description="UTC timestamp of response",
@@ -184,30 +182,19 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
     """
     # Urgency heuristic
     high = ci.urge >= 4 or ci.mood <= 2
-    moderate = (not high) and (
-        ci.sleep_hours < 5 or ci.isolation_score <= 1 or ci.energy_level <= 2
-    )
+    moderate = (not high) and (ci.sleep_hours < 5 or ci.isolation_score <= 1 or ci.energy_level <= 2)
     urgency = "high" if high else "moderate" if moderate else "low"
 
     # Tool & category
     if ci.urge >= 4:
         tool = "Urge Surfing — 5-minute guided wave visualization"
         category = "grounding"
-        msg = (
-            "Thanks for checking in. Strong urges can feel intense and temporary. "
-            "Let's ride the wave together."
-        )
-        follow = (
-            "If the urge stays high after 10 minutes, message your support person "
-            "or use a craving-delay timer."
-        )
+        msg = "Thanks for checking in. Strong urges can feel intense and temporary. Let’s ride the wave together."
+        follow = "If the urge stays high after 10 minutes, message your support person or use a craving-delay timer."
     elif ci.mood <= 2:
         tool = "5-4-3-2-1 Grounding"
         category = "grounding"
-        msg = (
-            "You're not alone—low mood happens. Try this short grounding practice "
-            "to steady your body first."
-        )
+        msg = "You’re not alone—low mood happens. Try this short grounding practice to steady your body first."
         follow = "After grounding, consider a brief walk or light stretch to shift state."
     elif ci.sleep_hours < 5:
         tool = "Body Scan (10 min) + Wind-Down Routine"
@@ -218,10 +205,7 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
         tool = "Connection Micro-task (2 min)"
         category = "connection"
         msg = "Connection helps recovery. A quick check-in with a safe person can lower urges."
-        follow = (
-            "Send a two-line text to someone supportive: share one win and one thing "
-            "you're trying."
-        )
+        follow = "Send a two-line text to someone supportive: share one win and one thing you’re trying."
     else:
         tool = "Box Breathing 4×4 (2 min)"
         category = "breathing"
@@ -237,9 +221,7 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
     )
 
 
-def analytics_from_checkin(
-    ci: CheckinIn, user_id: str, date: Optional[str] = None
-) -> CheckinAnalytics:
+def analytics_from_checkin(ci: CheckinIn, user_id: str, date: Optional[str] = None) -> CheckinAnalytics:
     """
     Convert a CheckinIn to a CheckinAnalytics record with a simple risk score.
     Risk score (0–10) is a weighted combination of risk factors.
@@ -252,13 +234,7 @@ def analytics_from_checkin(
     energy_risk = 1.0 if ci.energy_level <= 2 else 0.0
 
     # Weights (sum to 1.0 conceptually, then scale to 10)
-    score_0_1 = (
-        urge_risk * 0.55
-        + mood_risk * 0.20
-        + sleep_risk * 0.10
-        + iso_risk * 0.10
-        + energy_risk * 0.05
-    )
+    score_0_1 = urge_risk * 0.55 + mood_risk * 0.20 + sleep_risk * 0.10 + iso_risk * 0.10 + energy_risk * 0.05
     score = round(min(max(score_0_1 * 10, 0.0), 10.0), 2)
 
     engagement_flag: Literal["high", "medium", "low"]
