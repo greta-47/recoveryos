@@ -158,13 +158,13 @@ def run_weekly_briefing(background_tasks: BackgroundTasks):
 
         # Build de-identified message body
         body = f"""
-Weekly RecoveryOS Briefing ({briefing['period']})
+Weekly RecoveryOS Briefing ({briefing["period"]})
 
 📊 Summary:
-- Tracked: {briefing['summary']['total_patients_tracked']} patients
-- At Risk: {briefing['summary']['at_risk_count']}
-- Showing Improvement: {briefing['summary']['improved_count']}
-- Avg Engagement: {briefing['summary']['avg_checkin_rate']}
+- Tracked: {briefing["summary"]["total_patients_tracked"]} patients
+- At Risk: {briefing["summary"]["at_risk_count"]}
+- Showing Improvement: {briefing["summary"]["improved_count"]}
+- Avg Engagement: {briefing["summary"]["avg_checkin_rate"]}
 
 🚨 At-Risk Patients:
 {chr(10).join([f"• {p['name_display']} (Urge: {p['trend']['urge_avg']}) – {p['ai_insight']}" for p in at_risk]) or "• None in the last 7 days"}
@@ -173,10 +173,10 @@ Weekly RecoveryOS Briefing ({briefing['period']})
 {chr(10).join([f"• {p['name_display']} Mood ↑{p['trend']['mood_change']} – {p['ai_insight']}" for p in improved]) or "• No significant improvements flagged"}
 
 💡 Team Insights:
-{chr(10).join([f"• {insight}" for insight in briefing['team_insights']])}
+{chr(10).join([f"• {insight}" for insight in briefing["team_insights"]])}
 
 ✅ Recommended Actions:
-{chr(10).join([f"• {action}" for action in briefing['recommended_actions']])}
+{chr(10).join([f"• {action}" for action in briefing["recommended_actions"]])}
 
 This briefing is de-identified and for clinical use only.
         """.strip()

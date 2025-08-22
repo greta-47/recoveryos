@@ -218,7 +218,7 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         texts: List[str] = []
         new_meta: List[Dict[str, Any]] = []
         for doc in documents:
-            doc_id = str(doc.get("id") or f"doc-{len(meta)+len(new_meta)}")
+            doc_id = str(doc.get("id") or f"doc-{len(meta) + len(new_meta)}")
             title = str(doc.get("title") or "Untitled")
             content = str(doc.get("content") or "").strip()
             if not content:
