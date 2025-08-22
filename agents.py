@@ -348,7 +348,9 @@ async def run_multi_agent(
         researcher = await _chat(researcher_prompt(topic, horizon) + context_info)
 
         # 2) Analyst (Top 5 tests)
-        analyst = await _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
+        analyst = await _chat(
+            f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}"
+        )
         analyst_tests = _parse_analyst_tests(analyst)
 
         # 3) Critic
