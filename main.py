@@ -275,7 +275,9 @@ async def agents_run(body: AgentsIn, request: Request):
             )
 
         user_context = {"user_id": "anonymous"}
-        result = await run_multi_agent(body.topic, body.horizon, body.okrs, user_context)
+        result = await run_multi_agent(
+            body.topic, body.horizon, body.okrs, user_context
+        )
 
         # De-identification scan
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
