@@ -60,23 +60,21 @@ COPY --from=builder --chown=appuser:appuser /wheels/dist /wheels
 RUN --mount=type=cache,target=/root/.cache/pip \
     sh -euc 'pip install --no-cache-dir /wheels/* && rm -rf /wheels'
 
+# Optional prestart hook + clean PID1 signal handling
+RUN echo '#!/usr/bin/env sh' > /app/entrypoint.sh && \
+    echo 'set -euo pipefail' >> /app/entrypoint.sh && \
+    echo '# Optional: run DB migrations, warmups, etc.' >> /app/entrypoint.sh && \
+    echo 'if [ -x /app/prestart.sh ]; then /app/prestart.sh; fi' >> /app/entrypoint.sh && \
+    echo 'exec gunicorn -k uvicorn.workers.UvicornWorker \' >> /app/entrypoint.sh && \
+    echo '  --bind 0.0.0.0:${PORT} \' >> /app/entrypoint.sh && \
+    echo '  --workers ${WORKERS} \' >> /app/entrypoint.sh && \
+    echo '  --timeout ${TIMEOUT} \' >> /app/entrypoint.sh && \
+    echo '  main:app' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
 # App source
 COPY --chown=appuser:appuser . /app
 USER appuser
-
-# Optional prestart hook + clean PID1 signal handling
-RUN sh -euc 'cat > /app/entrypoint.sh << "SH"\n\
-#!/usr/bin/env sh\n\
-set -euo pipefail\n\
-# Optional: run DB migrations, warmups, etc.\n\
-if [ -x /app/prestart.sh ]; then /app/prestart.sh; fi\n\
-exec gunicorn -k uvicorn.workers.UvicornWorker \\\n\
-  --bind 0.0.0.0:${PORT} \\\n\
-  --workers ${WORKERS} \\\n\
-  --timeout ${TIMEOUT} \\\n\
-  main:app\n\
-SH\n\
-&& chmod +x /app/entrypoint.sh'
 
 # Healthcheck (simple & reliable)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
