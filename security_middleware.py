@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Awaitable
+
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 

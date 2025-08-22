@@ -26,6 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
 from security_middleware import ContentSecurityPolicyMiddleware
 
 from security_middleware import SecurityHeadersMiddleware, HTTPSEnforcementMiddleware, get_security_config
