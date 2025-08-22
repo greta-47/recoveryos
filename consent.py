@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger("recoveryos")
 
+
 # ----------------------
 # Consent Types & Status
 # ----------------------
@@ -227,4 +228,3 @@ if __name__ == "__main__":
     patient_consent.withdraw(reason="User toggled off in settings")
     print("Active after withdraw? ->", patient_consent.is_active())
     print("Can send weekly after withdraw? ->", can_send_weekly(patient_consent))
-

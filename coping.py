@@ -10,12 +10,15 @@ from pydantic import BaseModel, Field
 try:
     from alerts import queue_clinician_alert
 except Exception:  # fallback if alerts.py missing during local tests
+
     def queue_clinician_alert(*args, **kwargs):
         pass
+
 
 logger = logging.getLogger("recoveryos")
 
 RISK_HIGH_THRESHOLD = float(os.getenv("RISK_HIGH_THRESHOLD", "7.0"))
+
 
 # ----------------------
 # Models
@@ -47,12 +50,13 @@ class CopingRequest(BaseModel):
         }
     }
 
+
 class CopingResponse(BaseModel):
     tool: str = Field(..., description="Name of the coping skill")
     description: str = Field(..., description="How to do it (1–2 sentences)")
-    category: Literal["grounding", "breathing", "distraction", "connection", "body-scan", "mindfulness", "professional-help"] = Field(
-        ..., description="Type of tool"
-    )
+    category: Literal[
+        "grounding", "breathing", "distraction", "connection", "body-scan", "mindfulness", "professional-help"
+    ] = Field(..., description="Type of tool")
     urgency_level: Literal["low", "moderate", "high"] = Field("moderate", description="For routing logic")
     suggested_duration: str = Field("5 minutes", description="Recommended time to spend")
     message: str = Field(..., description="Personalized encouragement")
@@ -64,7 +68,9 @@ class CopingResponse(BaseModel):
     risk_level: Literal["Low", "Moderate", "High", "Severe"] = Field("Low", description="Discrete risk level")
     risk_factors: List[Dict] = Field(default_factory=list, description="Top contributing factors")
 
+
 router = APIRouter(prefix="/coping", tags=["coping"])
+
 
 # ----------------------
 # Minimal rule-based engine + risk model (stub)
@@ -73,18 +79,29 @@ def _risk_analyze(mood: int, urge: int, isolation: int, energy: int) -> Dict:
     # very simple composite
     score = (urge * 1.8) + max(0, 3 - mood) * 0.8 + max(0, 3 - isolation) * 0.6 + max(0, 3 - energy) * 0.6
     score = max(0.0, min(10.0, score))
-    if score >= 9: level = "Severe"
-    elif score >= 7: level = "High"
-    elif score >= 4: level = "Moderate"
-    else: level = "Low"
+    if score >= 9:
+        level = "Severe"
+    elif score >= 7:
+        level = "High"
+    elif score >= 4:
+        level = "Moderate"
+    else:
+        level = "Low"
     factors = []
-    if urge >= 4: factors.append({"name": "High Urge", "impact": 0.8, "explanation": "Self-reported urge is high (≥4)."})
-    if mood <= 2: factors.append({"name": "Low Mood", "impact": 0.5, "explanation": "Mood is low (≤2)."})
-    if isolation <= 2: factors.append({"name": "Isolation", "impact": 0.4, "explanation": "Social connection is low (≤2)."})
-    if energy <= 2: factors.append({"name": "Exhaustion", "impact": 0.3, "explanation": "Energy level is very low (≤2)."})
+    if urge >= 4:
+        factors.append({"name": "High Urge", "impact": 0.8, "explanation": "Self-reported urge is high (≥4)."})
+    if mood <= 2:
+        factors.append({"name": "Low Mood", "impact": 0.5, "explanation": "Mood is low (≤2)."})
+    if isolation <= 2:
+        factors.append({"name": "Isolation", "impact": 0.4, "explanation": "Social connection is low (≤2)."})
+    if energy <= 2:
+        factors.append({"name": "Exhaustion", "impact": 0.3, "explanation": "Energy level is very low (≤2)."})
     return {"score": round(score, 1), "level": level, "factors": factors[:3]}
 
-def _suggest_tool(mood: int, urge: int, sleep_hours: float, isolation: int, energy: int, craving_type: Optional[str]) -> Dict:
+
+def _suggest_tool(
+    mood: int, urge: int, sleep_hours: float, isolation: int, energy: int, craving_type: Optional[str]
+) -> Dict:
     tool = "Box Breathing"
     description = "Inhale 4s, hold 4s, exhale 4s, hold 4s. Repeat for 5 minutes."
     category = "breathing"
@@ -135,6 +152,7 @@ def _suggest_tool(mood: int, urge: int, sleep_hours: float, isolation: int, ener
         "resources": ["https://recoveryos.app/guided/urge-surfing.mp3"] if category == "grounding" else [],
     }
 
+
 # ----------------------
 # Routes
 # ----------------------
@@ -172,6 +190,7 @@ def recommend_coping_tool(request: CopingRequest, background_tasks: BackgroundTa
     except Exception as e:
         logger.error(f"Coping tool failed | Error: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Coping tool generation failed")
+
 
 @router.get("/healthz")
 def coping_health():
