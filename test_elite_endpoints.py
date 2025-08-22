@@ -10,13 +10,12 @@ This test suite validates:
 5. Performance impact assessment
 """
 
-import json
-import time
-import pytest
-import requests
-from typing import Dict, Any
 import os
-from datetime import datetime
+import queue
+import threading
+import time
+
+import requests
 
 
 class TestEliteEndpoints:
@@ -162,8 +161,9 @@ class TestEliteEndpoints:
     
     def test_pii_redaction_validation(self):
         """Test PII redaction validation using existing patterns"""
-        import sys
         import os
+        import sys
+
         sys.path.append(os.path.dirname(os.path.abspath(__file__)))
         
         try:
@@ -231,8 +231,6 @@ class TestEliteEndpoints:
     
     def test_concurrent_client_registration(self):
         """Test concurrent federated client registrations"""
-        import threading
-        import queue
         
         results = queue.Queue()
         
@@ -304,8 +302,9 @@ class TestEliteEndpoints:
             ("Medical Record", "MRN 987654321", r"MRN\s+\d+")
         ]
         
+        import re
+
         for pattern_name, test_text, regex_pattern in phi_patterns:
-            import re
             match = re.search(regex_pattern, test_text)
             assert match is not None, f"Pattern {pattern_name} should match in: {test_text}"
             print(f"✅ {pattern_name} pattern detection working")
@@ -355,7 +354,9 @@ class TestEliteEndpoints:
             else:
                 response = requests.get(f"{self.base_url}{case['endpoint']}", headers=self.headers)
             
-            assert response.status_code == case["expected_status"], f"{case['name']} failed: expected {case['expected_status']}, got {response.status_code}"
+            assert response.status_code == case["expected_status"], (
+                f"{case['name']} failed: expected {case['expected_status']}, got {response.status_code}"
+            )
             print(f"✅ {case['name']} edge case handled correctly")
         
         print("✅ Edge case scenarios test passed")
