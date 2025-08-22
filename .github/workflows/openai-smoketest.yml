@@ -1,8 +1,11 @@
 name: OpenAI Smoketest
 
 on:
-  push:
   pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main, recoveryos-upgrade ]
+  workflow_dispatch:
 
 jobs:
   smoketest:
