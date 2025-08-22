@@ -1,50 +1,52 @@
 #!/usr/bin/env python3
 import os
 import sys
-
-from openai import APIError, AuthenticationError, BadRequestError, OpenAI, RateLimitError
-
+from openai import OpenAI, APIError, RateLimitError
 
 def main():
+    provider = "openai"
     api_key = os.getenv("OPENAI_API_KEY")
-    model = os.getenv("OPENAI_MODEL", "gpt-5-mini")
     if not api_key:
-        print("NON-BLOCKING: auth error (OPENAI_API_KEY not set)", file=sys.stderr)
-        sys.exit(0)
+        print("ERROR: OPENAI_API_KEY is not set in environment", file=sys.stderr)
+        sys.exit(1)
+
+    model = os.getenv("OPENAI_MODEL", "gpt-5")
+
+    print(f"Provider: {provider}")
+    print(f"Model: {model}")
+
     client = OpenAI(api_key=api_key)
+
     try:
         resp = client.chat.completions.create(
             model=model,
-            messages=[{"role": "user", "content": "Say 'RecoveryOS smoketest PASS'."}],
-            max_tokens=8,
-            temperature=0,
+            messages=[
+                {"role": "system", "content": "You are a concise assistant."},
+                {"role": "user", "content": "Reply with one short sentence confirming connectivity."},
+            ],
+            timeout=20,
         )
-        text = (resp.choices[0].message.content or "").strip()
-        if text:
-            print(f"PASS: {text}")
-        else:
-            print("NON-BLOCKING: empty response", file=sys.stderr)
-        sys.exit(0)
     except RateLimitError as e:
-        msg = str(e).lower()
-        if "insufficient_quota" in msg or "insufficient quota" in msg:
-            print("NON-BLOCKING: insufficient_quota (OpenAI billing)", file=sys.stderr)
-            sys.exit(0)
-        print("NON-BLOCKING: rate_limit (retry later)", file=sys.stderr)
-        sys.exit(0)
-    except AuthenticationError:
-        print("NON-BLOCKING: auth error (check OPENAI_API_KEY)", file=sys.stderr)
-        sys.exit(0)
-    except BadRequestError as e:
-        print(f"NON-BLOCKING: bad-request ({e})", file=sys.stderr)
-        sys.exit(0)
+        print(f"Rate limited: {e}", file=sys.stderr)
+        sys.exit(2)
     except APIError as e:
-        print(f"NON-BLOCKING: api error ({e})", file=sys.stderr)
-        sys.exit(0)
+        print(f"OpenAI API error: {e}", file=sys.stderr)
+        sys.exit(3)
     except Exception as e:
-        print(f"NON-BLOCKING: unexpected error ({e})", file=sys.stderr)
-        sys.exit(0)
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        sys.exit(4)
 
+    content = resp.choices[0].message.content if resp and resp.choices else ""
+    usage = getattr(resp, "usage", None)
+    if usage:
+        prompt_tokens = getattr(usage, "prompt_tokens", None)
+        completion_tokens = getattr(usage, "completion_tokens", None)
+        total_tokens = getattr(usage, "total_tokens", None)
+        print("Test response:", content.strip())
+        print(f"Token usage: prompt={prompt_tokens}, completion={completion_tokens}, total={total_tokens}")
+    else:
+        print("Test response:", content.strip())
+        print("Token usage: unavailable")
 
 if __name__ == "__main__":
     main()
