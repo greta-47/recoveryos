@@ -320,8 +320,8 @@ def elite_health():
         "components": {
             "federated_learning": "active",
             "differential_privacy": "enabled",
-            "neuromorphic_processing": "ready"
-        }
+            "neuromorphic_processing": "ready",
+        },
     }
 
 
@@ -329,20 +329,13 @@ def elite_health():
 def elite_metrics():
     return {
         "timestamp": now_iso(),
-        "performance": {
-            "avg_response_time_ms": 245,
-            "requests_per_second": 12.5,
-            "error_rate": 0.02
-        },
+        "performance": {"avg_response_time_ms": 245, "requests_per_second": 12.5, "error_rate": 0.02},
         "federated_learning": {
             "active_clients": 3,
             "model_version": "v2.1.0",
-            "last_aggregation": "2025-08-22T22:15:00Z"
+            "last_aggregation": "2025-08-22T22:15:00Z",
         },
-        "privacy": {
-            "pii_redaction_rate": 0.98,
-            "differential_privacy_epsilon": 1.0
-        }
+        "privacy": {"pii_redaction_rate": 0.98, "differential_privacy_epsilon": 1.0},
     }
 
 
@@ -356,7 +349,7 @@ class FederatedClientRegistration(BaseModel):
 @app.post("/elite/federated/register", dependencies=[Depends(api_key_auth)])
 def register_federated_client(client: FederatedClientRegistration, request: Request):
     request_id = str(uuid.uuid4())
-    
+
     logger.info(
         "federated_client_registration",
         extra={
@@ -369,18 +362,15 @@ def register_federated_client(client: FederatedClientRegistration, request: Requ
             }
         },
     )
-    
+
     return {
         "status": "registered",
         "client_id": client.client_id,
         "assigned_model_version": "v2.1.0",
         "next_sync": "2025-08-22T23:00:00Z",
-        "privacy_config": {
-            "epsilon": 1.0 if client.privacy_level == "standard" else 0.5,
-            "delta": 1e-5
-        },
+        "privacy_config": {"epsilon": 1.0 if client.privacy_level == "standard" else 0.5, "delta": 1e-5},
         "request_id": request_id,
-        "timestamp": now_iso()
+        "timestamp": now_iso(),
     }
 
 
@@ -393,25 +383,25 @@ def list_federated_clients():
                 "client_type": "hospital",
                 "status": "active",
                 "last_sync": "2025-08-22T22:15:00Z",
-                "model_version": "v2.1.0"
+                "model_version": "v2.1.0",
             },
             {
-                "client_id": "clinic_002", 
+                "client_id": "clinic_002",
                 "client_type": "clinic",
                 "status": "active",
                 "last_sync": "2025-08-22T22:10:00Z",
-                "model_version": "v2.1.0"
+                "model_version": "v2.1.0",
             },
             {
                 "client_id": "research_003",
-                "client_type": "research", 
+                "client_type": "research",
                 "status": "syncing",
                 "last_sync": "2025-08-22T22:05:00Z",
-                "model_version": "v2.0.9"
-            }
+                "model_version": "v2.0.9",
+            },
         ],
         "total_clients": 3,
-        "timestamp": now_iso()
+        "timestamp": now_iso(),
     }
 
 
