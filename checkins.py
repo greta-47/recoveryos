@@ -1,11 +1,12 @@
 # checkins.py
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Literal
-from datetime import datetime
-from zoneinfo import ZoneInfo
 import re
+from datetime import datetime
+from typing import Literal, Optional
+from zoneinfo import ZoneInfo
+
+from pydantic import BaseModel, Field, field_validator
 
 # ======================
 # PHI / PII heuristics

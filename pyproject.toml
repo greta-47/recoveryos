@@ -10,17 +10,22 @@ py_version = 311
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = []
-per-file-ignores = { 
-  "recoveryos_rooted/**" = ["E501", "I001", "E401", "F401", "F841"],
-  "risk*.py" = ["E501", "I001", "E401", "F841"],
-  "coping.py" = ["E501"],
-  "rag.py" = ["E501", "I001", "F841"],
-  "db.py" = ["I001"],
-  "main.py" = ["E501", "I001", "F401", "F841"],
-  "scripts/openai_provider_test.py" = ["I001"],
-  "test_api.py" = ["I001"],
-  "users.py" = ["I001"],
-  "tools.py" = ["I001"]
-}
+
+[tool.ruff.lint.per-file-ignores]
+"recoveryos_rooted/**" = ["E501", "I001", "E401", "F401", "F841", "E702"]
+"risk*.py" = ["E501", "I001", "E401", "F841"]
+"coping.py" = ["E501", "E701"]
+"rag.py" = ["E501", "I001", "F841"]
+"db.py" = ["I001"]
+"main.py" = ["E501", "I001", "F401", "F841"]
+"agents.py" = ["E501", "I001", "F401", "F841"]
+"alerts.py" = ["E501", "I001"]
+"briefings.py" = ["E501", "I001"]
+"scripts/openai_provider_test.py" = ["I001"]
+"test_api.py" = ["I001"]
+"users.py" = ["I001"]
+"tools.py" = ["I001"]

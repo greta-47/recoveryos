@@ -1,9 +1,10 @@
 # briefing.py
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
-from typing import Dict, Any, List
-from datetime import datetime
 import logging
 import os
+from datetime import datetime
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 logger = logging.getLogger("recoveryos")
 
@@ -11,7 +12,7 @@ logger = logging.getLogger("recoveryos")
 # Optional consent hook (safe if consent.py is absent)
 # ----------------------
 try:
-    from consent import ConsentRecord, ConsentType, ConsentStatus, can_send_weekly  # type: ignore
+    from consent import ConsentRecord, ConsentStatus, ConsentType, can_send_weekly  # type: ignore
     _HAS_CONSENT = True
 except Exception:
     _HAS_CONSENT = False

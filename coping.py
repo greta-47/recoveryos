@@ -1,10 +1,11 @@
 # coping.py
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, List, Dict
-from datetime import datetime
-import os
 import logging
+import os
+from datetime import datetime
+from typing import Dict, List, Literal, Optional
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from pydantic import BaseModel, Field
 
 try:
     from alerts import queue_clinician_alert

@@ -1,13 +1,14 @@
 # agents.py
+import json
+import logging
 import os
+import re
 import time
 import uuid
-import re
-import json
-from typing import Dict, Any, List, Optional
 from datetime import datetime
-from openai import OpenAI, APIError, RateLimitError
-import logging
+from typing import Any, Dict, List
+
+from openai import APIError, OpenAI, RateLimitError
 
 # ----------------------
 # Logging
