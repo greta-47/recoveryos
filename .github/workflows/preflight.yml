@@ -45,4 +45,9 @@ jobs:
 
       - name: Confirm app starts
         run: |
-          if [ -f main.py ]; then python main.py --help || true; fi
+          if [ -f main.py ]; then
+            timeout 30 python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
+            sleep 5
+            curl -f http://localhost:8000/healthz || (echo "Health check failed" && exit 1)
+            pkill -f uvicorn
+          fi
