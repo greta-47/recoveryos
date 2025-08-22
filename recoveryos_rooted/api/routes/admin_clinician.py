@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 router = APIRouter(prefix="/clinician", tags=["clinician"])
 @router.get("/patient/{user_id}/summary")
 def patient_summary(user_id:int):

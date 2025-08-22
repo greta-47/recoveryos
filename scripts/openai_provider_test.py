@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import os
 import sys
-from openai import OpenAI, APIError, RateLimitError, AuthenticationError, BadRequestError
+
+from openai import APIError, AuthenticationError, BadRequestError, OpenAI, RateLimitError
+
 
 def main():
     api_key = os.getenv("OPENAI_API_KEY")

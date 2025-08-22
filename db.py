@@ -1,8 +1,9 @@
 # db/db.py
-from sqlmodel import SQLModel, create_engine, Session
-from contextlib import contextmanager
-import os
 import logging
+import os
+from contextlib import contextmanager
+
+from sqlmodel import Session, SQLModel, create_engine
 
 # ----------------------
 # Logging
@@ -55,7 +56,7 @@ def init_db():
     Create all tables.
     Call once at startup.
     """
-    from .models import User, Checkin, Supporter, Tool, RiskEvent, ConsentRecord  # noqa
+    from .models import Checkin, ConsentRecord, RiskEvent, Supporter, Tool, User  # noqa
     SQLModel.metadata.create_all(engine)
     logger.info("✅ Database initialized — all tables created or verified")
 

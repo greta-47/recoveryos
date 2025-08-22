@@ -1,5 +1,8 @@
-from pydantic import BaseModel, Field
 from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
 class CheckinIn(BaseModel):
     mood: int = Field(ge=1, le=5)
     urge: int = Field(ge=1, le=5)

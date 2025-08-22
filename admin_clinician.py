@@ -1,7 +1,9 @@
 # admin_clinician.py
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
+
 
 # ----------------------
 # Auth Placeholder (Replace with your real auth system)
@@ -147,6 +149,7 @@ def clinician_dashboard(current_user: dict = Depends(get_current_user)):
 
     # Filter by clinic scope (stubbed)
     patient_list: List[PatientSummary] = [
-        p for uid, p in MOCK_DATA.items() if is_patient_in_clinic(uid, current_user.get("clinic_id", ""))
+        p for uid, p in MOCK_DATA.items() 
+        if is_patient_in_clinic(uid, current_user.get("clinic_id", ""))
     ]
     return patient_list
