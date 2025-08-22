@@ -18,7 +18,11 @@ jobs:
           python-version: '3.12'
       - name: Install OpenAI SDK
         run: pip install "openai>=1.40.0"
+      - name: Note if secret missing (non-blocking)
+        if: ${{ secrets.OPENAI_API_KEY == '' }}
+        run: echo "Skipping smoketest: OPENAI_API_KEY secret not set in repo (non-blocking)."
       - name: Run smoketest
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
