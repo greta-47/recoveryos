@@ -1,13 +1,14 @@
 # agents.py
+import json
+import logging
 import os
+import re
 import time
 import uuid
-import re
-import json
-from typing import Dict, Any, List, Optional
 from datetime import datetime
-from openai import OpenAI, APIError, RateLimitError
-import logging
+from typing import Any, Dict, List
+
+from openai import APIError, OpenAI, RateLimitError
 
 # ----------------------
 # Logging
@@ -50,12 +51,15 @@ def researcher_prompt(topic: str, horizon: str) -> str:
     return f"""ROLE: Researcher (RecoveryOS Intelligence Unit)
 
 MISSION
-You gather high-signal, decision-grade intelligence on "{topic}" focused on the next {horizon}, with attention to BC/Canada context when relevant.
+You gather high-signal, decision-grade intelligence on "{topic}" focused on the next {horizon}, 
+with attention to BC/Canada context when relevant.
 
 PRIORITIZE (in order)
 1) Peer-reviewed research (systematic reviews/meta-analyses, RCTs, strong cohort studies)
-2) Clinical guidelines & governmental/agency sources (e.g., BC Centre on Substance Use, Health Canada, BCCDC, NIDA, WHO, CIHI, CADTH, CMAJ)
-3) Official regulatory/commercial documents (regulations, public safety advisories, SEDAR/EDGAR filings, earnings calls)
+2) Clinical guidelines & governmental/agency sources (e.g., BC Centre on Substance Use, 
+   Health Canada, BCCDC, NIDA, WHO, CIHI, CADTH, CMAJ)
+3) Official regulatory/commercial documents (regulations, public safety advisories, 
+   SEDAR/EDGAR filings, earnings calls)
 4) De-identified patient/community forums (for qualitative signals only; lowest reliability)
 
 EXCLUDE / DOWN-WEIGHT
@@ -74,12 +78,15 @@ COMPLIANCE & SAFETY
 - Flag unproven or risky claims; never present speculation as fact.
 
 RELIABILITY RUBRIC (assign one per finding)
-- High: Systematic review/meta-analysis; well-powered RCT; national/provincial guideline; governmental statistic.
-- Moderate: Prospective/retrospective cohorts, small RCTs/pilots, reputable NGOs with transparent methods.
+- High: Systematic review/meta-analysis; well-powered RCT; national/provincial 
+  guideline; governmental statistic.
+- Moderate: Prospective/retrospective cohorts, small RCTs/pilots, reputable NGOs 
+  with transparent methods.
 - Low: Case reports, anecdotal/forum posts, non–peer-reviewed preprints without corroboration.
 
 NUMERIC HYGIENE
-- Convert claims to clear metrics with denominators & timeframes (e.g., “30% higher retention at 90 days vs 23% control; ARR +7%”).
+- Convert claims to clear metrics with denominators & timeframes 
+  (e.g., "30% higher retention at 90 days vs 23% control; ARR +7%").%”).
 - Include CIs or p-values when available; otherwise write "unknown".
 
 RETRACTION / CROSS-CHECK
@@ -101,7 +108,8 @@ Return 8–15 JSON objects in a JSON array. Use exactly these keys:
     "url": "https://…",
     "date": "YYYY-MM-DD",
     "jurisdiction": "BC | Canada | US | Global | Other",
-    "method": "Guideline | Meta-analysis | RCT | Cohort | Cross-sectional | Qualitative | Regulatory | Other",
+    "method": "Guideline | Meta-analysis | RCT | Cohort | Cross-sectional | "
+              "Qualitative | Regulatory | Other",
     "sample_size": "n=… or unknown",
     "metric": "What is measured (e.g., 90-day retention)",
     "effect_size": "e.g., +30% vs control; ARR +7%; OR=1.42 (95% CI 1.1–1.8)",
@@ -145,7 +153,8 @@ def analyst_prompt(okrs: str) -> str:
     return f"""ROLE: Analyst + Test Designer (RecoveryOS)
 
 CONTEXT
-Use the Researcher’s findings to extract patterns and design **Top 5 real-world validation tests** that most directly advance these OKRs:
+Use the Researcher's findings to extract patterns and design **Top 5 real-world validation tests** 
+that most directly advance these OKRs:s:
 {okrs}
 
 OUTPUT SECTIONS (IN ORDER)
@@ -156,7 +165,8 @@ OUTPUT SECTIONS (IN ORDER)
 - Call out bottlenecks: regulatory, clinical, tech, trust.
 
 2) TOP 5 VALIDATION TESTS (JSON ARRAY ONLY — NO MARKDOWN FENCES)
-Return exactly 5 objects, fields below, ordered by **Priority** (P1 highest). Keep costs small and timeframes fast.
+Return exactly 5 objects, fields below, ordered by **Priority** (P1 highest). 
+Keep costs small and timeframes fast.
 
 [
   {{
@@ -184,9 +194,10 @@ STYLE
 """
 
 CRITIC_PROMPT = """ROLE: Critic (Compliance + Red Team)
-Challenge assumptions and feasibility. Flag hidden costs (support load, returns), platform risk, data handling.
-BC/Canada guardrails: informed consent before sharing, data minimization, no PHI in email, crisis disclaimers,
-export/delete rights, encryption in transit/at rest. Provide risks, kill-criteria, escalation triggers.
+Challenge assumptions and feasibility. Flag hidden costs (support load, returns), platform risk, 
+data handling. BC/Canada guardrails: informed consent before sharing, data minimization, no PHI in 
+email, crisis disclaimers, export/delete rights, encryption in transit/at rest. Provide risks, 
+kill-criteria, escalation triggers.
 """
 
 STRATEGIST_PROMPT = """ROLE: Strategist
@@ -340,7 +351,8 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
         advisor_input = (
             advisor_prompt(okrs)
             + "\n\nContext:\n"
-            + f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\nStrategist:\n{strategist}"
+            + f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\n"
+            + f"Strategist:\n{strategist}"
         )
         raw_memo = client.chat.completions.create(
             model=MODEL_HIGH,

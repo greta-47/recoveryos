@@ -1,11 +1,11 @@
 # alerts.py
-import os
 import logging
-from typing import List, Dict, Optional
+import os
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger("recoveryos")
 
@@ -72,7 +72,10 @@ def _build_blocks(
                 {
                     "type": "mrkdwn",
                     "text": f"*Score:* {risk_score:.1f}/10"
-                            + (f" | *Top factor:* {top.get('name')}" if top and top.get("name") else "")
+                            + (
+                                f" | *Top factor:* {top.get('name')}" 
+                                if top and top.get("name") else ""
+                            )
                 }
             ],
         },
@@ -89,7 +92,8 @@ def _build_blocks(
             "type": "context",
             "elements": [
                 {"type": "mrkdwn",
-                 "text": "⚠️ This is a *support signal*, not a diagnosis. Use clinical judgment. No PHI included."}
+                 "text": "⚠️ This is a *support signal*, not a diagnosis. "
+                         "Use clinical judgment. No PHI included."}
             ],
         },
     ]
@@ -125,11 +129,17 @@ def send_clinician_alert(
 
     # Only send when risk high (configurable)
     if risk_score < RISK_HIGH_THRESHOLD:
-        logger.info("Risk below threshold — not alerting (score=%.2f < %.2f)", risk_score, RISK_HIGH_THRESHOLD)
+        logger.info(
+            "Risk below threshold — not alerting (score=%.2f < %.2f)", 
+            risk_score, 
+            RISK_HIGH_THRESHOLD
+        )
         return
 
     # Simple per-user throttle to avoid spam
-    cooldown = timedelta(minutes=(throttle_minutes if throttle_minutes is not None else ALERT_THROTTLE_MINUTES))
+    cooldown = timedelta(
+        minutes=(throttle_minutes if throttle_minutes is not None else ALERT_THROTTLE_MINUTES)
+    )
     now = datetime.utcnow()
     last = _last_sent_at.get(user_id)
     if last and (now - last) < cooldown:
@@ -144,14 +154,25 @@ def send_clinician_alert(
         _last_sent_at[user_id] = now
         logger.info("High-risk alert sent | user=%s | score=%.2f", user_id, risk_score)
     except httpx.HTTPStatusError as e:
-        logger.error("Slack webhook HTTP error %s: %s", e.response.status_code, e.response.text[:300])
+        logger.error(
+            "Slack webhook HTTP error %s: %s", 
+            e.response.status_code, 
+            e.response.text[:300]
+        )
     except httpx.RequestError as e:
         logger.error("Slack webhook network error: %s", str(e))
     except Exception as e:
         logger.error("Slack webhook unexpected error: %s", str(e))
 
 # Convenience: use inside a FastAPI route
-def queue_clinician_alert(background_tasks, *, user_id: str, risk_score: float, factors: List[Dict], suggested_action: str) -> None:
+def queue_clinician_alert(
+    background_tasks, 
+    *, 
+    user_id: str, 
+    risk_score: float, 
+    factors: List[Dict], 
+    suggested_action: str
+) -> None:
     background_tasks.add_task(
         send_clinician_alert,
         user_id=user_id,

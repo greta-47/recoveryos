@@ -1,9 +1,10 @@
 # briefing.py
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
-from typing import Dict, Any, List
-from datetime import datetime
 import logging
 import os
+from datetime import datetime
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 logger = logging.getLogger("recoveryos")
 
@@ -11,7 +12,7 @@ logger = logging.getLogger("recoveryos")
 # Optional consent hook (safe if consent.py is absent)
 # ----------------------
 try:
-    from consent import ConsentRecord, ConsentType, ConsentStatus, can_send_weekly  # type: ignore
+    from consent import ConsentRecord, ConsentStatus, ConsentType, can_send_weekly  # type: ignore
     _HAS_CONSENT = True
 except Exception:
     _HAS_CONSENT = False
@@ -180,10 +181,16 @@ Weekly RecoveryOS Briefing ({briefing['period']})
 - Avg Engagement: {briefing['summary']['avg_checkin_rate']}
 
 🚨 At-Risk Patients:
-{chr(10).join([f"• {p['name_display']} (Urge: {p['trend']['urge_avg']}) – {p['ai_insight']}" for p in at_risk]) or "• None in the last 7 days"}
+{chr(10).join([
+    f"• {p['name_display']} (Urge: {p['trend']['urge_avg']}) – {p['ai_insight']}" 
+    for p in at_risk
+]) or "• None in the last 7 days"}
 
 📈 Improvement Highlights:
-{chr(10).join([f"• {p['name_display']} Mood ↑{p['trend']['mood_change']} – {p['ai_insight']}" for p in improved]) or "• No significant improvements flagged"}
+{chr(10).join([
+    f"• {p['name_display']} Mood ↑{p['trend']['mood_change']} – {p['ai_insight']}" 
+    for p in improved
+]) or "• No significant improvements flagged"}
 
 💡 Team Insights:
 {chr(10).join([f"• {insight}" for insight in briefing['team_insights']])}
@@ -198,14 +205,22 @@ This briefing is de-identified and for clinical use only.
         subject = f"RecoveryOS Weekly Briefing – {briefing['report_date']}"
 
         # Queue async send
-        background_tasks.add_task(send_email_or_notification, subject=subject, body=body, recipients=recipients)
+        background_tasks.add_task(
+            send_email_or_notification, 
+            subject=subject, 
+            body=body, 
+            recipients=recipients
+        )
 
         logger.info("Weekly briefing generated and queued")
         return {"ok": True, "status": "briefing queued", "report_date": briefing["report_date"]}
 
     except Exception as e:
         logger.error(f"Weekly briefing failed | Error: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Briefing generation failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Briefing generation failed"
+        )
 
 # ----------------------
 # GET /briefings/weekly:preview  (no send)
@@ -217,7 +232,10 @@ def preview_weekly_briefing():
     Useful for testing or clinician review.
     """
     trends = _filter_by_consent(get_patient_trends_last_7d())
-    at_risk = [p for p in trends if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")]
+    at_risk = [
+        p for p in trends 
+        if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")
+    ]
     improved = [
         p for p in trends
         if (p["risk_flags"].get("rising_urge") is False)

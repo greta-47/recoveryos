@@ -9,21 +9,21 @@ main.py — RecoveryOS API (refactor Option B, copy-paste ready)
 - Optional routers: coping, briefing
 - Static UI mounting if folder exists
 """
+import json
+import logging
 import os
 import re
-import json
 import time
 import uuid
-import logging
 from datetime import datetime, timezone
 from hashlib import blake2b
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 
 # Import your multi-agent pipeline
@@ -49,7 +49,11 @@ except Exception:
 APP_NAME = os.getenv("APP_NAME", "RecoveryOS API")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 API_KEY = os.getenv("API_KEY")
-ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o]
+ALLOWED_ORIGINS = [
+    o for o in os.getenv(
+        "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(",") if o
+]
 
 # ---------------------------------------------------------------------------
 # Structured logging
@@ -100,7 +104,11 @@ def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI(title=APP_NAME, version=APP_VERSION, description="AI-powered relapse prevention platform")
+app = FastAPI(
+    title=APP_NAME, 
+    version=APP_VERSION, 
+    description="AI-powered relapse prevention platform"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -126,7 +134,10 @@ class Checkin(BaseModel):
 class AgentsIn(BaseModel):
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
-    okrs: str = Field(default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", max_length=500)
+    okrs: str = Field(
+        default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", 
+        max_length=500
+    )
 
 # ---------------------------------------------------------------------------
 # Middleware
@@ -135,15 +146,45 @@ class AgentsIn(BaseModel):
 async def add_request_id(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     client_fp = safe_client_fingerprint(request)
-    logger.info("request", extra={"extra": {"path": request.url.path, "method": request.method, "request_id": request_id, "client_fp": client_fp}})
+    logger.info(
+        "request", 
+        extra={"extra": {
+            "path": request.url.path, 
+            "method": request.method, 
+            "request_id": request_id, 
+            "client_fp": client_fp
+        }}
+    )
     try:
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
-        logger.info("response", extra={"extra": {"path": request.url.path, "status": response.status_code, "request_id": request_id, "client_fp": client_fp}})
+        logger.info(
+            "response", 
+            extra={"extra": {
+                "path": request.url.path, 
+                "status": response.status_code, 
+                "request_id": request_id, 
+                "client_fp": client_fp
+            }}
+        )
         return response
     except Exception:
-        logger.exception("unhandled_error", extra={"extra": {"path": request.url.path, "request_id": request_id, "client_fp": client_fp}})
-        return JSONResponse(status_code=500, content={"error": {"type": "server_error", "message": "Unexpected error", "request_id": request_id}})
+        logger.exception(
+            "unhandled_error", 
+            extra={"extra": {
+                "path": request.url.path, 
+                "request_id": request_id, 
+                "client_fp": client_fp
+            }}
+        )
+        return JSONResponse(
+            status_code=500, 
+            content={"error": {
+                "type": "server_error", 
+                "message": "Unexpected error", 
+                "request_id": request_id
+            }}
+        )
 
 # ---------------------------------------------------------------------------
 # Exception handlers
@@ -151,12 +192,27 @@ async def add_request_id(request: Request, call_next):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     request_id = request.headers.get("X-Request-ID", "")
-    return JSONResponse(status_code=422, content={"error": {"type": "validation_error", "message": "Invalid request payload", "fields": exc.errors(), "request_id": request_id}})
+    return JSONResponse(
+        status_code=422, 
+        content={"error": {
+            "type": "validation_error", 
+            "message": "Invalid request payload", 
+            "fields": exc.errors(), 
+            "request_id": request_id
+        }}
+    )
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     request_id = request.headers.get("X-Request-ID", "")
-    return JSONResponse(status_code=exc.status_code, content={"error": {"type": "http_error", "message": exc.detail, "request_id": request_id}})
+    return JSONResponse(
+        status_code=exc.status_code, 
+        content={"error": {
+            "type": "http_error", 
+            "message": exc.detail, 
+            "request_id": request_id
+        }}
+    )
 
 # ---------------------------------------------------------------------------
 # Routes
@@ -180,8 +236,23 @@ def create_checkin(checkin: Checkin, request: Request):
         tool = "Sleep Hygiene Tip: Try a 10-minute body scan"
     else:
         tool = "Breathing — Box breathing 4x4"
-    logger.info("checkin", extra={"extra": {"request_id": request_id, "urge": checkin.urge, "mood": checkin.mood, "tool": tool, "client_fp": safe_client_fingerprint(request)}})
-    return {"message": "Check-in received", "tool": tool, "data": checkin.dict(), "timestamp": now_iso(), "request_id": request_id}
+    logger.info(
+        "checkin", 
+        extra={"extra": {
+            "request_id": request_id, 
+            "urge": checkin.urge, 
+            "mood": checkin.mood, 
+            "tool": tool, 
+            "client_fp": safe_client_fingerprint(request)
+        }}
+    )
+    return {
+        "message": "Check-in received", 
+        "tool": tool, 
+        "data": checkin.dict(), 
+        "timestamp": now_iso(), 
+        "request_id": request_id
+    }
 
 @app.post("/agents/run", dependencies=[Depends(api_key_auth)])
 def agents_run(body: AgentsIn, request: Request):
@@ -195,10 +266,13 @@ def agents_run(body: AgentsIn, request: Request):
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
             if key in result and isinstance(result[key], str):
                 if re.search(r"patient \\d+|name:|DOB:", result[key], re.I):
-                    logger.warning("PHI detected", extra={"extra": {"request_id": request_id, "field": key}})
+                    logger.warning(
+                        "PHI detected", 
+                        extra={"extra": {"request_id": request_id, "field": key}}
+                    )
                     result[key] = "[REDACTED] Output may contain sensitive data."
         return {**result, "request_id": request_id, "timestamp": now_iso()}
-    except Exception as e:
+    except Exception:
         logger.exception("agent_error", extra={"extra": {"request_id": request_id}})
         raise HTTPException(status_code=500, detail="Internal agent error — please try again")
 
@@ -221,4 +295,10 @@ except Exception:
 # Entrypoint
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")), reload=True, proxy_headers=True)
+    uvicorn.run(
+        "main:app", 
+        host="0.0.0.0", 
+        port=int(os.getenv("PORT", "8000")), 
+        reload=True, 
+        proxy_headers=True
+    )

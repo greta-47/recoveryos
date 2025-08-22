@@ -1,12 +1,12 @@
 # rag.py
 from __future__ import annotations
 
-import os
 import json
 import logging
+import os
 import threading
-from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -128,7 +128,11 @@ def _ensure_store_shapes(dim: int) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
             emb = np.load(EMBEDDINGS_FILE, mmap_mode=None)
             meta = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
             if emb.ndim != 2 or emb.shape[1] != dim:
-                logger.warning("Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.", emb.shape, dim)
+                logger.warning(
+                    "Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.", 
+                    emb.shape, 
+                    dim
+                )
                 return np.empty((0, dim), dtype=np.float32), []
             if len(meta) != emb.shape[0]:
                 logger.warning("Metadata length mismatch with embeddings. Rebuilding store.")
@@ -150,7 +154,9 @@ def _save_store(emb: np.ndarray, meta: List[Dict[str, Any]], dim: int) -> None:
 
 def _encode_texts(texts: List[str]) -> np.ndarray:
     model = _get_model()
-    vectors = model.encode(texts, show_progress_bar=False, normalize_embeddings=False)  # we normalize ourselves
+    vectors = model.encode(
+        texts, show_progress_bar=False, normalize_embeddings=False
+    )
     vectors = np.array(vectors, dtype=np.float32)
     return _normalize(vectors)
 
@@ -207,7 +213,6 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         logger.warning("No documents provided to ingest.")
         return
 
-    model = _get_model()
     dim = _DIM or 384  # fallback
 
     with _STORE_LOCK:
@@ -255,7 +260,12 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         # Save
         _save_store(emb, meta, dim)
 
-        logger.info("✅ Ingested %s chunks from %s docs (total=%s)", len(new_meta), len(documents), emb.shape[0])
+        logger.info(
+            "✅ Ingested %s chunks from %s docs (total=%s)", 
+            len(new_meta), 
+            len(documents), 
+            emb.shape[0]
+        )
 
 
 def retrieve(
@@ -272,7 +282,6 @@ def retrieve(
     if not query or not query.strip():
         return []
 
-    model = _get_model()
     dim = _DIM or 384
 
     if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
@@ -308,7 +317,13 @@ def retrieve(
             results.append(item)
 
         top = max((r["score"] for r in results), default=0.0)
-        logger.info("RAG retrieved %s results | k=%s | top=%.3f | query='%s'", len(results), k, top, query[:120])
+        logger.info(
+            "RAG retrieved %s results | k=%s | top=%.3f | query='%s'", 
+            len(results), 
+            k, 
+            top, 
+            query[:120]
+        )
         return results
 
     except Exception as e:
@@ -337,17 +352,28 @@ if __name__ == "__main__":
         {
             "id": "harm-reduction-101",
             "title": "Harm Reduction Principles",
-            "content": "Harm reduction meets patients where they are. It prioritizes safety, dignity, and incremental progress over abstinence-only goals. Key practices: needle exchange, naloxone access, non-judgmental engagement."
+            "content": (
+                "Harm reduction meets patients where they are. It prioritizes safety, "
+                "dignity, and incremental progress over abstinence-only goals. "
+                "Key practices: needle exchange, naloxone access, non-judgmental engagement."
+            )
         },
         {
             "id": "de-escalation",
             "title": "De-escalation Techniques",
-            "content": "Use a soft tone, non-threatening posture, and active listening. Offer choices to restore sense of control. Validate feelings without agreeing. 'I see this is really hard' is better than 'Calm down.'"
+            "content": (
+                "Use a soft tone, non-threatening posture, and active listening. "
+                "Offer choices to restore sense of control. Validate feelings without agreeing. "
+                "'I see this is really hard' is better than 'Calm down.'"
+            )
         },
         {
             "id": "urge-surfing",
             "title": "Urge Surfing Technique",
-            "content": "Teach patients to visualize cravings as waves: they rise, peak, and fall. Encourage riding the urge without acting. Mindfulness and breath are key tools."
+            "content": (
+                "Teach patients to visualize cravings as waves: they rise, peak, and fall. "
+                "Encourage riding the urge without acting. Mindfulness and breath are key tools."
+            )
         }
     ]
 
