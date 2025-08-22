@@ -7,11 +7,18 @@ from ..services.risk_model import explain, score
 from ..services.tools_engine import suggest_tool
 
 router = APIRouter(prefix="/checkins", tags=["checkins"])
+
+
 @router.post("", response_model=SuggestionOut)
 def create_checkin(data: CheckinIn, session=Depends(get_session)):
-    chk = Checkin(user_id=1, mood=data.mood, urge=data.urge,
-                  sleep_hours=data.sleep_hours, isolation_score=data.isolation_score,
-                  notes=data.notes or "")
+    chk = Checkin(
+        user_id=1,
+        mood=data.mood,
+        urge=data.urge,
+        sleep_hours=data.sleep_hours,
+        isolation_score=data.isolation_score,
+        notes=data.notes or "",
+    )
     session.add(chk)
     session.commit()
     tool = suggest_tool(data.mood, data.urge, data.sleep_hours, data.isolation_score)

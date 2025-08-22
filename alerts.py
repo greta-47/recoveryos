@@ -17,6 +17,7 @@ ALERT_THROTTLE_MINUTES = int(os.getenv("ALERT_THROTTLE_MINUTES", "30"))  # per u
 # In-memory throttle map (simple, process-local)
 _last_sent_at: dict[str, datetime] = {}
 
+
 def _risk_level(score: float) -> str:
     if score >= 9:
         return "Severe"
@@ -26,10 +27,12 @@ def _risk_level(score: float) -> str:
         return "Moderate"
     return "Low"
 
+
 def _sanitize_user(user_id: str) -> str:
     # Enforce de-identification in Slack: no emails/phones/real names
     uid = (user_id or "anon").strip()
     return uid if uid.startswith("anon-") else f"anon-{uid[-6:]}"
+
 
 def _build_blocks(
     user_id: str,
@@ -72,10 +75,7 @@ def _build_blocks(
                 {
                     "type": "mrkdwn",
                     "text": f"*Score:* {risk_score:.1f}/10"
-                            + (
-                                f" | *Top factor:* {top.get('name')}" 
-                                if top and top.get("name") else ""
-                            )
+                    + (f" | *Top factor:* {top.get('name')}" if top and top.get("name") else ""),
                 }
             ],
         },
@@ -91,12 +91,15 @@ def _build_blocks(
         {
             "type": "context",
             "elements": [
-                {"type": "mrkdwn",
-                 "text": "⚠️ This is a *support signal*, not a diagnosis. "
-                         "Use clinical judgment. No PHI included."}
+                {
+                    "type": "mrkdwn",
+                    "text": "⚠️ This is a *support signal*, not a diagnosis. "
+                    "Use clinical judgment. No PHI included.",
+                }
             ],
         },
     ]
+
 
 @retry(
     retry=retry_if_exception_type(httpx.RequestError),
@@ -108,6 +111,7 @@ def _post_to_slack(webhook: str, payload: Dict) -> None:
     with httpx.Client(timeout=5.0) as client:
         r = client.post(webhook, json=payload)
         r.raise_for_status()
+
 
 def send_clinician_alert(
     user_id: str,
@@ -130,9 +134,9 @@ def send_clinician_alert(
     # Only send when risk high (configurable)
     if risk_score < RISK_HIGH_THRESHOLD:
         logger.info(
-            "Risk below threshold — not alerting (score=%.2f < %.2f)", 
-            risk_score, 
-            RISK_HIGH_THRESHOLD
+            "Risk below threshold — not alerting (score=%.2f < %.2f)",
+            risk_score,
+            RISK_HIGH_THRESHOLD,
         )
         return
 
@@ -155,23 +159,17 @@ def send_clinician_alert(
         logger.info("High-risk alert sent | user=%s | score=%.2f", user_id, risk_score)
     except httpx.HTTPStatusError as e:
         logger.error(
-            "Slack webhook HTTP error %s: %s", 
-            e.response.status_code, 
-            e.response.text[:300]
+            "Slack webhook HTTP error %s: %s", e.response.status_code, e.response.text[:300]
         )
     except httpx.RequestError as e:
         logger.error("Slack webhook network error: %s", str(e))
     except Exception as e:
         logger.error("Slack webhook unexpected error: %s", str(e))
 
+
 # Convenience: use inside a FastAPI route
 def queue_clinician_alert(
-    background_tasks, 
-    *, 
-    user_id: str, 
-    risk_score: float, 
-    factors: List[Dict], 
-    suggested_action: str
+    background_tasks, *, user_id: str, risk_score: float, factors: List[Dict], suggested_action: str
 ) -> None:
     background_tasks.add_task(
         send_clinician_alert,
@@ -180,5 +178,6 @@ def queue_clinician_alert(
         factors=factors,
         suggested_action=suggested_action,
     )
+
 
 __all__ = ["send_clinician_alert", "queue_clinician_alert"]

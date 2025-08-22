@@ -11,6 +11,8 @@ app.include_router(supporters.router)
 app.include_router(risk.router)
 app.include_router(briefings.router)
 app.include_router(admin_clinician.router)
+
+
 @app.get("/")
 def root():
     return {"ok": True, "service": "RecoveryOS"}

@@ -13,13 +13,17 @@ logger = logging.getLogger("recoveryos")
 # ----------------------
 try:
     from consent import ConsentRecord, ConsentStatus, ConsentType, can_send_weekly  # type: ignore
+
     _HAS_CONSENT = True
 except Exception:
     _HAS_CONSENT = False
+
     class ConsentType:  # minimal shim
         WEEKLY_BRIEFING = "weekly_briefing"
+
     def can_send_weekly(_):  # always allow if no consent module
         return True
+
 
 # ----------------------
 # Mock Data Source (Replace with DB or API)
@@ -31,21 +35,17 @@ def get_patient_trends_last_7d() -> List[Dict[str, Any]]:
     """
     return [
         {
-            "user_id": "usr-101",                 # de-identified ID
-            "name_display": "Patient J",          # pseudonym only
+            "user_id": "usr-101",  # de-identified ID
+            "name_display": "Patient J",  # pseudonym only
             "recovery_days": 54,
             "trend": {
                 "mood_change": "+0.8",
                 "urge_avg": 2.7,
                 "sleep_improvement": True,
-                "checkin_rate": "85%"
+                "checkin_rate": "85%",
             },
-            "risk_flags": {
-                "rising_urge": False,
-                "isolation_risk": True,
-                "engagement_drop": False
-            },
-            "ai_insight": "Improved sleep correlates with lower urge scores."
+            "risk_flags": {"rising_urge": False, "isolation_risk": True, "engagement_drop": False},
+            "ai_insight": "Improved sleep correlates with lower urge scores.",
         },
         {
             "user_id": "usr-102",
@@ -55,16 +55,13 @@ def get_patient_trends_last_7d() -> List[Dict[str, Any]]:
                 "mood_change": "-1.2",
                 "urge_avg": 4.1,
                 "sleep_improvement": False,
-                "checkin_rate": "40%"
+                "checkin_rate": "40%",
             },
-            "risk_flags": {
-                "rising_urge": True,
-                "isolation_risk": False,
-                "engagement_drop": True
-            },
-            "ai_insight": "Urge scores rising for 4 days. Last check-in 3 days ago."
-        }
+            "risk_flags": {"rising_urge": True, "isolation_risk": False, "engagement_drop": True},
+            "ai_insight": "Urge scores rising for 4 days. Last check-in 3 days ago.",
+        },
     ]
+
 
 # ----------------------
 # Minimal notifier (replace with SendGrid/SES, Slack, etc.)
@@ -77,6 +74,7 @@ def send_email_or_notification(subject: str, body: str, recipients: List[str]) -
     logger.info(f"📬 Simulated send | To: {recipients} | Subject: {subject}")
     logger.debug(f"Body: {body}")
 
+
 # ----------------------
 # Helpers
 # ----------------------
@@ -86,11 +84,13 @@ def _pct_int(s: str) -> int:
     except Exception:
         return 0
 
+
 def _safe_avg_checkin_rate(trends: List[Dict[str, Any]]) -> str:
     if not trends:
         return "0%"
     vals = [_pct_int(p["trend"].get("checkin_rate", "0%")) for p in trends]
     return f"{int(sum(vals) / max(1, len(vals)))}%"
+
 
 def _filter_by_consent(trends: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
@@ -107,7 +107,7 @@ def _filter_by_consent(trends: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         cr = ConsentRecord(
             user_id=p["user_id"],
             consent_type=ConsentType.WEEKLY_BRIEFING,
-            status=ConsentStatus.GIVEN
+            status=ConsentStatus.GIVEN,
         )
         if can_send_weekly(cr):
             filtered.append(p)
@@ -115,10 +115,12 @@ def _filter_by_consent(trends: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             logger.info("Excluded from weekly briefing (no consent) | User=%s", p["user_id"])
     return filtered
 
+
 # ----------------------
 # Router
 # ----------------------
 router = APIRouter(prefix="/briefings", tags=["briefings"])
+
 
 # ----------------------
 # POST /briefings/weekly:run  (async send)
@@ -137,11 +139,13 @@ def run_weekly_briefing(background_tasks: BackgroundTasks):
 
         # Prioritization
         at_risk = [
-            p for p in trends
+            p
+            for p in trends
             if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")
         ]
         improved = [
-            p for p in trends
+            p
+            for p in trends
             if (p["risk_flags"].get("rising_urge") is False)
             and (str(p["trend"].get("mood_change", "0")).replace("+", "") not in {"", "0"})
             and (float(str(p["trend"]["mood_change"]).replace("+", "")) >= 0.5)
@@ -161,13 +165,13 @@ def run_weekly_briefing(background_tasks: BackgroundTasks):
             "team_insights": [
                 "Sleep quality strongly correlates with urge reduction.",
                 "Patients with <50% check-in rate are more likely to show rising urges.",
-                "Consider a short group session on sleep hygiene."
+                "Consider a short group session on sleep hygiene.",
             ],
             "recommended_actions": [
                 "Follow up with at-risk patients within 24h.",
                 "Acknowledge progress with improving patients.",
-                "Review isolation risk protocols."
-            ]
+                "Review isolation risk protocols.",
+            ],
         }
 
         # Build de-identified message body
@@ -206,10 +210,7 @@ This briefing is de-identified and for clinical use only.
 
         # Queue async send
         background_tasks.add_task(
-            send_email_or_notification, 
-            subject=subject, 
-            body=body, 
-            recipients=recipients
+            send_email_or_notification, subject=subject, body=body, recipients=recipients
         )
 
         logger.info("Weekly briefing generated and queued")
@@ -218,9 +219,9 @@ This briefing is de-identified and for clinical use only.
     except Exception as e:
         logger.error(f"Weekly briefing failed | Error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Briefing generation failed"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Briefing generation failed"
         )
+
 
 # ----------------------
 # GET /briefings/weekly:preview  (no send)
@@ -233,11 +234,13 @@ def preview_weekly_briefing():
     """
     trends = _filter_by_consent(get_patient_trends_last_7d())
     at_risk = [
-        p for p in trends 
+        p
+        for p in trends
         if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")
     ]
     improved = [
-        p for p in trends
+        p
+        for p in trends
         if (p["risk_flags"].get("rising_urge") is False)
         and (float(str(p["trend"].get("mood_change", "0")).replace("+", "")) >= 0.5)
     ]
@@ -252,4 +255,3 @@ def preview_weekly_briefing():
         "sample_at_risk": at_risk[:1],
         "sample_improved": improved[:1],
     }
-

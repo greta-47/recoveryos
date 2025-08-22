@@ -20,9 +20,9 @@ RAG_DEVICE = os.getenv("RAG_DEVICE", "cpu")  # "cpu" or "cuda"
 RAG_DIR = Path(os.getenv("RAG_STORE_DIR", "rag_store"))
 RAG_DIR.mkdir(parents=True, exist_ok=True)
 
-EMBEDDINGS_FILE = RAG_DIR / "embeddings.npy"   # shape: (N, d) float32 (normalized)
-METADATA_FILE   = RAG_DIR / "metadata.json"    # list[Dict]
-MANIFEST_FILE   = RAG_DIR / "manifest.json"    # {model, dim, count, updated_at}
+EMBEDDINGS_FILE = RAG_DIR / "embeddings.npy"  # shape: (N, d) float32 (normalized)
+METADATA_FILE = RAG_DIR / "metadata.json"  # list[Dict]
+MANIFEST_FILE = RAG_DIR / "manifest.json"  # {model, dim, count, updated_at}
 
 # Thread lock to avoid concurrent writers
 _STORE_LOCK = threading.Lock()
@@ -83,6 +83,7 @@ def _save_manifest(model_name: str, dim: int, count: int) -> None:
 
 def _now_iso() -> str:
     from datetime import datetime
+
     return datetime.utcnow().isoformat() + "Z"
 
 
@@ -129,9 +130,9 @@ def _ensure_store_shapes(dim: int) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
             meta = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
             if emb.ndim != 2 or emb.shape[1] != dim:
                 logger.warning(
-                    "Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.", 
-                    emb.shape, 
-                    dim
+                    "Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.",
+                    emb.shape,
+                    dim,
                 )
                 return np.empty((0, dim), dtype=np.float32), []
             if len(meta) != emb.shape[0]:
@@ -154,9 +155,7 @@ def _save_store(emb: np.ndarray, meta: List[Dict[str, Any]], dim: int) -> None:
 
 def _encode_texts(texts: List[str]) -> np.ndarray:
     model = _get_model()
-    vectors = model.encode(
-        texts, show_progress_bar=False, normalize_embeddings=False
-    )
+    vectors = model.encode(texts, show_progress_bar=False, normalize_embeddings=False)
     vectors = np.array(vectors, dtype=np.float32)
     return _normalize(vectors)
 
@@ -231,15 +230,17 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
             chunks = _chunk_text(content) if chunk else [content]
             for i, c in enumerate(chunks):
                 texts.append(c)
-                new_meta.append({
-                    "id": f"{doc_id}#{i}" if len(chunks) > 1 else doc_id,
-                    "doc_id": doc_id,
-                    "title": title,
-                    "content": c,
-                    "chunk_index": i,
-                    "source": doc.get("source"),
-                    "tags": doc.get("tags"),
-                })
+                new_meta.append(
+                    {
+                        "id": f"{doc_id}#{i}" if len(chunks) > 1 else doc_id,
+                        "doc_id": doc_id,
+                        "title": title,
+                        "content": c,
+                        "chunk_index": i,
+                        "source": doc.get("source"),
+                        "tags": doc.get("tags"),
+                    }
+                )
 
         if not texts:
             logger.warning("No text content to embed after preprocessing.")
@@ -261,10 +262,10 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         _save_store(emb, meta, dim)
 
         logger.info(
-            "✅ Ingested %s chunks from %s docs (total=%s)", 
-            len(new_meta), 
-            len(documents), 
-            emb.shape[0]
+            "✅ Ingested %s chunks from %s docs (total=%s)",
+            len(new_meta),
+            len(documents),
+            emb.shape[0],
         )
 
 
@@ -318,11 +319,11 @@ def retrieve(
 
         top = max((r["score"] for r in results), default=0.0)
         logger.info(
-            "RAG retrieved %s results | k=%s | top=%.3f | query='%s'", 
-            len(results), 
-            k, 
-            top, 
-            query[:120]
+            "RAG retrieved %s results | k=%s | top=%.3f | query='%s'",
+            len(results),
+            k,
+            top,
+            query[:120],
         )
         return results
 
@@ -356,7 +357,7 @@ if __name__ == "__main__":
                 "Harm reduction meets patients where they are. It prioritizes safety, "
                 "dignity, and incremental progress over abstinence-only goals. "
                 "Key practices: needle exchange, naloxone access, non-judgmental engagement."
-            )
+            ),
         },
         {
             "id": "de-escalation",
@@ -365,7 +366,7 @@ if __name__ == "__main__":
                 "Use a soft tone, non-threatening posture, and active listening. "
                 "Offer choices to restore sense of control. Validate feelings without agreeing. "
                 "'I see this is really hard' is better than 'Calm down.'"
-            )
+            ),
         },
         {
             "id": "urge-surfing",
@@ -373,8 +374,8 @@ if __name__ == "__main__":
             "content": (
                 "Teach patients to visualize cravings as waves: they rise, peak, and fall. "
                 "Encourage riding the urge without acting. Mindfulness and breath are key tools."
-            )
-        }
+            ),
+        },
     ]
 
     # Ingest once (append-safe)
@@ -384,4 +385,3 @@ if __name__ == "__main__":
     hits = retrieve("How do I help a patient with strong urges?")
     for r in hits:
         print(f"📄 {r['title']} (Score: {r['score']:.2f})\n{r['content']}\n")
-
