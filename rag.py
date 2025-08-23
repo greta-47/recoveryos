@@ -129,7 +129,11 @@ def _ensure_store_shapes(dim: int) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
             emb = np.load(EMBEDDINGS_FILE, mmap_mode=None)
             meta = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
             if emb.ndim != 2 or emb.shape[1] != dim:
-                logger.warning("Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.", emb.shape, dim)
+                logger.warning(
+                    "Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.",
+                    emb.shape,
+                    dim,
+                )
                 return np.empty((0, dim), dtype=np.float32), []
             if len(meta) != emb.shape[0]:
                 logger.warning("Metadata length mismatch with embeddings. Rebuilding store.")
@@ -208,7 +212,7 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         logger.warning("No documents provided to ingest.")
         return
 
-    model = _get_model()
+    _get_model()
     dim = _DIM or 384  # fallback
 
     with _STORE_LOCK:
@@ -258,7 +262,12 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         # Save
         _save_store(emb, meta, dim)
 
-        logger.info("✅ Ingested %s chunks from %s docs (total=%s)", len(new_meta), len(documents), emb.shape[0])
+        logger.info(
+            "✅ Ingested %s chunks from %s docs (total=%s)",
+            len(new_meta),
+            len(documents),
+            emb.shape[0],
+        )
 
 
 def retrieve(
@@ -275,7 +284,7 @@ def retrieve(
     if not query or not query.strip():
         return []
 
-    model = _get_model()
+    _get_model()
     dim = _DIM or 384
 
     if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
@@ -311,7 +320,13 @@ def retrieve(
             results.append(item)
 
         top = max((r["score"] for r in results), default=0.0)
-        logger.info("RAG retrieved %s results | k=%s | top=%.3f | query='%s'", len(results), k, top, query[:120])
+        logger.info(
+            "RAG retrieved %s results | k=%s | top=%.3f | query='%s'",
+            len(results),
+            k,
+            top,
+            query[:120],
+        )
         return results
 
     except Exception as e:

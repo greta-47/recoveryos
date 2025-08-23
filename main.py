@@ -1,13 +1,13 @@
 """
-main.py — RecoveryOS API (refactor Option B, copy-paste ready)
+main.py — RecoveryOS API (refactor, copy-paste ready)
 
 - Env-driven config (APP_NAME, APP_VERSION, API_KEY, CORS_ORIGINS)
 - Structured JSON logging with request IDs + safe client fingerprinting
 - Optional API key auth via X-API-Key (disable by omitting API_KEY)
 - /healthz, /checkins, /agents/run endpoints
 - Guardrails: prompt-injection filter, PHI redaction
-- Optional routers: coping, briefing
-- Static UI mounting if folder exists
+- Optional routers: coping, briefing(s)
+- Static UI mounting if 'ui/' exists
 """
 
 import json
@@ -27,35 +27,18 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-# Import your multi-agent pipeline
-try:
-    from agents import run_multi_agent
-except Exception:
-    run_multi_agent = None
-
-# Optional routers
-try:
-    from coping import router as coping_router
-except Exception:
-    coping_router = None
-
-try:
-    from briefing import router as briefing_router
-except Exception:
-    briefing_router = None
-
-# ---------------------------------------------------------------------------
+# ----------------------
 # Settings
-# ---------------------------------------------------------------------------
+# ----------------------
 APP_NAME = os.getenv("APP_NAME", "RecoveryOS API")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 API_KEY = os.getenv("API_KEY")
 ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o]
 
 
-# ---------------------------------------------------------------------------
+# ----------------------
 # Structured logging
-# ---------------------------------------------------------------------------
+# ----------------------
 class JsonLogFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         base = {
@@ -64,6 +47,7 @@ class JsonLogFormatter(logging.Formatter):
             "logger": record.name,
             "time": int(time.time() * 1000),
         }
+        # Allow structured extras via record.extra dict
         if hasattr(record, "extra") and isinstance(record.extra, dict):
             base.update(record.extra)
         if record.exc_info:
@@ -74,14 +58,14 @@ class JsonLogFormatter(logging.Formatter):
 logger = logging.getLogger("recoveryos")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
-    h = logging.StreamHandler()
-    h.setFormatter(JsonLogFormatter())
-    logger.addHandler(h)
+    _h = logging.StreamHandler()
+    _h.setFormatter(JsonLogFormatter())
+    logger.addHandler(_h)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------
 # Utils
-# ---------------------------------------------------------------------------
+# ----------------------
 def safe_client_fingerprint(request: Request) -> str:
     host = request.client.host if request.client else "unknown"
     coarse_ts = int(time.time() // 60)
@@ -94,19 +78,48 @@ def now_iso() -> str:
     return datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-# ---------------------------------------------------------------------------
+# ----------------------
+# Optional imports
+# ----------------------
+try:
+    from agents import run_multi_agent  # type: ignore
+except Exception:
+    run_multi_agent = None  # type: ignore[assignment]
+
+try:
+    from coping import router as coping_router  # type: ignore
+except Exception:
+    coping_router = None  # type: ignore[assignment]
+
+# Support either file name: briefings.py or briefing.py
+briefing_router = None
+try:
+    from briefings import router as _briefings_router  # type: ignore
+
+    briefing_router = _briefings_router
+except Exception:
+    try:
+        from briefing import router as _briefing_router  # type: ignore
+
+        briefing_router = _briefing_router
+    except Exception:
+        briefing_router = None  # type: ignore[assignment]
+
+
+# ----------------------
 # Auth
-# ---------------------------------------------------------------------------
+# ----------------------
 def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
+    # If API_KEY is not set, auth is disabled
     if API_KEY is None:
         return
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
-# ---------------------------------------------------------------------------
-# App
-# ---------------------------------------------------------------------------
+# ----------------------
+# App & Middleware
+# ----------------------
 app = FastAPI(title=APP_NAME, version=APP_VERSION, description="AI-powered relapse prevention platform")
 
 app.add_middleware(
@@ -122,25 +135,28 @@ if os.path.isdir("ui"):
     app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
 
 
-# ---------------------------------------------------------------------------
+# ----------------------
 # Models
-# ---------------------------------------------------------------------------
+# ----------------------
 class Checkin(BaseModel):
-    mood: int = Field(..., ge=1, le=5)
-    urge: int = Field(..., ge=1, le=5)
-    sleep_hours: float = Field(0, ge=0, le=24)
-    isolation_score: int = Field(0, ge=0, le=5)
+    mood: int = Field(..., ge=1, le=5, description="Mood level: 1 (struggling) to 5 (strong)")
+    urge: int = Field(..., ge=1, le=5, description="Urge to use: 1 (low) to 5 (high)")
+    sleep_hours: float = Field(0, ge=0, le=24, description="Hours slept last night")
+    isolation_score: int = Field(0, ge=0, le=5, description="Social connection: 0 (isolated) to 5 (connected)")
 
 
 class AgentsIn(BaseModel):
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
-    okrs: str = Field(default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", max_length=500)
+    okrs: str = Field(
+        default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%",
+        max_length=500,
+    )
 
 
-# ---------------------------------------------------------------------------
-# Middleware
-# ---------------------------------------------------------------------------
+# ----------------------
+# Middleware (request/response logging with request ID)
+# ----------------------
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
@@ -182,9 +198,9 @@ async def add_request_id(request: Request, call_next):
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------
 # Exception handlers
-# ---------------------------------------------------------------------------
+# ----------------------
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     request_id = request.headers.get("X-Request-ID", "")
@@ -210,9 +226,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------
 # Routes
-# ---------------------------------------------------------------------------
+# ----------------------
 @app.get("/", response_class=JSONResponse)
 def root():
     return {"ok": True, "service": APP_NAME, "version": APP_VERSION, "timestamp": now_iso()}
@@ -260,30 +276,36 @@ def agents_run(body: AgentsIn, request: Request):
     request_id = str(uuid.uuid4())
     if run_multi_agent is None:
         raise HTTPException(status_code=503, detail="Agent pipeline unavailable")
+    # Simple prompt-injection / sensitive term guard
     if re.search(r"password|token|secret|PHI", body.topic, re.I):
         raise HTTPException(status_code=400, detail="Invalid topic — restricted keywords detected")
     try:
         result = run_multi_agent(body.topic, body.horizon, body.okrs)
+        # De-identification scan
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
             if key in result and isinstance(result[key], str):
-                if re.search(r"patient \\d+|name:|DOB:", result[key], re.I):
+                if re.search(r"patient \d+|name:|DOB:", result[key], re.I):
                     logger.warning("PHI detected", extra={"extra": {"request_id": request_id, "field": key}})
                     result[key] = "[REDACTED] Output may contain sensitive data."
         return {**result, "request_id": request_id, "timestamp": now_iso()}
-    except Exception as e:
+    except Exception:
         logger.exception("agent_error", extra={"extra": {"request_id": request_id}})
         raise HTTPException(status_code=500, detail="Internal agent error — please try again")
 
 
+# ----------------------
 # Optional routers
+# ----------------------
 if coping_router:
     app.include_router(coping_router)
 if briefing_router:
     app.include_router(briefing_router)
 
+# ----------------------
 # Optional metrics (soft dependency)
+# ----------------------
 try:
-    from starlette_exporter import PrometheusMiddleware, handle_metrics
+    from starlette_exporter import PrometheusMiddleware, handle_metrics  # type: ignore
 
     app.add_middleware(PrometheusMiddleware)
     app.add_route("/metrics", handle_metrics)
@@ -294,8 +316,16 @@ except Exception:
         return PlainTextResponse("starlette_exporter not installed")
 
 
+# ----------------------
 # Entrypoint
+# ----------------------
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")), reload=True, proxy_headers=True)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "8000")),
+        reload=True,
+        proxy_headers=True,
+    )

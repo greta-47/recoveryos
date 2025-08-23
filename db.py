@@ -36,8 +36,8 @@ def create_db_engine():
     engine_kwargs = {}
 
     if is_sqlite:
-        connect_args["check_same_thread"] = False  # Required for async
-        engine_kwargs["echo"] = False  # Set to True only in dev
+        connect_args["check_same_thread"] = False  # Required for async-style usage
+        engine_kwargs["echo"] = False  # Set to True only in local debugging
     elif is_postgres:
         # Connection pooling for production
         engine_kwargs["pool_size"] = 10
@@ -59,7 +59,14 @@ def init_db():
     Create all tables.
     Call once at startup.
     """
-    from .models import Checkin, ConsentRecord, RiskEvent, Supporter, Tool, User  # noqa
+    from .models import Checkin, ConsentRecord, RiskEvent, Supporter, Tool, User  # noqa: F401
+
+    # Optional models from separate modules; safe to ignore if absent
+    try:
+        from user_profiles import UserProfile  # noqa: F401
+        from interaction_history import InteractionHistory  # noqa: F401
+    except ImportError:
+        pass
 
     SQLModel.metadata.create_all(engine)
     logger.info("✅ Database initialized — all tables created or verified")

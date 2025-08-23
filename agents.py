@@ -1,4 +1,3 @@
-# agents.py
 import json
 import logging
 import os
@@ -6,14 +5,17 @@ import re
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from openai import APIError, OpenAI, RateLimitError
 
 # ----------------------
 # Logging
 # ----------------------
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 logger = logging.getLogger("recoveryos")
 
 # ----------------------
@@ -35,9 +37,12 @@ SYSTEM = """You are a coordinated multi-agent team for RecoveryOS (BC, Canada).
 Agents: Researcher, Analyst, Critic (BC compliance), Strategist, Advisor.
 Core principles:
 - Trauma-informed, professional, decision-ready
+- Deep clinical reasoning for complex cases (dual diagnosis, poly-substance, trauma)
+- Evidence-based pathways and interventions
 - No clinical diagnosis or crisis advice
 - Cite sources, note assumptions, keep concise
 - Never include PHI or patient identifiers
+- Personalized responses based on user profile and history
 - All outputs must be de-identified and audit-safe
 """
 
@@ -248,10 +253,13 @@ def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
             resp = client.chat.completions.create(
                 model=model,
                 temperature=0.3,
-                messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": content}],
+                messages=[
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": content},
+                ],
                 timeout=15,
             )
-            return resp.choices[0].message.content
+            return resp.choices[0].message.content or ""
         except RateLimitError:
             wait = 2**attempt
             time.sleep(wait)
@@ -314,7 +322,9 @@ def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
 # ----------------------
 # Pipeline
 # ----------------------
-def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
+def run_multi_agent(
+    topic: str, horizon: str, okrs: str, user_context: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     request_id = str(uuid.uuid4())
     logger.info(f"Agent pipeline started | ID={request_id} | Topic='{topic}'")
 
@@ -325,8 +335,18 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
         raise ValueError("Horizon and OKRs are required")
 
     try:
+        context_info = ""
+        if user_context:
+            profile = user_context.get("user_profile", {})
+            if profile:
+                context_info = (
+                    "\nUser Context: "
+                    f"Communication style: {profile.get('communication_style', 'supportive')}, "
+                    f"Recovery goals: {profile.get('recovery_goals', 'general')}"
+                )
+
         # 1) Researcher
-        researcher = _chat(researcher_prompt(topic, horizon))
+        researcher = _chat(researcher_prompt(topic, horizon) + context_info)
 
         # 2) Analyst (Top 5 tests)
         analyst = _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
@@ -358,6 +378,7 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
             )
             .choices[0]
             .message.content
+            or ""
         )
 
         advisor_memo = "[REDACTED] Potential PHI detected." if _contains_phi(raw_memo) else raw_memo
