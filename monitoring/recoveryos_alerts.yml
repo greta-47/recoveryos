@@ -1,0 +1,58 @@
+groups:
+  - name: recoveryos_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(recoveryos_errors_total[5m]) / rate(recoveryos_requests_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          service: recoveryos
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for endpoint {{ $labels.endpoint }}"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(recoveryos_request_duration_seconds_bucket[5m])) > 0.6
+        for: 5m
+        labels:
+          severity: warning
+          service: recoveryos
+        annotations:
+          summary: "High latency detected"
+          description: "P95 latency is {{ $value }}s for endpoint {{ $labels.endpoint }}"
+
+      - alert: ServiceDown
+        expr: up{job="recoveryos"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: recoveryos
+        annotations:
+          summary: "RecoveryOS service is down"
+          description: "RecoveryOS service has been down for more than 1 minute"
+
+      - alert: CanaryDeploymentIssue
+        expr: |
+          (
+            rate(recoveryos_errors_total{env="canary"}[5m]) / rate(recoveryos_requests_total{env="canary"}[5m]) > 0.01
+          ) or (
+            histogram_quantile(0.95, rate(recoveryos_request_duration_seconds_bucket{env="canary"}[5m])) > 0.6
+          )
+        for: 5m
+        labels:
+          severity: critical
+          service: recoveryos
+          deployment: canary
+        annotations:
+          summary: "Canary deployment showing issues"
+          description: "Canary deployment has high error rate or latency - consider rollback"
+
+      - alert: FeatureFlagRollback
+        expr: recoveryos_feature_flag_enabled{flag="release_20250814"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: recoveryos
+        annotations:
+          summary: "Feature flag rolled back"
+          description: "Release feature flag has been disabled - check for issues"

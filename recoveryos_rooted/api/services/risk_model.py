@@ -1,40 +1,66 @@
+# services/risk_model.py
 import json
 import os
+from typing import Dict
 
-DEFAULT_WEIGHTS = {"urge": 0.35, "mood": 0.20, "sleep": 0.15, "isolation": 0.15, "lang": 0.15}
+DEFAULT_WEIGHTS: Dict[str, float] = {
+    "urge": 0.35,
+    "mood": 0.20,
+    "sleep": 0.15,
+    "isolation": 0.15,
+    "lang": 0.15,
+}
 
 
-def get_weights():
+def get_weights() -> Dict[str, float]:
+    """
+    Load weights from env var RISK_MODEL_WEIGHTS (JSON), falling back to defaults.
+    Any missing keys are filled from DEFAULT_WEIGHTS; extra keys are ignored.
+    """
     raw = os.getenv("RISK_MODEL_WEIGHTS")
     if not raw:
         return DEFAULT_WEIGHTS
     try:
-        return json.loads(raw)
+        loaded = json.loads(raw)
+        # Keep only known keys and coerce to float; fill missing with defaults
+        sanitized = {k: float(loaded.get(k, DEFAULT_WEIGHTS[k])) for k in DEFAULT_WEIGHTS.keys()}
+        return sanitized
     except Exception:
         return DEFAULT_WEIGHTS
 
 
-def score(urge: int, mood: int, sleep_hours: float, isolation: int, lang_signal: float = 0.0):
+def score(urge: int, mood: int, sleep_hours: float, isolation: int, lang_signal: float = 0.0) -> float:
+    """
+    Composite risk score in 0..1 using weighted normalized features.
+    - urge: 1..5 (higher = higher risk)
+    - mood: 1..5 (lower = higher risk, we invert)
+    - sleep_hours: 0..24 (deficit vs 8h adds risk)
+    - isolation: 0..5 (higher isolation = higher risk)
+    - lang_signal: 0..1 (optional language-derived risk)
+    """
     w = get_weights()
-    mood_inv = (6 - mood) / 5.0
-    sleep_deficit = max(0.0, (8 - sleep_hours) / 8.0)
-    iso = min(max(isolation / 5.0, 0.0), 1.0)
+    mood_inv = (6 - mood) / 5.0  # 1->1.0 risk, 5->0.2 risk
+    sleep_deficit = max(0.0, (8 - float(sleep_hours)) / 8.0)  # deficit vs 8h
+    iso_norm = min(max(float(isolation) / 5.0, 0.0), 1.0)
     composite = (
-        (urge / 5.0) * w["urge"]
+        (float(urge) / 5.0) * w["urge"]
         + mood_inv * w["mood"]
         + sleep_deficit * w["sleep"]
-        + iso * w["isolation"]
-        + lang_signal * w["lang"]
+        + iso_norm * w["isolation"]
+        + float(lang_signal) * w["lang"]
     )
     return round(composite, 3)
 
 
-def explain(urge, mood, sleep_hours, isolation, lang_signal):
+def explain(urge: int, mood: int, sleep_hours: float, isolation: int, lang_signal: float = 0.0) -> Dict[str, float]:
+    """
+    Return the normalized components that make up the score, plus weights.
+    """
     return {
-        "urge": urge,
+        "urge": float(urge),
         "mood_inverse": (6 - mood) / 5.0,
-        "sleep_deficit": max(0.0, (8 - sleep_hours) / 8.0),
-        "isolation_norm": min(max(isolation / 5.0, 0.0), 1.0),
-        "language_signal": lang_signal,
-        "weights": get_weights(),
+        "sleep_deficit": max(0.0, (8 - float(sleep_hours)) / 8.0),
+        "isolation_norm": min(max(float(isolation) / 5.0, 0.0), 1.0),
+        "language_signal": float(lang_signal),
+        **{f"w_{k}": v for k, v in get_weights().items()},
     }

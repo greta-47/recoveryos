@@ -82,11 +82,17 @@ def _build_blocks(
         {"type": "divider"},
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*Suggested action:* {suggested_action}"},
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*Suggested action:* {suggested_action}",
+            },
         },
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*Key factors (top 3):*\n{key_factors_text}"},
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*Key factors (top 3):*\n{key_factors_text}",
+            },
         },
         {
             "type": "context",
@@ -132,7 +138,11 @@ def send_clinician_alert(
 
     # Only send when risk high (configurable)
     if risk_score < RISK_HIGH_THRESHOLD:
-        logger.info("Risk below threshold — not alerting (score=%.2f < %.2f)", risk_score, RISK_HIGH_THRESHOLD)
+        logger.info(
+            "Risk below threshold — not alerting (score=%.2f < %.2f)",
+            risk_score,
+            RISK_HIGH_THRESHOLD,
+        )
         return
 
     # Simple per-user throttle to avoid spam
@@ -140,7 +150,11 @@ def send_clinician_alert(
     now = datetime.utcnow()
     last = _last_sent_at.get(user_id)
     if last and (now - last) < cooldown:
-        logger.info("Throttled alert for user=%s (last sent %s)", user_id, last.isoformat() + "Z")
+        logger.info(
+            "Throttled alert for user=%s (last sent %s)",
+            user_id,
+            last.isoformat() + "Z",
+        )
         return
 
     blocks = _build_blocks(user_id, risk_score, factors, suggested_action)
@@ -151,7 +165,11 @@ def send_clinician_alert(
         _last_sent_at[user_id] = now
         logger.info("High-risk alert sent | user=%s | score=%.2f", user_id, risk_score)
     except httpx.HTTPStatusError as e:
-        logger.error("Slack webhook HTTP error %s: %s", e.response.status_code, e.response.text[:300])
+        logger.error(
+            "Slack webhook HTTP error %s: %s",
+            e.response.status_code,
+            e.response.text[:300],
+        )
     except httpx.RequestError as e:
         logger.error("Slack webhook network error: %s", str(e))
     except Exception as e:
