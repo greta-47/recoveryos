@@ -16,9 +16,7 @@ def test_root():
 
 def test_agents_endpoint_without_api_key():
     """Test that agents endpoint works in test environment."""
-    r = client.post("/agents/run", json={
-        "topic": "test optimization strategies",
-        "horizon": "30 days", 
-        "okrs": "test objectives"
-    })
+    r = client.post(
+        "/agents/run", json={"topic": "test optimization strategies", "horizon": "30 days", "okrs": "test objectives"}
+    )
     assert r.status_code in [200, 503]

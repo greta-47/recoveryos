@@ -127,15 +127,9 @@ app = FastAPI(title=APP_NAME, version=APP_VERSION, description="AI-powered relap
 security_config = get_security_config()
 
 if security_config["enable_https_enforcement"]:
-    app.add_middleware(
-        HTTPSEnforcementMiddleware,
-        allow_localhost=security_config["allow_localhost"]
-    )
+    app.add_middleware(HTTPSEnforcementMiddleware, allow_localhost=security_config["allow_localhost"])
 
-app.add_middleware(
-    SecurityHeadersMiddleware,
-    csp_mode=security_config["csp_mode"]
-)
+app.add_middleware(SecurityHeadersMiddleware, csp_mode=security_config["csp_mode"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -148,6 +142,7 @@ app.add_middleware(
 
 if os.path.isdir("ui"):
     app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
+
 
 # ----------------------
 # Models

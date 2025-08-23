@@ -102,7 +102,7 @@ def _risk_analyze(mood: int, urge: int, isolation: int, energy: int) -> Dict:
     mood_deficit = max(0, 3 - mood)
     isolation_deficit = max(0, 3 - isolation)
     energy_deficit = max(0, 3 - energy)
-    
+
     score = (urge * 1.8) + mood_deficit * 0.8 + isolation_deficit * 0.6 + energy_deficit * 0.6
     score = max(0.0, min(10.0, score))
     if score >= 9:
