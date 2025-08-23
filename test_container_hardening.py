@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 
+
 def test_docker_build():
     """Test that the hardened Docker image builds successfully."""
     print('=== Testing Docker Build ===')
