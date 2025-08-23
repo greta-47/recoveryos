@@ -1,16 +1,11 @@
 # alerts.py
-import os
 import logging
-from typing import List, Dict, Optional
+import os
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 
 import httpx
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger("recoveryos")
 
@@ -80,11 +75,7 @@ def _build_blocks(
                 {
                     "type": "mrkdwn",
                     "text": f"*Score:* {risk_score:.1f}/10"
-                    + (
-                        f" | *Top factor:* {top.get('name')}"
-                        if top and top.get("name")
-                        else ""
-                    ),
+                    + (f" | *Top factor:* {top.get('name')}" if top and top.get("name") else ""),
                 }
             ],
         },
@@ -191,12 +182,7 @@ def send_clinician_alert(
 
 # Convenience: use inside a FastAPI route
 def queue_clinician_alert(
-    background_tasks,
-    *,
-    user_id: str,
-    risk_score: float,
-    factors: List[Dict],
-    suggested_action: str,
+    background_tasks, *, user_id: str, risk_score: float, factors: List[Dict], suggested_action: str
 ) -> None:
     background_tasks.add_task(
         send_clinician_alert,

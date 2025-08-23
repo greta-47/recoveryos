@@ -1,15 +1,15 @@
 # coping.py
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, List, Dict
-from datetime import datetime
-import os
 import logging
+import os
+from datetime import datetime
+from typing import Dict, List, Literal, Optional
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from pydantic import BaseModel, Field
 
 try:
     from alerts import queue_clinician_alert
 except Exception:  # fallback if alerts.py missing during local tests
-
     def queue_clinician_alert(  # type: ignore[misc]
         background_tasks,
         user_id: str,
@@ -17,6 +17,7 @@ except Exception:  # fallback if alerts.py missing during local tests
         factors: list,
         suggested_action: str,
     ):
+        # no-op in local fallback
         pass
 
 
@@ -121,14 +122,11 @@ def _risk_analyze(mood: int, urge: int, isolation: int, energy: int) -> Dict:
         level = "Moderate"
     else:
         level = "Low"
-    factors = []
+
+    factors: List[Dict] = []
     if urge >= 4:
         factors.append(
-            {
-                "name": "High Urge",
-                "impact": 0.8,
-                "explanation": "Self-reported urge is high (≥4).",
-            }
+            {"name": "High Urge", "impact": 0.8, "explanation": "Self-reported urge is high (≥4)."}
         )
     if mood <= 2:
         factors.append(
@@ -136,19 +134,11 @@ def _risk_analyze(mood: int, urge: int, isolation: int, energy: int) -> Dict:
         )
     if isolation <= 2:
         factors.append(
-            {
-                "name": "Isolation",
-                "impact": 0.4,
-                "explanation": "Social connection is low (≤2).",
-            }
+            {"name": "Isolation", "impact": 0.4, "explanation": "Social connection is low (≤2)."}
         )
     if energy <= 2:
         factors.append(
-            {
-                "name": "Exhaustion",
-                "impact": 0.3,
-                "explanation": "Energy level is very low (≤2).",
-            }
+            {"name": "Exhaustion", "impact": 0.3, "explanation": "Energy level is very low (≤2)."}
         )
     return {"score": round(score, 1), "level": level, "factors": factors[:3]}
 
@@ -185,9 +175,7 @@ def _suggest_tool(
             tool = "5-4-3-2-1 Grounding"
             description = "Name 5 things you see, 4 you feel, 3 you hear, 2 you smell, 1 you taste."
             category = "grounding"
-            message = (
-                "You’re here. You’re safe. Use your senses to return to the present."
-            )
+            message = "You’re here. You’re safe. Use your senses to return to the present."
     elif mood <= 2 and isolation <= 2:
         urgency_level = "moderate"
         tool = "Reach Out Script"
@@ -198,14 +186,14 @@ def _suggest_tool(
     elif sleep_hours < 5:
         urgency_level = "moderate"
         tool = "Body Scan Meditation"
-        description = (
-            "Scan attention from toes to head, noticing tension without judgment."
-        )
+        description = "Scan attention from toes to head, noticing tension without judgment."
         category = "mindfulness"
         suggested_duration = "10 minutes"
-        message = (
-            "When sleep feels far away, this can help your body relax enough to rest."
-        )
+        message = "When sleep feels far away, this can help your body relax enough to rest."
+
+    resources = (
+        ["https://recoveryos.app/guided/urge-surfing.mp3"] if category == "grounding" else []
+    )
 
     return {
         "tool": tool,
@@ -214,11 +202,7 @@ def _suggest_tool(
         "urgency_level": urgency_level,
         "suggested_duration": suggested_duration,
         "message": message,
-        "resources": (
-            ["https://recoveryos.app/guided/urge-surfing.mp3"]
-            if category == "grounding"
-            else []
-        ),
+        "resources": resources,
     }
 
 
@@ -236,9 +220,8 @@ def recommend_coping_tool(request: CopingRequest, background_tasks: BackgroundTa
             energy=request.energy,
             craving_type=request.craving_type,
         )
-        risk = _risk_analyze(
-            request.mood, request.urge, request.isolation, request.energy
-        )
+        risk = _risk_analyze(request.mood, request.urge, request.isolation, request.energy)
+
         anon_user_id = "anon-user"  # TODO: replace with your de-identified user id
         suggested_action = "Offer same-day check-in"
 

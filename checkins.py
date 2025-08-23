@@ -1,11 +1,12 @@
 # checkins.py
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Literal
-from datetime import datetime
-from zoneinfo import ZoneInfo
 import re
+from datetime import datetime
+from typing import Literal, Optional
+from zoneinfo import ZoneInfo
+
+from pydantic import BaseModel, Field, field_validator
 
 # ======================
 # PHI / PII heuristics
@@ -76,7 +77,7 @@ class CheckinIn(BaseModel):
         le=5,
         description="Social connection: 0 (isolated) to 5 (connected)",
     )
-    # FIX: default must meet constraints (ge=1). Use neutral midpoint = 3.
+    # Default must meet constraints (ge=1). Neutral midpoint = 3.
     energy_level: int = Field(
         3,
         ge=1,
@@ -144,9 +145,9 @@ class SuggestionOut(BaseModel):
     tool: str = Field(
         ..., description="Coping skill or resource (e.g., 'Box breathing 4x4')"
     )
-    category: Literal[
-        "grounding", "breathing", "distraction", "connection", "professional-help"
-    ] = Field(..., description="Type of coping strategy")
+    category: Literal["grounding", "breathing", "distraction", "connection", "professional-help"] = Field(
+        ..., description="Type of coping strategy"
+    )
     urgency_level: Literal["low", "moderate", "high"] = Field(
         "low", description="Urgency based on inputs (for routing)"
     )
@@ -194,44 +195,57 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
     moderate = (not high) and (
         ci.sleep_hours < 5 or ci.isolation_score <= 1 or ci.energy_level <= 2
     )
-    urgency = "high" if high else "moderate" if moderate else "low"
+    urgency: Literal["low", "moderate", "high"] = (
+        "high" if high else "moderate" if moderate else "low"
+    )
 
     # Tool & category
     if ci.urge >= 4:
         tool = "Urge Surfing — 5-minute guided wave visualization"
-        category = "grounding"
-        msg = "Thanks for checking in. Strong urges can feel intense and temporary. Let’s ride the wave together."
-        follow = "If the urge stays high after 10 minutes, message your support person or use a craving-delay timer."
+        category: Literal[
+            "grounding", "breathing", "distraction", "connection", "professional-help"
+        ] = "grounding"
+        msg = (
+            "Thanks for checking in. Strong urges can feel intense and temporary. "
+            "Let’s ride the wave together."
+        )
+        follow = (
+            "If the urge stays high after 10 minutes, message your support person "
+            "or use a craving-delay timer."
+        )
     elif ci.mood <= 2:
         tool = "5-4-3-2-1 Grounding"
         category = "grounding"
-        msg = "You’re not alone—low mood happens. Try this short grounding practice to steady your body first."
-        follow = (
-            "After grounding, consider a brief walk or light stretch to shift state."
+        msg = (
+            "You’re not alone—low mood happens. Try this short grounding practice "
+            "to steady your body first."
         )
+        follow = "After grounding, consider a brief walk or light stretch to shift state."
     elif ci.sleep_hours < 5:
         tool = "Body Scan (10 min) + Wind-Down Routine"
         category = "breathing"
         msg = "Sleep debt can amplify urges. A brief body scan can calm your system before bed."
-        follow = (
-            "Aim for a consistent bedtime and dim lights 60 minutes earlier tonight."
-        )
+        follow = "Aim for a consistent bedtime and dim lights 60 minutes earlier tonight."
     elif ci.isolation_score <= 1:
         tool = "Connection Micro-task (2 min)"
         category = "connection"
         msg = "Connection helps recovery. A quick check-in with a safe person can lower urges."
-        follow = "Send a two-line text to someone supportive: share one win and one thing you’re trying."
+        follow = (
+            "Send a two-line text to someone supportive: share one win and one thing you’re trying."
+        )
     else:
         tool = "Box Breathing 4×4 (2 min)"
         category = "breathing"
-        msg = "Nice work staying engaged today. A short breath reset can keep momentum going."
+        msg = (
+            "Nice work staying engaged today. A short breath reset can keep momentum going."
+        )
         follow = "Log one helpful action you’ll repeat tomorrow."
 
     return SuggestionOut(
         message=msg,
         tool=tool,
-        category=category,  # type: ignore[arg-type]
-        urgency_level=urgency,  # type: ignore[arg-type]
+        category=category,
+        urgency_level=urgency,
         follow_up_suggestion=follow,
     )
 
@@ -260,9 +274,8 @@ def analytics_from_checkin(
     )
     score = round(min(max(score_0_1 * 10, 0.0), 10.0), 2)
 
-    engagement_flag: Literal["high", "medium", "low"]
     if ci.notes and len(ci.notes.strip()) >= 40:
-        engagement_flag = "high"
+        engagement_flag: Literal["high", "medium", "low"] = "high"
     elif ci.notes:
         engagement_flag = "medium"
     else:
@@ -290,3 +303,4 @@ __all__ = [
     "suggest_from_checkin",
     "analytics_from_checkin",
 ]
+

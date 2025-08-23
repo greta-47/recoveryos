@@ -1,9 +1,10 @@
-# briefing.py
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
-from typing import Dict, Any, List
-from datetime import datetime
+# briefings.py
 import logging
 import os
+from datetime import datetime
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 logger = logging.getLogger("recoveryos")
 
@@ -11,14 +12,13 @@ logger = logging.getLogger("recoveryos")
 # Optional consent hook (safe if consent.py is absent)
 # ----------------------
 try:
-    from consent import ConsentRecord, ConsentType, ConsentStatus, can_send_weekly  # type: ignore
+    # If your project has a consent module, we’ll use it.
+    from consent import ConsentRecord, ConsentStatus, ConsentType, can_send_weekly  # type: ignore
 
     _HAS_CONSENT = True
 except Exception:
+    # Fallback shim so the app still runs without a consent module.
     _HAS_CONSENT = False
-    from typing import Any
-
-if not _HAS_CONSENT:
 
     class ConsentRecord:  # type: ignore[no-redef]
         def __init__(self, user_id: str, consent_type: str, status: str):
@@ -32,7 +32,7 @@ if not _HAS_CONSENT:
     class ConsentStatus:  # type: ignore[no-redef]
         GIVEN = "given"
 
-    def can_send_weekly(user_consent: Any) -> bool:  # type: ignore[misc]
+    def can_send_weekly(_: Any) -> bool:  # type: ignore[misc]
         return True
 
 
@@ -119,10 +119,9 @@ def _filter_by_consent(trends: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if not _HAS_CONSENT:
         return trends
 
-    # Example stub: everyone has a "given" consent unless you wire real data
     filtered: List[Dict[str, Any]] = []
     for p in trends:
-        # Build a fake consent record for the demo; swap with your DB record
+        # Demo stub: assume consent is GIVEN unless you wire real data
         cr = ConsentRecord(
             user_id=p["user_id"],
             consent_type=ConsentType.WEEKLY_BRIEFING,
@@ -201,13 +200,13 @@ def run_weekly_briefing(background_tasks: BackgroundTasks):
 
         # Build de-identified message body
         body = f"""
-Weekly RecoveryOS Briefing ({briefing['period']})
+Weekly RecoveryOS Briefing ({briefing["period"]})
 
 📊 Summary:
-- Tracked: {briefing['summary']['total_patients_tracked']} patients
-- At Risk: {briefing['summary']['at_risk_count']}
-- Showing Improvement: {briefing['summary']['improved_count']}
-- Avg Engagement: {briefing['summary']['avg_checkin_rate']}
+- Tracked: {briefing["summary"]["total_patients_tracked"]} patients
+- At Risk: {briefing["summary"]["at_risk_count"]}
+- Showing Improvement: {briefing["summary"]["improved_count"]}
+- Avg Engagement: {briefing["summary"]["avg_checkin_rate"]}
 
 🚨 At-Risk Patients:
 {chr(10).join([f"• {p['name_display']} (Urge: {p['trend']['urge_avg']}) – {p['ai_insight']}" for p in at_risk]) or "• None in the last 7 days"}
@@ -216,10 +215,10 @@ Weekly RecoveryOS Briefing ({briefing['period']})
 {chr(10).join([f"• {p['name_display']} Mood ↑{p['trend']['mood_change']} – {p['ai_insight']}" for p in improved]) or "• No significant improvements flagged"}
 
 💡 Team Insights:
-{chr(10).join([f"• {insight}" for insight in briefing['team_insights']])}
+{chr(10).join([f"• {insight}" for insight in briefing["team_insights"]])}
 
 ✅ Recommended Actions:
-{chr(10).join([f"• {action}" for action in briefing['recommended_actions']])}
+{chr(10).join([f"• {action}" for action in briefing["recommended_actions"]])}
 
 This briefing is de-identified and for clinical use only.
         """.strip()

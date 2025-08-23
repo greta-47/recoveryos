@@ -1,6 +1,7 @@
 # admin_clinician.py
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
 
 

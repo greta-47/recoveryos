@@ -1,12 +1,12 @@
 # rag.py
 from __future__ import annotations
 
-import os
 import json
 import logging
+import os
 import threading
-from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -226,7 +226,7 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         texts: List[str] = []
         new_meta: List[Dict[str, Any]] = []
         for doc in documents:
-            doc_id = str(doc.get("id") or f"doc-{len(meta)+len(new_meta)}")
+            doc_id = str(doc.get("id") or f"doc-{len(meta) + len(new_meta)}")
             title = str(doc.get("title") or "Untitled")
             content = str(doc.get("content") or "").strip()
             if not content:

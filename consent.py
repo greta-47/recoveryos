@@ -1,10 +1,10 @@
 # consent.py
 from __future__ import annotations
 
-from enum import Enum
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
 import logging
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("recoveryos")
 

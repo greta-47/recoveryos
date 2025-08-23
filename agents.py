@@ -1,19 +1,20 @@
-# agents.py
+import json
+import logging
 import os
+import re
 import time
 import uuid
-import re
-import json
-from typing import Dict, Any, List, Optional
 from datetime import datetime
-from openai import OpenAI, APIError, RateLimitError
-import logging
+from typing import Any, Dict, List, Optional
+
+from openai import APIError, OpenAI, RateLimitError
 
 # ----------------------
 # Logging
 # ----------------------
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("recoveryos")
 
@@ -342,7 +343,11 @@ def run_multi_agent(
         if user_context:
             profile = user_context.get("user_profile", {})
             if profile:
-                context_info = f"\nUser Context: Communication style: {profile.get('communication_style', 'supportive')}, Recovery goals: {profile.get('recovery_goals', 'general')}"
+                context_info = (
+                    "\nUser Context: "
+                    f"Communication style: {profile.get('communication_style', 'supportive')}, "
+                    f"Recovery goals: {profile.get('recovery_goals', 'general')}"
+                )
 
         # 1) Researcher
         researcher = _chat(researcher_prompt(topic, horizon) + context_info)
@@ -406,3 +411,4 @@ def run_multi_agent(
     except Exception as e:
         logger.error("Agent pipeline failed | ID=%s | Error=%s", request_id, str(e))
         raise
+
