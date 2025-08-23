@@ -75,11 +75,12 @@ def test_csp_modes():
     print('\n=== Testing CSP Mode Differences ===')
     
     try:
-        from test_config import setup_test_environment
-        setup_test_environment()
+        from fastapi.testclient import TestClient
         
         from main import app
-        from fastapi.testclient import TestClient
+        from test_config import setup_test_environment
+        
+        setup_test_environment()
         
         os.environ['CSP_MODE'] = 'enforce'
         client = TestClient(app)
@@ -162,7 +163,7 @@ if __name__ == "__main__":
     csp_ok = test_csp_modes()
     env_ok = test_env_file_loading()
     
-    print(f"\n=== Test Results ===")
+    print("\n=== Test Results ===")
     print(f"Production config: {'✅' if prod_ok else '❌'}")
     print(f"Development config: {'✅' if dev_ok else '❌'}")
     print(f"CSP modes: {'✅' if csp_ok else '❌'}")

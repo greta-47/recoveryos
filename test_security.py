@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test script to verify security headers implementation."""
 
-import os
 import sys
 
 sys.path.insert(0, '/home/ubuntu/repos/recoveryos')
@@ -11,11 +10,12 @@ def test_security_headers():
     print('=== Testing Security Headers Implementation ===')
     
     try:
-        from test_config import setup_test_environment
-        setup_test_environment()
+        from fastapi.testclient import TestClient
         
         from main import app
-        from fastapi.testclient import TestClient
+        from test_config import setup_test_environment
+        
+        setup_test_environment()
         
         client = TestClient(app)
         
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     headers_working = test_security_headers()
     middleware_working = test_middleware_order()
     
-    print(f"\n=== Test Results ===")
+    print("\n=== Test Results ===")
     print(f"Security headers: {'✅' if headers_working else '❌'}")
     print(f"Middleware order: {'✅' if middleware_working else '❌'}")
     

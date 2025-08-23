@@ -195,7 +195,7 @@ if __name__ == "__main__":
         user_ok = test_non_root_user()
         labels_ok = test_security_labels()
         
-        print(f"\n=== Test Results ===")
+        print("\n=== Test Results ===")
         print(f"Docker build: {'✅' if build_ok else '❌'}")
         print(f"Read-only filesystem: {'✅' if readonly_ok else '❌'}")
         print(f"Build tools removed: {'✅' if tools_ok else '❌'}")

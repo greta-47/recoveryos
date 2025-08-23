@@ -81,7 +81,7 @@ if __name__ == "__main__":
     headers_implemented = check_security_headers()
     env_configured = check_environment_config()
     
-    print(f"\n=== Summary ===")
+    print("\n=== Summary ===")
     print(f"Application functionality: {'✅' if app_works else '❌'}")
     print(f"Security headers: {'✅' if headers_implemented else '❌'}")
     print(f"Environment config: {'✅' if env_configured else '❌'}")

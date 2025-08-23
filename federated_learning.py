@@ -90,7 +90,10 @@ class FederatedAggregator:
 
     def _validate_update(self, update: ModelUpdate) -> bool:
         if update.privacy_budget_used > self.config.privacy_epsilon:
-            logger.warning(f"Privacy budget exceeded | Used={update.privacy_budget_used} | Limit={self.config.privacy_epsilon}")
+            logger.warning(
+                f"Privacy budget exceeded | Used={update.privacy_budget_used} | "
+                f"Limit={self.config.privacy_epsilon}"
+            )
             return False
         return True
 
