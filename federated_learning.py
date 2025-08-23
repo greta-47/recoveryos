@@ -91,11 +91,17 @@ class FederatedAggregator:
     def _validate_update(self, update: ModelUpdate) -> bool:
         if update.privacy_budget_used > self.config.privacy_epsilon:
             logger.warning(
-    "Insufficient clients for aggregation | Have=%s | Need=%s",
-    len(self.client_updates),
-    self.config.min_clients,
-)
-} | Need={self.config.min_clients}"
+                f"Privacy budget exceeded | Used={update.privacy_budget_used} | " f"Limit={self.config.privacy_epsilon}"
+            )
+            return False
+        return True
+
+    def federated_averaging(self) -> Optional[Dict[str, np.ndarray]]:
+        if len(self.client_updates) < self.config.min_clients:
+            logger.warning(
+                "Insufficient clients for aggregation | Have=%s | Need=%s",
+                len(self.client_updates),
+                self.config.min_clients,
             )
             return None
 

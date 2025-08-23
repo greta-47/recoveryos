@@ -190,8 +190,8 @@ def _mmr(
             candidates.remove(idx)
             continue
         # Compute MMR score
-        max_red = np.max(doc_sim[list(candidates)][:, selected], axis=1)  # (|cand|,)
         cand_list = list(candidates)
+        max_red = np.max(doc_sim[cand_list][:, selected], axis=1)  # (|cand|,)
         mmr_scores = lambda_mult * rel[cand_list] - (1 - lambda_mult) * max_red
         best_idx = int(np.argmax(mmr_scores))
         idx = cand_list[best_idx]

@@ -1,0 +1,63 @@
+# Hardened Docker Compose configuration for RecoveryOS
+# Demonstrates read-only filesystem and security configurations
+
+version: '3.8'
+
+services:
+  recoveryos-hardened:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: recoveryos-hardened
+    ports:
+      - "8000:8000"
+    environment:
+      - READONLY_MODE=true
+      - CSP_MODE=enforce
+      - ENABLE_HTTPS_ENFORCEMENT=true
+      - ALLOW_LOCALHOST=false
+    # Read-only filesystem with tmpfs mounts for writable areas
+    read_only: true
+    tmpfs:
+      - /tmp/app:size=100M,noexec,nosuid,nodev
+      - /var/log/app:size=50M,noexec,nosuid,nodev
+      - /var/cache/app:size=50M,noexec,nosuid,nodev
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Restart policy
+    restart: unless-stopped
+    # User override (redundant but explicit)
+    user: "10001:10001"
+    # Drop all capabilities and add only necessary ones
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE  # Only if binding to privileged ports
+    # Network security
+    networks:
+      - recoveryos-network
+
+networks:
+  recoveryos-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
