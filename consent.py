@@ -165,9 +165,7 @@ def can_use(consent: Optional[ConsentRecord], expected_type: ConsentType) -> boo
     Returns False if no record, wrong type, withdrawn, pending, or expired.
     """
     if not consent:
-        logger.warning(
-            "Consent check failed | Reason=no_record | Expected=%s", expected_type.value
-        )
+        logger.warning("Consent check failed | Reason=no_record | Expected=%s", expected_type.value)
         return False
 
     if consent.consent_type != expected_type:

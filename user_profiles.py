@@ -1,7 +1,8 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional, Dict, Any
-from datetime import datetime
 import json
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+from sqlmodel import Field, SQLModel
 
 
 class UserProfile(SQLModel, table=True):

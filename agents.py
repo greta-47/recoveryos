@@ -265,9 +265,7 @@ def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
             time.sleep(wait)
         except APIError as e:
             if attempt == max_retries - 1:
-                raise RuntimeError(
-                    f"OpenAI API error after {max_retries} attempts: {e}"
-                )
+                raise RuntimeError(f"OpenAI API error after {max_retries} attempts: {e}")
             time.sleep(2)
     raise RuntimeError("Max retries exceeded")
 
@@ -301,9 +299,7 @@ def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
             continue
         if isinstance(arr, list):
             required = {"hypothesis", "test_method", "metric"}
-            objs = [
-                o for o in arr if isinstance(o, dict) and required.issubset(o.keys())
-            ]
+            objs = [o for o in arr if isinstance(o, dict) and required.issubset(o.keys())]
             if objs:
                 out: List[Dict[str, Any]] = []
                 for o in objs[:5]:
@@ -357,9 +353,7 @@ def run_multi_agent(
         analyst_tests = _parse_analyst_tests(analyst)
 
         # 3) Critic
-        critic = _chat(
-            f"Researcher + Analyst:\n{researcher}\n\n{analyst}\n\n{CRITIC_PROMPT}"
-        )
+        critic = _chat(f"Researcher + Analyst:\n{researcher}\n\n{analyst}\n\n{CRITIC_PROMPT}")
 
         # 4) Strategist
         strategist = _chat(
@@ -387,11 +381,7 @@ def run_multi_agent(
             or ""
         )
 
-        advisor_memo = (
-            "[REDACTED] Potential PHI detected."
-            if _contains_phi(raw_memo)
-            else raw_memo
-        )
+        advisor_memo = "[REDACTED] Potential PHI detected." if _contains_phi(raw_memo) else raw_memo
 
         logger.info(f"Agent pipeline completed | ID={request_id}")
         return {
@@ -411,4 +401,3 @@ def run_multi_agent(
     except Exception as e:
         logger.error("Agent pipeline failed | ID=%s | Error=%s", request_id, str(e))
         raise
-

@@ -1,6 +1,6 @@
 import logging
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any, Dict
 
 logger = logging.getLogger("recoveryos")
 
@@ -111,9 +111,7 @@ class ClinicalAgent:
             }
 
         except Exception as e:
-            logger.error(
-                f"Clinical agent analysis failed | Agent={self.agent_type} | Error={str(e)}"
-            )
+            logger.error(f"Clinical agent analysis failed | Agent={self.agent_type} | Error={str(e)}")
             return {
                 "agent_type": self.agent_type,
                 "analysis": "Clinical analysis unavailable - please consult with healthcare provider",

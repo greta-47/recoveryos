@@ -1,11 +1,12 @@
-import logging
-from typing import Dict, Any, List, Optional, Tuple, Callable
-from datetime import datetime
-import numpy as np
-from dataclasses import dataclass
-from enum import Enum
 import heapq
+import logging
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -54,9 +55,7 @@ class SpikingNeuron:
         self.leak_rate = 0.1
         self.spike_history: List[float] = []
 
-    def update(
-        self, current_time: float, input_current: float = 0.0
-    ) -> Optional[Spike]:
+    def update(self, current_time: float, input_current: float = 0.0) -> Optional[Spike]:
         if current_time - self.last_spike_time < self.refractory_period:
             return None
 
@@ -98,18 +97,14 @@ class SpikingNeuralNetwork:
     def add_neuron(self, neuron: SpikingNeuron) -> bool:
         if neuron.neuron_id not in self.neurons:
             self.neurons[neuron.neuron_id] = neuron
-            logger.debug(
-                f"Added neuron | ID={neuron.neuron_id} | Type={neuron.neuron_type.value}"
-            )
+            logger.debug(f"Added neuron | ID={neuron.neuron_id} | Type={neuron.neuron_type.value}")
             return True
         return False
 
     def add_synapse(self, synapse: Synapse) -> bool:
         if synapse.pre_neuron in self.neurons and synapse.post_neuron in self.neurons:
             self.synapses.append(synapse)
-            logger.debug(
-                f"Added synapse | {synapse.pre_neuron} -> {synapse.post_neuron} | Weight={synapse.weight}"
-            )
+            logger.debug(f"Added synapse | {synapse.pre_neuron} -> {synapse.post_neuron} | Weight={synapse.weight}")
             return True
         return False
 
@@ -147,9 +142,7 @@ class SpikingNeuralNetwork:
         activity = {
             "timestamp": self.current_time,
             "spikes_fired": len(spikes_fired),
-            "active_neurons": len(
-                [n for n in self.neurons.values() if n.membrane_potential > 0.1]
-            ),
+            "active_neurons": len([n for n in self.neurons.values() if n.membrane_potential > 0.1]),
             "network_energy": sum(n.membrane_potential for n in self.neurons.values()),
         }
         self.network_activity.append(activity)
@@ -176,10 +169,7 @@ class SpikingNeuralNetwork:
         return results
 
     def get_network_state(self) -> Dict[str, Any]:
-        firing_rates = {
-            neuron_id: neuron.get_firing_rate()
-            for neuron_id, neuron in self.neurons.items()
-        }
+        firing_rates = {neuron_id: neuron.get_firing_rate() for neuron_id, neuron in self.neurons.items()}
 
         return {
             "network_name": self.name,
@@ -188,9 +178,7 @@ class SpikingNeuralNetwork:
             "num_synapses": len(self.synapses),
             "pending_spikes": len(self.spike_queue),
             "firing_rates": firing_rates,
-            "avg_firing_rate": (
-                np.mean(list(firing_rates.values())) if firing_rates else 0.0
-            ),
+            "avg_firing_rate": (np.mean(list(firing_rates.values())) if firing_rates else 0.0),
             "network_synchrony": self._calculate_synchrony(),
         }
 
@@ -199,9 +187,7 @@ class SpikingNeuralNetwork:
         current_time = self.current_time
 
         for neuron in self.neurons.values():
-            recent_spikes.extend(
-                [t for t in neuron.spike_history if t > current_time - 50.0]
-            )
+            recent_spikes.extend([t for t in neuron.spike_history if t > current_time - 50.0])
 
         if len(recent_spikes) < 2:
             return 0.0
@@ -273,9 +259,7 @@ class RecoveryNeuromorphicProcessor:
 
         logger.info("Initialized neuromorphic recovery networks")
 
-    def process_emotional_state(
-        self, emotional_inputs: Dict[str, float]
-    ) -> Dict[str, Any]:
+    def process_emotional_state(self, emotional_inputs: Dict[str, float]) -> Dict[str, Any]:
         emotion_net = self.networks["emotion"]
 
         input_mapping = {"stress_level": 0, "anxiety_level": 1, "mood_state": 3}
@@ -293,8 +277,7 @@ class RecoveryNeuromorphicProcessor:
         processing_result = {
             "emotional_inputs": emotional_inputs,
             "network_response": final_state,
-            "emotional_stability": 1.0
-            - final_state["network_synchrony"],  # Lower synchrony = more stability
+            "emotional_stability": 1.0 - final_state["network_synchrony"],  # Lower synchrony = more stability
             "processing_efficiency": final_state["avg_firing_rate"],
             "emotional_regulation": self._assess_emotional_regulation(results),
             "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -332,8 +315,7 @@ class RecoveryNeuromorphicProcessor:
             "network_response": final_state,
             "alert_triggered": alert_fired,
             "risk_level": self._calculate_risk_level(final_state, alert_fired),
-            "neuromorphic_confidence": final_state["avg_firing_rate"]
-            / 10.0,  # Normalize
+            "neuromorphic_confidence": final_state["avg_firing_rate"] / 10.0,  # Normalize
             "processing_latency_ms": 40.0,
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
@@ -341,9 +323,7 @@ class RecoveryNeuromorphicProcessor:
         self.processing_history.append(risk_assessment)
         return risk_assessment
 
-    def _assess_emotional_regulation(
-        self, simulation_results: List[Dict[str, Any]]
-    ) -> float:
+    def _assess_emotional_regulation(self, simulation_results: List[Dict[str, Any]]) -> float:
         if not simulation_results:
             return 0.5
 
@@ -357,9 +337,7 @@ class RecoveryNeuromorphicProcessor:
 
         return min(1.0, float(stability))
 
-    def _calculate_risk_level(
-        self, network_state: Dict[str, Any], alert_fired: bool
-    ) -> str:
+    def _calculate_risk_level(self, network_state: Dict[str, Any], alert_fired: bool) -> str:
         if alert_fired:
             return "high"
 
@@ -387,16 +365,12 @@ class RecoveryNeuromorphicProcessor:
             if "risk_level" in record:
                 risk_assessments.append(record["risk_level"])
 
-        risk_distribution = {
-            level: risk_assessments.count(level) for level in set(risk_assessments)
-        }
+        risk_distribution = {level: risk_assessments.count(level) for level in set(risk_assessments)}
 
         return {
             "total_processing_events": len(self.processing_history),
             "recent_events": len(recent_processing),
-            "avg_emotional_stability": (
-                np.mean(emotional_stability) if emotional_stability else 0.5
-            ),
+            "avg_emotional_stability": (np.mean(emotional_stability) if emotional_stability else 0.5),
             "risk_level_distribution": risk_distribution,
             "neuromorphic_efficiency": "high_efficiency",  # Spiking networks are inherently efficient
             "processing_paradigm": "event_driven_spiking",
@@ -404,39 +378,25 @@ class RecoveryNeuromorphicProcessor:
             "insights": self._generate_neuromorphic_insights(recent_processing),
         }
 
-    def _generate_neuromorphic_insights(
-        self, recent_processing: List[Dict[str, Any]]
-    ) -> List[str]:
+    def _generate_neuromorphic_insights(self, recent_processing: List[Dict[str, Any]]) -> List[str]:
         insights = []
 
         if len(recent_processing) > 5:
-            insights.append(
-                "Neuromorphic processing shows consistent event-driven pattern recognition"
-            )
+            insights.append("Neuromorphic processing shows consistent event-driven pattern recognition")
 
         emotional_records = [r for r in recent_processing if "emotional_stability" in r]
         if emotional_records:
-            avg_stability = np.mean(
-                [r["emotional_stability"] for r in emotional_records]
-            )
+            avg_stability = np.mean([r["emotional_stability"] for r in emotional_records])
             if avg_stability > 0.7:
-                insights.append(
-                    "Spiking neural networks indicate strong emotional regulation patterns"
-                )
+                insights.append("Spiking neural networks indicate strong emotional regulation patterns")
             elif avg_stability < 0.3:
-                insights.append(
-                    "Neuromorphic analysis suggests need for emotional stability interventions"
-                )
+                insights.append("Neuromorphic analysis suggests need for emotional stability interventions")
 
         risk_records = [r for r in recent_processing if "alert_triggered" in r]
         if risk_records:
-            alert_rate = sum(r["alert_triggered"] for r in risk_records) / len(
-                risk_records
-            )
+            alert_rate = sum(r["alert_triggered"] for r in risk_records) / len(risk_records)
             if alert_rate > 0.5:
-                insights.append(
-                    "High alert frequency in neuromorphic risk assessment network"
-                )
+                insights.append("High alert frequency in neuromorphic risk assessment network")
 
         return insights
 
@@ -451,9 +411,7 @@ class EventDrivenProcessor:
         self.processors[event_type] = processor
         logger.info(f"Registered event processor | Type={event_type}")
 
-    def schedule_event(
-        self, delay_ms: float, event_type: str, event_data: Dict[str, Any]
-    ):
+    def schedule_event(self, delay_ms: float, event_type: str, event_data: Dict[str, Any]):
         timestamp = datetime.utcnow().timestamp() * 1000 + delay_ms
         heapq.heappush(self.event_queue, (timestamp, event_type, event_data))
 
@@ -462,12 +420,7 @@ class EventDrivenProcessor:
         processed = []
         events_processed = 0
 
-        while (
-            self.event_queue
-            and self.event_queue[0][0] <= current_time
-            and events_processed < max_events
-        ):
-
+        while self.event_queue and self.event_queue[0][0] <= current_time and events_processed < max_events:
             timestamp, event_type, event_data = heapq.heappop(self.event_queue)
 
             if event_type in self.processors:
@@ -483,9 +436,7 @@ class EventDrivenProcessor:
                     )
                     self.processing_stats[event_type] += 1
                 except Exception as e:
-                    logger.error(
-                        f"Event processing failed | Type={event_type} | Error={str(e)}"
-                    )
+                    logger.error(f"Event processing failed | Type={event_type} | Error={str(e)}")
 
             events_processed += 1
 

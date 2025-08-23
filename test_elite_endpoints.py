@@ -5,6 +5,7 @@ Includes failing tests that demonstrate bugs and verify fixes.
 """
 
 import sys
+
 import requests
 
 sys.path.append("/home/ubuntu/recoveryos")
@@ -83,9 +84,7 @@ class TestEdgeAI:
 
     def test_edge_ai_risk_predictor(self):
         """Test edge AI with risk_predictor model type"""
-        response = requests.post(
-            f"{BASE_URL}/elite/edge-ai/deploy", json={"model_type": "risk_predictor"}
-        )
+        response = requests.post(f"{BASE_URL}/elite/edge-ai/deploy", json={"model_type": "risk_predictor"})
         assert response.status_code == 200
         data = response.json()
         assert data["model_type"] == "risk"
@@ -93,9 +92,7 @@ class TestEdgeAI:
 
     def test_edge_ai_default_emotion(self):
         """Test edge AI with default emotion model"""
-        response = requests.post(
-            f"{BASE_URL}/elite/edge-ai/deploy", json={"model_type": "emotion"}
-        )
+        response = requests.post(f"{BASE_URL}/elite/edge-ai/deploy", json={"model_type": "emotion"})
         assert response.status_code == 200
         data = response.json()
         assert data["model_type"] == "emotion"
@@ -159,9 +156,7 @@ class TestAllEliteEndpoints:
 
         for endpoint, payload in endpoints:
             response = requests.post(f"{BASE_URL}{endpoint}", json=payload)
-            assert (
-                response.status_code == 200
-            ), f"Endpoint {endpoint} failed with status {response.status_code}"
+            assert response.status_code == 200, f"Endpoint {endpoint} failed with status {response.status_code}"
             data = response.json()
             assert data is not None, f"Endpoint {endpoint} returned null response"
 

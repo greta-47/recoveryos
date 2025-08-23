@@ -1,14 +1,15 @@
-import logging
-import time
-import json
-import uuid
-from typing import Dict, Any, List, Optional
-from datetime import datetime
-from dataclasses import dataclass
-from functools import wraps
 import contextvars
-from prometheus_client import Counter, Histogram, Gauge, generate_latest
+import json
+import logging
 import re
+import time
+import uuid
+from dataclasses import dataclass
+from datetime import datetime
+from functools import wraps
+from typing import Any, Dict, List, Optional
+
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 correlation_id_var = contextvars.ContextVar("correlation_id", default=None)
 
@@ -29,9 +30,7 @@ ERROR_RATE = Counter(
     "Total errors",
     ["endpoint", "version", "env", "error_type"],
 )
-ACTIVE_REQUESTS = Gauge(
-    "recoveryos_active_requests", "Active requests", ["endpoint", "version", "env"]
-)
+ACTIVE_REQUESTS = Gauge("recoveryos_active_requests", "Active requests", ["endpoint", "version", "env"])
 
 
 @dataclass
@@ -55,9 +54,7 @@ class TraceSpan:
 
     def log(self, message: str, level: str = "info"):
         if self.logs is not None:
-            self.logs.append(
-                {"timestamp": time.time(), "level": level, "message": message}
-            )
+            self.logs.append({"timestamp": time.time(), "level": level, "message": message})
 
     def set_tag(self, key: str, value: Any):
         if self.tags is not None:
@@ -68,9 +65,7 @@ class DistributedTracer:
     def __init__(self):
         self.spans: Dict[str, TraceSpan] = {}
 
-    def start_span(
-        self, operation_name: str, parent_id: Optional[str] = None
-    ) -> TraceSpan:
+    def start_span(self, operation_name: str, parent_id: Optional[str] = None) -> TraceSpan:
         span_id = str(uuid.uuid4())
         span = TraceSpan(
             span_id=span_id,
@@ -213,9 +208,7 @@ class EnhancedObservability:
                 error_type=error_type or "unknown",
             ).inc()
 
-        metric.success_rate = (
-            metric.request_count - metric.error_count
-        ) / metric.request_count
+        metric.success_rate = (metric.request_count - metric.error_count) / metric.request_count
         metric.last_request = datetime.utcnow().isoformat() + "Z"
 
         REQUEST_COUNT.labels(
@@ -225,9 +218,7 @@ class EnhancedObservability:
             status="success" if success else "error",
         ).inc()
 
-        REQUEST_LATENCY.labels(
-            endpoint=endpoint_name, version=self.version, env=self.environment
-        ).observe(
+        REQUEST_LATENCY.labels(endpoint=endpoint_name, version=self.version, env=self.environment).observe(
             latency_ms / 1000.0
         )  # Convert to seconds
 
@@ -256,11 +247,7 @@ class EnhancedObservability:
                     "request_count": metric.request_count,
                     "error_count": metric.error_count,
                     "avg_latency_ms": round(
-                        (
-                            metric.total_latency_ms / metric.request_count
-                            if metric.request_count > 0
-                            else 0
-                        ),
+                        (metric.total_latency_ms / metric.request_count if metric.request_count > 0 else 0),
                         2,
                     ),
                     "p50_latency_ms": round(metric.p50_latency_ms, 2),
@@ -274,9 +261,7 @@ class EnhancedObservability:
             "total_requests": sum(m.request_count for m in self.metrics.values()),
             "total_errors": sum(m.error_count for m in self.metrics.values()),
             "avg_success_rate": (
-                sum(m.success_rate for m in self.metrics.values()) / len(self.metrics)
-                if self.metrics
-                else 1.0
+                sum(m.success_rate for m in self.metrics.values()) / len(self.metrics) if self.metrics else 1.0
             ),
             "version": self.version,
             "environment": self.environment,

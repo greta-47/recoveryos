@@ -5,12 +5,13 @@ Tests the 3 target endpoints with performance validation
 """
 
 import asyncio
-import aiohttp
-import time
 import json
 import statistics
-from typing import Dict, Any
+import time
 from datetime import datetime
+from typing import Any, Dict
+
+import aiohttp
 
 
 class LoadTester:
@@ -41,9 +42,7 @@ class LoadTester:
             try:
                 async with session.post(url, json=payload) as response:
                     await response.text()
-                    request_latency = (
-                        time.time() - request_start
-                    ) * 1000  # Convert to ms
+                    request_latency = (time.time() - request_start) * 1000  # Convert to ms
                     latencies.append(request_latency)
 
                     if response.status != 200:
@@ -60,16 +59,8 @@ class LoadTester:
 
         if latencies:
             p50 = statistics.median(latencies)
-            p95 = (
-                statistics.quantiles(latencies, n=20)[18]
-                if len(latencies) >= 20
-                else max(latencies)
-            )
-            p99 = (
-                statistics.quantiles(latencies, n=100)[98]
-                if len(latencies) >= 100
-                else max(latencies)
-            )
+            p95 = statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else max(latencies)
+            p99 = statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else max(latencies)
             avg_latency = statistics.mean(latencies)
         else:
             p50 = p95 = p99 = avg_latency = 0
@@ -95,9 +86,7 @@ class LoadTester:
             },
         }
 
-        print(
-            f"✅ {endpoint} completed: {total_requests} requests, {error_rate:.2f}% errors, P95: {p95:.2f}ms"
-        )
+        print(f"✅ {endpoint} completed: {total_requests} requests, {error_rate:.2f}% errors, P95: {p95:.2f}ms")
 
     async def run_load_tests(self):
         """Run load tests for all 3 target endpoints"""
@@ -156,19 +145,14 @@ class LoadTester:
                 "endpoints_meeting_sla": sum(
                     1
                     for r in self.results.values()
-                    if r["sla_compliance"]["p95_under_500ms"]
-                    and r["sla_compliance"]["error_rate_under_1pct"]
+                    if r["sla_compliance"]["p95_under_500ms"] and r["sla_compliance"]["error_rate_under_1pct"]
                 ),
                 "avg_error_rate": round(
-                    statistics.mean(
-                        [r["error_rate_percent"] for r in self.results.values()]
-                    ),
+                    statistics.mean([r["error_rate_percent"] for r in self.results.values()]),
                     2,
                 ),
                 "avg_p95_latency": round(
-                    statistics.mean(
-                        [r["latency_ms"]["p95"] for r in self.results.values()]
-                    ),
+                    statistics.mean([r["latency_ms"]["p95"] for r in self.results.values()]),
                     2,
                 ),
             },
@@ -195,18 +179,13 @@ async def main():
         json.dump(report, f, indent=2)
 
     print("\n📊 Load Test Results Summary:")
-    print(
-        f"Total Endpoints Tested: {report['overall_summary']['total_endpoints_tested']}"
-    )
-    print(
-        f"Endpoints Meeting SLA: {report['overall_summary']['endpoints_meeting_sla']}"
-    )
+    print(f"Total Endpoints Tested: {report['overall_summary']['total_endpoints_tested']}")
+    print(f"Endpoints Meeting SLA: {report['overall_summary']['endpoints_meeting_sla']}")
     print(f"Average Error Rate: {report['overall_summary']['avg_error_rate']}%")
     print(f"Average P95 Latency: {report['overall_summary']['avg_p95_latency']}ms")
 
     all_compliant = (
-        report["overall_summary"]["endpoints_meeting_sla"]
-        == report["overall_summary"]["total_endpoints_tested"]
+        report["overall_summary"]["endpoints_meeting_sla"] == report["overall_summary"]["total_endpoints_tested"]
     )
 
     if all_compliant:

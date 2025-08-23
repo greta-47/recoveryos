@@ -1,9 +1,10 @@
 import logging
-from typing import Dict, Any, List
-from datetime import datetime
-import numpy as np
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -42,11 +43,7 @@ class ElasticWeightConsolidation(ContinualLearningStrategy):
 
         for key in old_weights.keys():
             if key in new_weights and key in importance:
-                penalty = (
-                    self.lambda_reg
-                    * importance[key]
-                    * (new_weights[key] - old_weights[key]) ** 2
-                )
+                penalty = self.lambda_reg * importance[key] * (new_weights[key] - old_weights[key]) ** 2
                 consolidated[key] = new_weights[key] - 0.01 * penalty
             else:
                 consolidated[key] = new_weights.get(key, old_weights[key])
@@ -69,9 +66,7 @@ class ClinicalContinualLearner:
             "intervention_layer": np.random.normal(0, 0.1, (5, 3)),
         }
 
-    def learn_new_task(
-        self, task_id: str, training_data: List[Dict[str, Any]], epochs: int = 10
-    ) -> Dict[str, Any]:
+    def learn_new_task(self, task_id: str, training_data: List[Dict[str, Any]], epochs: int = 10) -> Dict[str, Any]:
         logger.info(f"Learning new task | TaskID={task_id}")
 
         old_weights = {k: v.copy() for k, v in self.current_weights.items()}
@@ -80,9 +75,7 @@ class ClinicalContinualLearner:
 
         importance_weights = self._calculate_importance(training_data)
 
-        consolidated_weights = self.strategy.consolidate_knowledge(
-            old_weights, new_weights, importance_weights
-        )
+        consolidated_weights = self.strategy.consolidate_knowledge(old_weights, new_weights, importance_weights)
 
         self.current_weights = consolidated_weights
 
@@ -109,9 +102,7 @@ class ClinicalContinualLearner:
         self.learning_history.append(learning_result)
         return learning_result
 
-    def _train_on_task(
-        self, training_data: List[Dict[str, Any]], epochs: int
-    ) -> Dict[str, np.ndarray]:
+    def _train_on_task(self, training_data: List[Dict[str, Any]], epochs: int) -> Dict[str, np.ndarray]:
         new_weights = {k: v.copy() for k, v in self.current_weights.items()}
 
         for epoch in range(epochs):
@@ -122,9 +113,7 @@ class ClinicalContinualLearner:
 
         return new_weights
 
-    def _calculate_importance(
-        self, training_data: List[Dict[str, Any]]
-    ) -> Dict[str, np.ndarray]:
+    def _calculate_importance(self, training_data: List[Dict[str, Any]]) -> Dict[str, np.ndarray]:
         importance = {}
 
         for key, weights in self.current_weights.items():
@@ -139,9 +128,7 @@ class ClinicalContinualLearner:
 
         return importance
 
-    def _evaluate_performance(
-        self, test_data: List[Dict[str, Any]]
-    ) -> Dict[str, float]:
+    def _evaluate_performance(self, test_data: List[Dict[str, Any]]) -> Dict[str, float]:
         correct_predictions = 0
         total_predictions = len(test_data)
 
@@ -150,9 +137,7 @@ class ClinicalContinualLearner:
             if prediction > 0.5:
                 correct_predictions += 1
 
-        accuracy = (
-            correct_predictions / total_predictions if total_predictions > 0 else 0.0
-        )
+        accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
 
         return {
             "accuracy": accuracy,
@@ -189,9 +174,7 @@ class ClinicalContinualLearner:
         predictions = []
 
         for memory in self.task_memories[-5:]:
-            task_prediction = self._predict_with_weights(
-                input_data, memory.model_weights
-            )
+            task_prediction = self._predict_with_weights(input_data, memory.model_weights)
             predictions.append(task_prediction)
 
         if not predictions:
@@ -208,22 +191,13 @@ class ClinicalContinualLearner:
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
 
-    def _predict_with_weights(
-        self, input_data: Dict[str, Any], weights: Dict[str, np.ndarray]
-    ) -> float:
+    def _predict_with_weights(self, input_data: Dict[str, Any], weights: Dict[str, np.ndarray]) -> float:
         input_vector = np.array(list(input_data.values())[:10])
 
         if "emotion_layer" in weights:
-            hidden = np.maximum(
-                0, input_vector @ weights["emotion_layer"][: len(input_vector), :]
-            )
-            if (
-                "risk_layer" in weights
-                and len(hidden) >= weights["risk_layer"].shape[0]
-            ):
-                output = (
-                    hidden[: weights["risk_layer"].shape[0]] @ weights["risk_layer"]
-                )
+            hidden = np.maximum(0, input_vector @ weights["emotion_layer"][: len(input_vector), :])
+            if "risk_layer" in weights and len(hidden) >= weights["risk_layer"].shape[0]:
+                output = hidden[: weights["risk_layer"].shape[0]] @ weights["risk_layer"]
                 return float(1.0 / (1.0 + np.exp(-np.mean(output))))
 
         return 0.5
@@ -234,53 +208,33 @@ class ClinicalContinualLearner:
 
         recent_learning = self.learning_history[-10:]
 
-        avg_performance = np.mean(
-            [learning["performance"]["accuracy"] for learning in recent_learning]
-        )
-        avg_forgetting = np.mean(
-            [learning["catastrophic_forgetting_score"] for learning in recent_learning]
-        )
-        avg_retention = np.mean(
-            [learning["knowledge_retention"] for learning in recent_learning]
-        )
+        avg_performance = np.mean([learning["performance"]["accuracy"] for learning in recent_learning])
+        avg_forgetting = np.mean([learning["catastrophic_forgetting_score"] for learning in recent_learning])
+        avg_retention = np.mean([learning["knowledge_retention"] for learning in recent_learning])
 
         return {
             "total_tasks_learned": len(self.task_memories),
             "recent_performance": float(avg_performance),
             "catastrophic_forgetting": float(avg_forgetting),
             "knowledge_retention": float(avg_retention),
-            "continual_learning_efficiency": float(
-                avg_retention * (1.0 - avg_forgetting)
-            ),
+            "continual_learning_efficiency": float(avg_retention * (1.0 - avg_forgetting)),
             "learning_strategy": type(self.strategy).__name__,
             "insights": self._generate_learning_insights(recent_learning),
         }
 
-    def _generate_learning_insights(
-        self, recent_learning: List[Dict[str, Any]]
-    ) -> List[str]:
+    def _generate_learning_insights(self, recent_learning: List[Dict[str, Any]]) -> List[str]:
         insights = []
 
         if len(recent_learning) > 3:
-            insights.append(
-                "Continual learning system shows consistent task acquisition"
-            )
+            insights.append("Continual learning system shows consistent task acquisition")
 
-        forgetting_scores = [
-            learning["catastrophic_forgetting_score"] for learning in recent_learning
-        ]
+        forgetting_scores = [learning["catastrophic_forgetting_score"] for learning in recent_learning]
         if forgetting_scores and np.mean(forgetting_scores) < 0.2:
-            insights.append(
-                "Low catastrophic forgetting indicates effective knowledge consolidation"
-            )
+            insights.append("Low catastrophic forgetting indicates effective knowledge consolidation")
         elif forgetting_scores and np.mean(forgetting_scores) > 0.5:
-            insights.append(
-                "High forgetting detected - consider adjusting consolidation parameters"
-            )
+            insights.append("High forgetting detected - consider adjusting consolidation parameters")
 
-        retention_scores = [
-            learning["knowledge_retention"] for learning in recent_learning
-        ]
+        retention_scores = [learning["knowledge_retention"] for learning in recent_learning]
         if retention_scores and np.mean(retention_scores) > 0.8:
             insights.append("Strong knowledge retention across multiple clinical tasks")
 

@@ -1,7 +1,7 @@
 import logging
-from typing import Dict, Any, Optional
-from datetime import datetime
 import re
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("recoveryos")
 
@@ -53,21 +53,15 @@ AMBIVALENCE_PATTERNS = [
 class EmotionAI:
     def __init__(self):
         self.shame_regex = re.compile("|".join(SHAME_PATTERNS), re.IGNORECASE)
-        self.ambivalence_regex = re.compile(
-            "|".join(AMBIVALENCE_PATTERNS), re.IGNORECASE
-        )
+        self.ambivalence_regex = re.compile("|".join(AMBIVALENCE_PATTERNS), re.IGNORECASE)
 
-    def analyze_emotional_content(
-        self, text: str, context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def analyze_emotional_content(self, text: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         try:
             analysis = {
                 "shame_detected": bool(self.shame_regex.search(text)),
                 "ambivalence_detected": bool(self.ambivalence_regex.search(text)),
                 "emotional_tone": self._analyze_tone(text),
-                "therapeutic_response": self._generate_therapeutic_response(
-                    text, context or {}
-                ),
+                "therapeutic_response": self._generate_therapeutic_response(text, context or {}),
                 "timestamp": datetime.utcnow().isoformat() + "Z",
             }
 
@@ -87,30 +81,15 @@ class EmotionAI:
     def _analyze_tone(self, text: str) -> str:
         text_lower = text.lower()
 
-        if any(
-            word in text_lower
-            for word in ["hopeful", "optimistic", "grateful", "proud", "strong"]
-        ):
+        if any(word in text_lower for word in ["hopeful", "optimistic", "grateful", "proud", "strong"]):
             return "hopeful"
-        elif any(
-            word in text_lower
-            for word in ["angry", "frustrated", "pissed", "mad", "furious"]
-        ):
+        elif any(word in text_lower for word in ["angry", "frustrated", "pissed", "mad", "furious"]):
             return "angry"
-        elif any(
-            word in text_lower
-            for word in ["sad", "depressed", "hopeless", "despair", "empty"]
-        ):
+        elif any(word in text_lower for word in ["sad", "depressed", "hopeless", "despair", "empty"]):
             return "despairing"
-        elif any(
-            word in text_lower
-            for word in ["ashamed", "embarrassed", "guilty", "worthless"]
-        ):
+        elif any(word in text_lower for word in ["ashamed", "embarrassed", "guilty", "worthless"]):
             return "ashamed"
-        elif any(
-            word in text_lower
-            for word in ["defensive", "whatever", "fine", "don't care"]
-        ):
+        elif any(word in text_lower for word in ["defensive", "whatever", "fine", "don't care"]):
             return "defensive"
         else:
             return "neutral"
@@ -149,8 +128,6 @@ class EmotionAI:
                 return "Thank you for sharing. Your feelings are valid, and I'm here to support you on this journey."
 
 
-def analyze_emotion_and_respond(
-    text: str, user_context: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+def analyze_emotion_and_respond(text: str, user_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     emotion_ai = EmotionAI()
     return emotion_ai.analyze_emotional_content(text, user_context or {})

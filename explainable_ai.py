@@ -1,9 +1,10 @@
 import logging
-from typing import Dict, Any, List, Optional
-from datetime import datetime
-import numpy as np
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -20,9 +21,7 @@ class Explanation:
 
 class ExplanationMethod(ABC):
     @abstractmethod
-    def explain(
-        self, input_data: Dict[str, Any], prediction: Dict[str, Any]
-    ) -> Explanation:
+    def explain(self, input_data: Dict[str, Any], prediction: Dict[str, Any]) -> Explanation:
         pass
 
 
@@ -36,9 +35,7 @@ class SHAPExplainer(ExplanationMethod):
             "sleep_quality": 0.6,
         }
 
-    def explain(
-        self, input_data: Dict[str, Any], prediction: Dict[str, Any]
-    ) -> Explanation:
+    def explain(self, input_data: Dict[str, Any], prediction: Dict[str, Any]) -> Explanation:
         feature_importance = {}
         reasoning_chain = []
 
@@ -50,9 +47,7 @@ class SHAPExplainer(ExplanationMethod):
 
                 if abs(contribution) > 0.1:
                     direction = "increases" if contribution > 0 else "decreases"
-                    reasoning_chain.append(
-                        f"{feature} ({value:.2f}) {direction} risk by {abs(contribution):.2f}"
-                    )
+                    reasoning_chain.append(f"{feature} ({value:.2f}) {direction} risk by {abs(contribution):.2f}")
 
         counterfactual = self._generate_counterfactual(input_data, prediction)
 
@@ -75,9 +70,7 @@ class SHAPExplainer(ExplanationMethod):
         }
         return weights.get(feature, 0.1)
 
-    def _generate_counterfactual(
-        self, input_data: Dict[str, Any], prediction: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_counterfactual(self, input_data: Dict[str, Any], prediction: Dict[str, Any]) -> Dict[str, Any]:
         current_risk = prediction.get("risk_score", 0.5)
         target_risk = max(0.1, current_risk - 0.3)
 
@@ -95,21 +88,15 @@ class SHAPExplainer(ExplanationMethod):
             "changes_needed": self._describe_changes(input_data, counterfactual),
         }
 
-    def _describe_changes(
-        self, original: Dict[str, Any], modified: Dict[str, Any]
-    ) -> List[str]:
+    def _describe_changes(self, original: Dict[str, Any], modified: Dict[str, Any]) -> List[str]:
         changes = []
 
         for key, new_value in modified.items():
             if key in original and abs(original[key] - new_value) > 0.05:
                 if new_value > original[key]:
-                    changes.append(
-                        f"Increase {key} from {original[key]:.2f} to {new_value:.2f}"
-                    )
+                    changes.append(f"Increase {key} from {original[key]:.2f} to {new_value:.2f}")
                 else:
-                    changes.append(
-                        f"Reduce {key} from {original[key]:.2f} to {new_value:.2f}"
-                    )
+                    changes.append(f"Reduce {key} from {original[key]:.2f} to {new_value:.2f}")
 
         return changes
 
@@ -118,19 +105,13 @@ class LIMEExplainer(ExplanationMethod):
     def __init__(self, num_samples: int = 100):
         self.num_samples = num_samples
 
-    def explain(
-        self, input_data: Dict[str, Any], prediction: Dict[str, Any]
-    ) -> Explanation:
+    def explain(self, input_data: Dict[str, Any], prediction: Dict[str, Any]) -> Explanation:
         feature_importance = self._local_linear_approximation(input_data, prediction)
 
         reasoning_chain = []
-        for feature, importance in sorted(
-            feature_importance.items(), key=lambda x: abs(x[1]), reverse=True
-        )[:3]:
+        for feature, importance in sorted(feature_importance.items(), key=lambda x: abs(x[1]), reverse=True)[:3]:
             effect = "protective" if importance < 0 else "risk-increasing"
-            reasoning_chain.append(
-                f"{feature} has {effect} effect (weight: {importance:.3f})"
-            )
+            reasoning_chain.append(f"{feature} has {effect} effect (weight: {importance:.3f})")
 
         return Explanation(
             explanation_type="LIME",
@@ -141,9 +122,7 @@ class LIMEExplainer(ExplanationMethod):
             timestamp=datetime.utcnow(),
         )
 
-    def _local_linear_approximation(
-        self, input_data: Dict[str, Any], prediction: Dict[str, Any]
-    ) -> Dict[str, float]:
+    def _local_linear_approximation(self, input_data: Dict[str, Any], prediction: Dict[str, Any]) -> Dict[str, float]:
         feature_importance = {}
 
         for feature in input_data.keys():
@@ -162,9 +141,7 @@ class LIMEExplainer(ExplanationMethod):
 
             if len(set(perturbations)) > 1:
                 correlation = np.corrcoef(perturbations, predictions)[0, 1]
-                feature_importance[feature] = (
-                    correlation if not np.isnan(correlation) else 0.0
-                )
+                feature_importance[feature] = correlation if not np.isnan(correlation) else 0.0
             else:
                 feature_importance[feature] = 0.0
 
@@ -193,20 +170,14 @@ class CausalExplainer(ExplanationMethod):
             "sleep_quality": ["mood_state", "stress_level"],
         }
 
-    def explain(
-        self, input_data: Dict[str, Any], prediction: Dict[str, Any]
-    ) -> Explanation:
+    def explain(self, input_data: Dict[str, Any], prediction: Dict[str, Any]) -> Explanation:
         causal_effects = self._calculate_causal_effects(input_data)
 
         reasoning_chain = []
-        for cause, effect_size in sorted(
-            causal_effects.items(), key=lambda x: abs(x[1]), reverse=True
-        ):
+        for cause, effect_size in sorted(causal_effects.items(), key=lambda x: abs(x[1]), reverse=True):
             if abs(effect_size) > 0.05:
                 direction = "increases" if effect_size > 0 else "decreases"
-                reasoning_chain.append(
-                    f"{cause} causally {direction} relapse risk by {abs(effect_size):.2f}"
-                )
+                reasoning_chain.append(f"{cause} causally {direction} relapse risk by {abs(effect_size):.2f}")
 
         counterfactual = self._causal_counterfactual(input_data, causal_effects)
 
@@ -258,9 +229,7 @@ class CausalExplainer(ExplanationMethod):
 
         return indirect_effect
 
-    def _causal_counterfactual(
-        self, input_data: Dict[str, Any], causal_effects: Dict[str, float]
-    ) -> Dict[str, Any]:
+    def _causal_counterfactual(self, input_data: Dict[str, Any], causal_effects: Dict[str, float]) -> Dict[str, Any]:
         interventions = {}
 
         strongest_cause = max(causal_effects.items(), key=lambda x: abs(x[1]))
@@ -268,19 +237,13 @@ class CausalExplainer(ExplanationMethod):
 
         if effect_size > 0.1:
             if cause_name == "stress_level":
-                interventions[cause_name] = max(
-                    0.1, input_data.get(cause_name, 0.5) - 0.4
-                )
+                interventions[cause_name] = max(0.1, input_data.get(cause_name, 0.5) - 0.4)
             elif cause_name == "mood_state":
-                interventions[cause_name] = max(
-                    0.1, input_data.get(cause_name, 0.5) - 0.3
-                )
+                interventions[cause_name] = max(0.1, input_data.get(cause_name, 0.5) - 0.3)
 
         elif effect_size < -0.1:
             if cause_name in ["social_support", "coping_skills"]:
-                interventions[cause_name] = min(
-                    1.0, input_data.get(cause_name, 0.5) + 0.3
-                )
+                interventions[cause_name] = min(1.0, input_data.get(cause_name, 0.5) + 0.3)
 
         return {
             "causal_intervention": interventions,
@@ -309,9 +272,7 @@ class ExplainableAIEngine:
         for method in methods:
             if method in self.explainers:
                 try:
-                    explanation = self.explainers[method].explain(
-                        input_data, prediction
-                    )
+                    explanation = self.explainers[method].explain(input_data, prediction)
                     explanations[method] = {
                         "feature_importance": explanation.feature_importance,
                         "reasoning_chain": explanation.reasoning_chain,
@@ -342,9 +303,7 @@ class ExplainableAIEngine:
 
         for method, explanation in explanations.items():
             if "error" not in explanation:
-                for feature, importance in explanation.get(
-                    "feature_importance", {}
-                ).items():
+                for feature, importance in explanation.get("feature_importance", {}).items():
                     if feature not in feature_votes:
                         feature_votes[feature] = []
                     feature_votes[feature].append(importance)
@@ -355,21 +314,15 @@ class ExplainableAIEngine:
         for feature, votes in feature_votes.items():
             consensus_importance[feature] = np.mean(votes)
 
-        top_factors = sorted(
-            consensus_importance.items(), key=lambda x: float(abs(x[1])), reverse=True
-        )[:3]
+        top_factors = sorted(consensus_importance.items(), key=lambda x: float(abs(x[1])), reverse=True)[:3]
 
         return {
-            "top_risk_factors": [
-                {"factor": f, "importance": i} for f, i in top_factors
-            ],
+            "top_risk_factors": [{"factor": f, "importance": i} for f, i in top_factors],
             "consensus_reasoning": reasoning_points[:5],
             "explanation_agreement": len(feature_votes) / max(1, len(explanations)),
         }
 
-    def _assess_explanation_quality(
-        self, explanations: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _assess_explanation_quality(self, explanations: Dict[str, Any]) -> Dict[str, Any]:
         quality_metrics = {
             "completeness": len(explanations) / len(self.explainers),
             "consistency": 0.0,
@@ -383,9 +336,9 @@ class ExplainableAIEngine:
 
             for i, exp1 in enumerate(valid_explanations):
                 for exp2 in valid_explanations[i + 1 :]:
-                    common_features = set(
-                        exp1.get("feature_importance", {}).keys()
-                    ) & set(exp2.get("feature_importance", {}).keys())
+                    common_features = set(exp1.get("feature_importance", {}).keys()) & set(
+                        exp2.get("feature_importance", {}).keys()
+                    )
 
                     if common_features:
                         corr_values = []
@@ -400,13 +353,9 @@ class ExplainableAIEngine:
             if feature_correlations:
                 quality_metrics["consistency"] = float(np.mean(feature_correlations))
 
-        reasoning_lengths = [
-            len(e.get("reasoning_chain", [])) for e in valid_explanations
-        ]
+        reasoning_lengths = [len(e.get("reasoning_chain", [])) for e in valid_explanations]
         if reasoning_lengths:
-            quality_metrics["interpretability"] = min(
-                1.0, float(np.mean(reasoning_lengths)) / 5.0
-            )
+            quality_metrics["interpretability"] = min(1.0, float(np.mean(reasoning_lengths)) / 5.0)
 
         return quality_metrics
 
@@ -449,8 +398,6 @@ def create_explainable_ai_engine() -> ExplainableAIEngine:
     return ExplainableAIEngine()
 
 
-def explain_clinical_prediction(
-    input_data: Dict[str, Any], prediction: Dict[str, Any]
-) -> Dict[str, Any]:
+def explain_clinical_prediction(input_data: Dict[str, Any], prediction: Dict[str, Any]) -> Dict[str, Any]:
     engine = create_explainable_ai_engine()
     return engine.explain_prediction(input_data, prediction)

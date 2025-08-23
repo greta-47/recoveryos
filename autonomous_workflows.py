@@ -1,7 +1,7 @@
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("recoveryos")
 
@@ -110,9 +110,7 @@ class AutonomousWorkflow:
             return {"status": "completed", "message": "Workflow executed successfully"}
 
         except Exception as e:
-            logger.error(
-                f"Workflow execution failed | ID={self.workflow_id} | Error={str(e)}"
-            )
+            logger.error(f"Workflow execution failed | ID={self.workflow_id} | Error={str(e)}")
             return {"status": "error", "message": str(e)}
 
     def _check_guardrails(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -132,9 +130,7 @@ class AutonomousWorkflow:
 
         return results
 
-    def _evaluate_guardrail_condition(
-        self, guardrail: ClinicalGuardrail, context: Dict[str, Any]
-    ) -> bool:
+    def _evaluate_guardrail_condition(self, guardrail: ClinicalGuardrail, context: Dict[str, Any]) -> bool:
         condition = guardrail.condition
 
         if condition == "risk_score >= 8.0":
@@ -165,9 +161,7 @@ class AutonomousWorkflow:
 
         return False
 
-    def _handle_escalation(
-        self, guardrail_results: Dict[str, Any], context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _handle_escalation(self, guardrail_results: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         escalation_level = guardrail_results["escalation_level"]
         triggered_guardrails = guardrail_results["triggered_guardrails"]
 
@@ -210,9 +204,7 @@ class AutonomousWorkflow:
             "message": f"Daily check-in reminder sent for {preferred_time}",
             "actions": ["send_checkin_reminder", "prepare_personalized_questions"],
             "personalization": {
-                "communication_style": user_profile.get(
-                    "communication_style", "supportive"
-                ),
+                "communication_style": user_profile.get("communication_style", "supportive"),
                 "preferred_coping_tools": user_profile.get("coping_preferences", []),
             },
         }
@@ -264,15 +256,11 @@ class WorkflowManager:
         self.active_workflows: Dict[str, AutonomousWorkflow] = {}
 
     def create_workflow(self, user_id: int, workflow_type: WorkflowType) -> str:
-        workflow_id = (
-            f"{workflow_type.value}_{user_id}_{int(datetime.utcnow().timestamp())}"
-        )
+        workflow_id = f"{workflow_type.value}_{user_id}_{int(datetime.utcnow().timestamp())}"
         workflow = AutonomousWorkflow(workflow_id, user_id, workflow_type)
         self.active_workflows[workflow_id] = workflow
 
-        logger.info(
-            f"Workflow created | ID={workflow_id} | Type={workflow_type.value} | User={user_id}"
-        )
+        logger.info(f"Workflow created | ID={workflow_id} | Type={workflow_type.value} | User={user_id}")
         return workflow_id
 
     def execute_workflows(self, user_context: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -306,28 +294,20 @@ def setup_user_workflows(user_id: int, preferences: Dict[str, Any]) -> List[str]
     workflow_ids = []
 
     if preferences.get("daily_checkins", True):
-        workflow_id = workflow_manager.create_workflow(
-            user_id, WorkflowType.DAILY_CHECKIN
-        )
+        workflow_id = workflow_manager.create_workflow(user_id, WorkflowType.DAILY_CHECKIN)
         workflow_ids.append(workflow_id)
 
     if preferences.get("risk_monitoring", True):
-        workflow_id = workflow_manager.create_workflow(
-            user_id, WorkflowType.RISK_MONITORING
-        )
+        workflow_id = workflow_manager.create_workflow(user_id, WorkflowType.RISK_MONITORING)
         workflow_ids.append(workflow_id)
 
     if preferences.get("relapse_alerts", True):
-        workflow_id = workflow_manager.create_workflow(
-            user_id, WorkflowType.RELAPSE_ALERT
-        )
+        workflow_id = workflow_manager.create_workflow(user_id, WorkflowType.RELAPSE_ALERT)
         workflow_ids.append(workflow_id)
 
     return workflow_ids
 
 
-def execute_user_workflows(
-    user_id: int, context: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+def execute_user_workflows(user_id: int, context: Dict[str, Any]) -> List[Dict[str, Any]]:
     user_context = {**context, "user_id": user_id}
     return workflow_manager.execute_workflows(user_context)

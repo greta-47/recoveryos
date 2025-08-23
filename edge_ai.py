@@ -1,10 +1,11 @@
-import logging
-from typing import Dict, Any, List, Optional, Callable
-from datetime import datetime
-import numpy as np
 import json
-from dataclasses import dataclass
+import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -55,9 +56,7 @@ class WebAssemblyInferenceEngine(EdgeInferenceEngine):
 
     def load_model(self, model: EdgeModel) -> bool:
         if not model.wasm_binary or not model.javascript_code:
-            logger.error(
-                f"WASM model missing binary or JS code | ModelID={model.model_id}"
-            )
+            logger.error(f"WASM model missing binary or JS code | ModelID={model.model_id}")
             return False
 
         try:
@@ -369,9 +368,7 @@ class EdgeModelCompiler:
             quantized=True,
         )
 
-        logger.info(
-            f"Quantized model | Original={model.model_id} | Quantized={quantized_model.model_id}"
-        )
+        logger.info(f"Quantized model | Original={model.model_id} | Quantized={quantized_model.model_id}")
         return quantized_model
 
 
@@ -385,9 +382,7 @@ class EdgeAIManager:
         self.deployed_models: Dict[str, EdgeModel] = {}
         self.inference_stats: List[Dict[str, Any]] = []
 
-    def deploy_model(
-        self, model_type: str, engine_type: str = "javascript"
-    ) -> Optional[str]:
+    def deploy_model(self, model_type: str, engine_type: str = "javascript") -> Optional[str]:
         if engine_type not in self.engines:
             logger.error(f"Unknown engine type | Type={engine_type}")
             return None
@@ -409,9 +404,7 @@ class EdgeAIManager:
 
         return None
 
-    def run_inference(
-        self, deployment_id: str, input_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def run_inference(self, deployment_id: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
         if deployment_id not in self.deployed_models:
             return {"error": "Model not deployed"}
 
@@ -442,11 +435,7 @@ class EdgeAIManager:
                 risk_score = float(output[0])
                 result = {
                     "risk_score": risk_score,
-                    "risk_level": (
-                        "high"
-                        if risk_score > 0.7
-                        else "moderate" if risk_score > 0.4 else "low"
-                    ),
+                    "risk_level": ("high" if risk_score > 0.7 else "moderate" if risk_score > 0.4 else "low"),
                 }
             else:
                 result = {"output": output.tolist()}
@@ -552,12 +541,8 @@ class EdgeAIManager:
         model_counts: Dict[str, int] = {}
 
         for stat in recent_stats:
-            engine_counts[stat["engine_type"]] = (
-                engine_counts.get(stat["engine_type"], 0) + 1
-            )
-            model_counts[stat["model_type"]] = (
-                model_counts.get(stat["model_type"], 0) + 1
-            )
+            engine_counts[stat["engine_type"]] = engine_counts.get(stat["engine_type"], 0) + 1
+            model_counts[stat["model_type"]] = model_counts.get(stat["model_type"], 0) + 1
 
         return {
             "total_inferences": len(self.inference_stats),
@@ -568,9 +553,7 @@ class EdgeAIManager:
             "engine_usage": engine_counts,
             "model_usage": model_counts,
             "deployed_models": len(self.deployed_models),
-            "edge_efficiency": (
-                "ultra_low_latency" if np.mean(latencies) < 10 else "low_latency"
-            ),
+            "edge_efficiency": ("ultra_low_latency" if np.mean(latencies) < 10 else "low_latency"),
         }
 
 

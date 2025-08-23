@@ -64,4 +64,3 @@ def explain(urge: int, mood: int, sleep_hours: float, isolation: int, lang_signa
         "language_signal": float(lang_signal),
         **{f"w_{k}": v for k, v in get_weights().items()},
     }
-

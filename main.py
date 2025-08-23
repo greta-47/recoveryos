@@ -33,9 +33,8 @@ from pydantic import BaseModel, Field
 APP_NAME = os.getenv("APP_NAME", "RecoveryOS API")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 API_KEY = os.getenv("API_KEY")
-ALLOWED_ORIGINS = [
-    o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o
-]
+ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o]
+
 
 # ----------------------
 # Structured logging
@@ -55,12 +54,14 @@ class JsonLogFormatter(logging.Formatter):
             base["exc"] = self.formatException(record.exc_info)
         return json.dumps(base)
 
+
 logger = logging.getLogger("recoveryos")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(JsonLogFormatter())
     logger.addHandler(_h)
+
 
 # ----------------------
 # Utils
@@ -72,8 +73,10 @@ def safe_client_fingerprint(request: Request) -> str:
     h.update(f"{host}-{coarse_ts}".encode())
     return h.hexdigest()
 
+
 def now_iso() -> str:
     return datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
 
 # ----------------------
 # Optional imports
@@ -92,13 +95,16 @@ except Exception:
 briefing_router = None
 try:
     from briefings import router as _briefings_router  # type: ignore
+
     briefing_router = _briefings_router
 except Exception:
     try:
         from briefing import router as _briefing_router  # type: ignore
+
         briefing_router = _briefing_router
     except Exception:
         briefing_router = None  # type: ignore[assignment]
+
 
 # ----------------------
 # Auth
@@ -109,6 +115,7 @@ def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
         return
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
+
 
 # ----------------------
 # App & Middleware
@@ -127,6 +134,7 @@ app.add_middleware(
 if os.path.isdir("ui"):
     app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
 
+
 # ----------------------
 # Models
 # ----------------------
@@ -136,6 +144,7 @@ class Checkin(BaseModel):
     sleep_hours: float = Field(0, ge=0, le=24, description="Hours slept last night")
     isolation_score: int = Field(0, ge=0, le=5, description="Social connection: 0 (isolated) to 5 (connected)")
 
+
 class AgentsIn(BaseModel):
     topic: str = Field(..., min_length=5, max_length=200)
     horizon: str = Field(default="90 days", max_length=50)
@@ -143,6 +152,7 @@ class AgentsIn(BaseModel):
         default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%",
         max_length=500,
     )
+
 
 # ----------------------
 # Middleware (request/response logging with request ID)
@@ -153,22 +163,40 @@ async def add_request_id(request: Request, call_next):
     client_fp = safe_client_fingerprint(request)
     logger.info(
         "request",
-        extra={"extra": {"path": request.url.path, "method": request.method, "request_id": request_id, "client_fp": client_fp}},
+        extra={
+            "extra": {
+                "path": request.url.path,
+                "method": request.method,
+                "request_id": request_id,
+                "client_fp": client_fp,
+            }
+        },
     )
     try:
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         logger.info(
             "response",
-            extra={"extra": {"path": request.url.path, "status": response.status_code, "request_id": request_id, "client_fp": client_fp}},
+            extra={
+                "extra": {
+                    "path": request.url.path,
+                    "status": response.status_code,
+                    "request_id": request_id,
+                    "client_fp": client_fp,
+                }
+            },
         )
         return response
     except Exception:
-        logger.exception("unhandled_error", extra={"extra": {"path": request.url.path, "request_id": request_id, "client_fp": client_fp}})
+        logger.exception(
+            "unhandled_error",
+            extra={"extra": {"path": request.url.path, "request_id": request_id, "client_fp": client_fp}},
+        )
         return JSONResponse(
             status_code=500,
             content={"error": {"type": "server_error", "message": "Unexpected error", "request_id": request_id}},
         )
+
 
 # ----------------------
 # Exception handlers
@@ -188,6 +216,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         },
     )
 
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     request_id = request.headers.get("X-Request-ID", "")
@@ -196,6 +225,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         content={"error": {"type": "http_error", "message": exc.detail, "request_id": request_id}},
     )
 
+
 # ----------------------
 # Routes
 # ----------------------
@@ -203,9 +233,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 def root():
     return {"ok": True, "service": APP_NAME, "version": APP_VERSION, "timestamp": now_iso()}
 
+
 @app.get("/healthz", response_class=JSONResponse)
 def health():
     return {"status": "ok", "app": APP_NAME, "timestamp": now_iso()}
+
 
 @app.post("/checkins", dependencies=[Depends(api_key_auth)])
 def create_checkin(checkin: Checkin, request: Request):
@@ -220,7 +252,15 @@ def create_checkin(checkin: Checkin, request: Request):
         tool = "Breathing — Box breathing 4x4"
     logger.info(
         "checkin",
-        extra={"extra": {"request_id": request_id, "urge": checkin.urge, "mood": checkin.mood, "tool": tool, "client_fp": safe_client_fingerprint(request)}},
+        extra={
+            "extra": {
+                "request_id": request_id,
+                "urge": checkin.urge,
+                "mood": checkin.mood,
+                "tool": tool,
+                "client_fp": safe_client_fingerprint(request),
+            }
+        },
     )
     return {
         "message": "Check-in received",
@@ -229,6 +269,7 @@ def create_checkin(checkin: Checkin, request: Request):
         "timestamp": now_iso(),
         "request_id": request_id,
     }
+
 
 @app.post("/agents/run", dependencies=[Depends(api_key_auth)])
 def agents_run(body: AgentsIn, request: Request):
@@ -251,6 +292,7 @@ def agents_run(body: AgentsIn, request: Request):
         logger.exception("agent_error", extra={"extra": {"request_id": request_id}})
         raise HTTPException(status_code=500, detail="Internal agent error — please try again")
 
+
 # ----------------------
 # Optional routers
 # ----------------------
@@ -268,9 +310,11 @@ try:
     app.add_middleware(PrometheusMiddleware)
     app.add_route("/metrics", handle_metrics)
 except Exception:
+
     @app.get("/metrics", include_in_schema=False)
     async def metrics_placeholder():
         return PlainTextResponse("starlette_exporter not installed")
+
 
 # ----------------------
 # Entrypoint
@@ -285,4 +329,3 @@ if __name__ == "__main__":
         reload=True,
         proxy_headers=True,
     )
-

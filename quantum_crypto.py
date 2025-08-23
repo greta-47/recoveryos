@@ -1,10 +1,11 @@
-import logging
-from typing import Dict, Any, List, Optional, Tuple, Union
-from datetime import datetime
-import numpy as np
 import hashlib
+import logging
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -88,9 +89,7 @@ class QuantumResistantCrypto:
         self.key_store: Dict[str, QuantumKeyPair] = {}
         self.encryption_log: List[Dict[str, Any]] = []
 
-    def generate_keypair(
-        self, algorithm: QuantumAlgorithm = QuantumAlgorithm.KYBER
-    ) -> str:
+    def generate_keypair(self, algorithm: QuantumAlgorithm = QuantumAlgorithm.KYBER) -> str:
         public_key, private_key = self.lattice_crypto.generate_lattice_keypair()
         public_key_bytes = public_key.astype(np.int32).tobytes()
         private_key_bytes = private_key.astype(np.int32).tobytes()
@@ -106,15 +105,11 @@ class QuantumResistantCrypto:
         )
 
         self.key_store[key_id] = keypair
-        logger.info(
-            f"Generated quantum-resistant keypair | Algorithm={algorithm.value} | KeyID={key_id}"
-        )
+        logger.info(f"Generated quantum-resistant keypair | Algorithm={algorithm.value} | KeyID={key_id}")
 
         return key_id
 
-    def encrypt(
-        self, key_id: str, plaintext: Union[str, bytes]
-    ) -> Optional[Dict[str, Any]]:
+    def encrypt(self, key_id: str, plaintext: Union[str, bytes]) -> Optional[Dict[str, Any]]:
         if key_id not in self.key_store:
             logger.error(f"Key not found | KeyID={key_id}")
             return None

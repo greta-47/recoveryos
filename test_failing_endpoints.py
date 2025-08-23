@@ -4,14 +4,12 @@ Diagnostic test script for the 3 failing elite endpoints.
 This will help categorize each failure type and capture detailed error information.
 """
 
-import sys
 import logging
+import sys
 import traceback
 
 # Set up detailed logging
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 sys.path.append("/home/ubuntu/recoveryos")
 
@@ -35,9 +33,7 @@ def test_continual_learning():
         task_id = "stress_prediction"
         training_data_dict = {"stress_patterns": [0.8, 0.6, 0.9]}
 
-        print(
-            f"Current endpoint passes: task_id='{task_id}', training_data={training_data_dict}"
-        )
+        print(f"Current endpoint passes: task_id='{task_id}', training_data={training_data_dict}")
 
         # Check what the function actually expects
         import inspect

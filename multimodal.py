@@ -1,8 +1,8 @@
-import logging
-from typing import Dict, Any, List
-from datetime import datetime
 import base64
 import io
+import logging
+from datetime import datetime
+from typing import Any, Dict, List
 
 logger = logging.getLogger("recoveryos")
 
@@ -72,9 +72,7 @@ class MultimodalProcessor:
                             {"type": "text", "text": VISION_ANALYSIS_PROMPT},
                             {
                                 "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                },
+                                "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
                             },
                         ],
                     }
@@ -116,9 +114,7 @@ class MultimodalProcessor:
             from openai import OpenAI
 
             client = OpenAI()
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1", file=audio_file
-            )
+            transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
             transcription = transcript.text
 
             response = client.chat.completions.create(
@@ -173,13 +169,9 @@ class MultimodalProcessor:
         mood_data = {}
 
         if "mood" in analysis.lower():
-            if any(
-                word in analysis.lower() for word in ["happy", "good", "positive", "up"]
-            ):
+            if any(word in analysis.lower() for word in ["happy", "good", "positive", "up"]):
                 mood_data["trend"] = "positive"
-            elif any(
-                word in analysis.lower() for word in ["sad", "down", "low", "negative"]
-            ):
+            elif any(word in analysis.lower() for word in ["sad", "down", "low", "negative"]):
                 mood_data["trend"] = "negative"
             else:
                 mood_data["trend"] = "neutral"
@@ -189,23 +181,13 @@ class MultimodalProcessor:
     def _analyze_audio_emotion(self, transcription: str) -> str:
         text_lower = transcription.lower()
 
-        if any(
-            word in text_lower
-            for word in ["excited", "happy", "great", "amazing", "wonderful"]
-        ):
+        if any(word in text_lower for word in ["excited", "happy", "great", "amazing", "wonderful"]):
             return "positive"
-        elif any(
-            word in text_lower
-            for word in ["sad", "depressed", "terrible", "awful", "hopeless"]
-        ):
+        elif any(word in text_lower for word in ["sad", "depressed", "terrible", "awful", "hopeless"]):
             return "negative"
-        elif any(
-            word in text_lower for word in ["angry", "frustrated", "mad", "pissed"]
-        ):
+        elif any(word in text_lower for word in ["angry", "frustrated", "mad", "pissed"]):
             return "angry"
-        elif any(
-            word in text_lower for word in ["anxious", "worried", "nervous", "scared"]
-        ):
+        elif any(word in text_lower for word in ["anxious", "worried", "nervous", "scared"]):
             return "anxious"
         else:
             return "neutral"
@@ -214,35 +196,22 @@ class MultimodalProcessor:
         flags = []
         content_lower = content.lower()
 
-        if any(
-            word in content_lower
-            for word in ["suicide", "kill myself", "end it all", "not worth living"]
-        ):
+        if any(word in content_lower for word in ["suicide", "kill myself", "end it all", "not worth living"]):
             flags.append("suicide_risk")
 
-        if any(
-            word in content_lower for word in ["self harm", "cut myself", "hurt myself"]
-        ):
+        if any(word in content_lower for word in ["self harm", "cut myself", "hurt myself"]):
             flags.append("self_harm_risk")
 
-        if any(
-            word in content_lower
-            for word in ["relapse", "used again", "drank again", "high again"]
-        ):
+        if any(word in content_lower for word in ["relapse", "used again", "drank again", "high again"]):
             flags.append("relapse_indicator")
 
-        if any(
-            word in content_lower
-            for word in ["crisis", "emergency", "help me", "can't cope"]
-        ):
+        if any(word in content_lower for word in ["crisis", "emergency", "help me", "can't cope"]):
             flags.append("crisis_indicator")
 
         return flags
 
 
-def process_multimodal_input(
-    file_data: bytes, filename: str, file_type: str
-) -> Dict[str, Any]:
+def process_multimodal_input(file_data: bytes, filename: str, file_type: str) -> Dict[str, Any]:
     processor = MultimodalProcessor()
 
     if file_type.startswith("image/"):

@@ -4,10 +4,12 @@ Observability Integration Testing Script
 Tests metrics, tracing, and PII redaction functionality
 """
 
-import requests
 import time
-from observability_enhanced import PIIRedactor
+
+import requests
+
 from feature_flags import feature_flags
+from observability_enhanced import PIIRedactor
 
 
 def test_metrics_endpoint():
@@ -35,9 +37,7 @@ def test_metrics_endpoint():
                 print("✅ Metrics endpoint: PASS - All expected metrics found")
                 return True
             else:
-                print(
-                    f"❌ Metrics endpoint: FAIL - Missing metrics: {set(expected_metrics) - set(found_metrics)}"
-                )
+                print(f"❌ Metrics endpoint: FAIL - Missing metrics: {set(expected_metrics) - set(found_metrics)}")
                 return False
         else:
             print(f"❌ Metrics endpoint: FAIL - HTTP {response.status_code}")
@@ -102,9 +102,7 @@ def test_pii_redaction():
     for i, test_case in enumerate(test_cases, 1):
         redacted = PIIRedactor.redact_pii(test_case["input"])
 
-        patterns_found = all(
-            pattern in redacted for pattern in test_case["expected_redacted"]
-        )
+        patterns_found = all(pattern in redacted for pattern in test_case["expected_redacted"])
 
         if patterns_found:
             print(f"✅ PII Test {i}: PASS")
@@ -126,9 +124,7 @@ def test_feature_flags():
 
     try:
         enhanced_enabled = feature_flags.is_enabled("enhanced_observability")
-        print(
-            f"Enhanced Observability: {'✅ ENABLED' if enhanced_enabled else '❌ DISABLED'}"
-        )
+        print(f"Enhanced Observability: {'✅ ENABLED' if enhanced_enabled else '❌ DISABLED'}")
 
         release_enabled = feature_flags.is_enabled("release_20250814")
         print(f"Release 20250814: {'✅ ENABLED' if release_enabled else '❌ DISABLED'}")

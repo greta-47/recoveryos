@@ -1,8 +1,8 @@
 import logging
-from typing import Dict, Any, List, Optional, Union, Tuple
-from datetime import datetime
 import secrets
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger("recoveryos")
 
@@ -68,9 +68,7 @@ class SimpleHomomorphicEncryption:
 
         return float(plaintext) / 1000.0
 
-    def homomorphic_add(
-        self, key_id: str, ciphertext1: int, ciphertext2: int
-    ) -> Optional[int]:
+    def homomorphic_add(self, key_id: str, ciphertext1: int, ciphertext2: int) -> Optional[int]:
         if key_id not in self.keys:
             return None
 
@@ -79,9 +77,7 @@ class SimpleHomomorphicEncryption:
 
         return result
 
-    def homomorphic_multiply_constant(
-        self, key_id: str, ciphertext: int, constant: int
-    ) -> Optional[int]:
+    def homomorphic_multiply_constant(self, key_id: str, ciphertext: int, constant: int) -> Optional[int]:
         if key_id not in self.keys:
             return None
 
@@ -177,9 +173,7 @@ class SecureMultiPartyComputation:
         if count == 0:
             return None
 
-        avg_encrypted = self.he.homomorphic_multiply_constant(
-            key_id, secure_sum_result, 1
-        )
+        avg_encrypted = self.he.homomorphic_multiply_constant(key_id, secure_sum_result, 1)
 
         self.computation_log.append(
             {
@@ -192,9 +186,7 @@ class SecureMultiPartyComputation:
 
         return avg_encrypted
 
-    def privacy_preserving_analytics(
-        self, key_id: str, encrypted_data: List[int]
-    ) -> Dict[str, Any]:
+    def privacy_preserving_analytics(self, key_id: str, encrypted_data: List[int]) -> Dict[str, Any]:
         if not encrypted_data:
             return {"error": "No data provided"}
 
@@ -257,17 +249,11 @@ class ClinicalHomomorphicProcessor:
         self.clinical_computations.append(result)
         return result
 
-    def secure_outcome_comparison(
-        self, group_a_outcomes: List[float], group_b_outcomes: List[float]
-    ) -> Dict[str, Any]:
+    def secure_outcome_comparison(self, group_a_outcomes: List[float], group_b_outcomes: List[float]) -> Dict[str, Any]:
         key_id = self.smpc.he.generate_keypair()
 
-        encrypted_a = [
-            self.smpc.he.encrypt(key_id, outcome) for outcome in group_a_outcomes
-        ]
-        encrypted_b = [
-            self.smpc.he.encrypt(key_id, outcome) for outcome in group_b_outcomes
-        ]
+        encrypted_a = [self.smpc.he.encrypt(key_id, outcome) for outcome in group_a_outcomes]
+        encrypted_b = [self.smpc.he.encrypt(key_id, outcome) for outcome in group_b_outcomes]
 
         encrypted_a = [e for e in encrypted_a if e is not None]
         encrypted_b = [e for e in encrypted_b if e is not None]
@@ -278,12 +264,8 @@ class ClinicalHomomorphicProcessor:
         avg_a_encrypted = self.smpc.secure_average(key_id, encrypted_a)
         avg_b_encrypted = self.smpc.secure_average(key_id, encrypted_b)
 
-        avg_a = (
-            self.smpc.he.decrypt(key_id, avg_a_encrypted) if avg_a_encrypted else None
-        )
-        avg_b = (
-            self.smpc.he.decrypt(key_id, avg_b_encrypted) if avg_b_encrypted else None
-        )
+        avg_a = self.smpc.he.decrypt(key_id, avg_a_encrypted) if avg_a_encrypted else None
+        avg_b = self.smpc.he.decrypt(key_id, avg_b_encrypted) if avg_b_encrypted else None
 
         comparison = {
             "group_a_average": avg_a,
@@ -308,13 +290,9 @@ class ClinicalHomomorphicProcessor:
         computation_types: Dict[str, int] = {}
         for comp in recent_computations:
             if "aggregated_risk" in comp:
-                computation_types["risk_aggregation"] = (
-                    computation_types.get("risk_aggregation", 0) + 1
-                )
+                computation_types["risk_aggregation"] = computation_types.get("risk_aggregation", 0) + 1
             elif "group_a_average" in comp:
-                computation_types["outcome_comparison"] = (
-                    computation_types.get("outcome_comparison", 0) + 1
-                )
+                computation_types["outcome_comparison"] = computation_types.get("outcome_comparison", 0) + 1
 
         return {
             "total_computations": total_computations,

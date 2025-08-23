@@ -5,6 +5,7 @@ Tests the enhanced observability PII redaction capabilities
 """
 
 import json
+
 from observability_enhanced import PIIRedactor
 
 
@@ -97,7 +98,7 @@ def test_pii_redaction():
         print("❌ FAIL - Dictionary redaction failed")
         all_passed = False
 
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     if all_passed:
         print("🎉 All PII redaction tests PASSED")
         return True

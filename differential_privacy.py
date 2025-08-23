@@ -1,9 +1,10 @@
 import logging
-from typing import Dict, Any, List, Optional, Union, Callable
-from datetime import datetime
-import numpy as np
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Union
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -23,10 +24,7 @@ class PrivacyBudget:
     used_delta: float = 0.0
 
     def can_spend(self, epsilon: float, delta: float = 0.0) -> bool:
-        return (
-            self.used_epsilon + epsilon <= self.epsilon
-            and self.used_delta + delta <= self.delta
-        )
+        return self.used_epsilon + epsilon <= self.epsilon and self.used_delta + delta <= self.delta
 
     def spend(self, epsilon: float, delta: float = 0.0) -> bool:
         if self.can_spend(epsilon, delta):
@@ -55,15 +53,11 @@ class DifferentialPrivacyMechanism:
 
     def gaussian_noise(self, shape: tuple, scale: Optional[float] = None) -> np.ndarray:
         if scale is None:
-            scale = (
-                np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
-            )
+            scale = np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
         scale_value = float(scale) if scale is not None else 1.0
         return np.random.normal(0.0, scale_value, shape)
 
-    def exponential_mechanism(
-        self, candidates: List[Any], utility_fn: Callable, sensitivity: float
-    ) -> Any:
+    def exponential_mechanism(self, candidates: List[Any], utility_fn: Callable, sensitivity: float) -> Any:
         utilities = [utility_fn(candidate) for candidate in candidates]
 
         probabilities = []
@@ -166,9 +160,7 @@ class ClinicalPrivacyProtector:
 
         return privatized_factors
 
-    def privatize_clinical_insights(
-        self, insights: List[str], user_id: str, epsilon: float = 0.08
-    ) -> List[str]:
+    def privatize_clinical_insights(self, insights: List[str], user_id: str, epsilon: float = 0.08) -> List[str]:
         budget = self.get_user_budget(user_id)
 
         if not budget.can_spend(epsilon):
@@ -185,23 +177,17 @@ class ClinicalPrivacyProtector:
                 "healing",
                 "progress",
             ]
-            return sum(
-                1 for keyword in therapeutic_keywords if keyword in insight.lower()
-            )
+            return sum(1 for keyword in therapeutic_keywords if keyword in insight.lower())
 
         if insights:
-            selected_insight = mechanism.exponential_mechanism(
-                insights, utility_fn, sensitivity=1.0
-            )
+            selected_insight = mechanism.exponential_mechanism(insights, utility_fn, sensitivity=1.0)
             budget.spend(epsilon)
             self._log_query("clinical_insights", user_id, epsilon)
             return [selected_insight]
 
         return insights
 
-    def privatize_aggregated_stats(
-        self, stats: Dict[str, float], epsilon: float = 0.2
-    ) -> Dict[str, float]:
+    def privatize_aggregated_stats(self, stats: Dict[str, float], epsilon: float = 0.2) -> Dict[str, float]:
         if not self.global_budget.can_spend(epsilon):
             logger.warning("Insufficient global privacy budget for aggregated stats")
             return {k: 0.0 for k in stats.keys()}
@@ -228,9 +214,7 @@ class ClinicalPrivacyProtector:
             "user_id": user_id,
             "global_budget": global_remaining,
             "user_budget": user_remaining,
-            "queries_made": len(
-                [q for q in self.query_history if q["user_id"] == user_id]
-            ),
+            "queries_made": len([q for q in self.query_history if q["user_id"] == user_id]),
             "status": "healthy" if user_remaining["epsilon"] > 0.01 else "depleted",
         }
 
@@ -258,11 +242,7 @@ class PrivacyAudit:
             query_type = query["query_type"]
             query_types[query_type] = query_types.get(query_type, 0) + 1
 
-        global_budget_used = (
-            self.protector.global_budget.used_epsilon
-            / self.protector.global_budget.epsilon
-            * 100
-        )
+        global_budget_used = self.protector.global_budget.used_epsilon / self.protector.global_budget.epsilon * 100
 
         user_budget_stats = []
         for user_id, budget in self.protector.user_budgets.items():
@@ -292,10 +272,7 @@ class PrivacyAudit:
     def validate_privacy_compliance(self) -> Dict[str, Any]:
         issues = []
 
-        if (
-            self.protector.global_budget.used_epsilon
-            > self.protector.global_budget.epsilon
-        ):
+        if self.protector.global_budget.used_epsilon > self.protector.global_budget.epsilon:
             issues.append("Global epsilon budget exceeded")
 
         for user_id, budget in self.protector.user_budgets.items():
@@ -315,9 +292,7 @@ class PrivacyAudit:
             "recommendations": self._generate_recommendations(issues, high_risk_users),
         }
 
-    def _generate_recommendations(
-        self, issues: List[str], high_risk_users: List[str]
-    ) -> List[str]:
+    def _generate_recommendations(self, issues: List[str], high_risk_users: List[str]) -> List[str]:
         recommendations = []
 
         if issues:
@@ -328,16 +303,12 @@ class PrivacyAudit:
             recommendations.append("Consider using more efficient privacy mechanisms")
 
         if not issues and not high_risk_users:
-            recommendations.append(
-                "Privacy compliance is healthy - continue monitoring"
-            )
+            recommendations.append("Privacy compliance is healthy - continue monitoring")
 
         return recommendations
 
 
-def create_clinical_privacy_protector(
-    epsilon: float = 1.0, delta: float = 1e-5
-) -> ClinicalPrivacyProtector:
+def create_clinical_privacy_protector(epsilon: float = 1.0, delta: float = 1e-5) -> ClinicalPrivacyProtector:
     return ClinicalPrivacyProtector(epsilon, delta)
 
 

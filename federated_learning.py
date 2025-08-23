@@ -1,10 +1,11 @@
-import logging
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime
-import numpy as np
 import hashlib
-from dataclasses import dataclass
+import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -83,9 +84,7 @@ class FederatedAggregator:
     def add_client_update(self, update: ModelUpdate) -> bool:
         if self._validate_update(update):
             self.client_updates.append(update)
-            logger.info(
-                f"Added client update | Client={update.client_id} | Samples={update.num_samples}"
-            )
+            logger.info(f"Added client update | Client={update.client_id} | Samples={update.num_samples}")
             return True
         return False
 
@@ -132,9 +131,7 @@ class FederatedAggregator:
         self.round_number += 1
         self.client_updates.clear()
 
-        logger.info(
-            f"Federated averaging completed | Round={self.round_number} | Clients={len(self.client_updates)}"
-        )
+        logger.info(f"Federated averaging completed | Round={self.round_number} | Clients={len(self.client_updates)}")
         return aggregated_weights
 
     def get_global_weights(self) -> Optional[Dict[str, np.ndarray]]:
@@ -143,13 +140,9 @@ class FederatedAggregator:
 
 class SecureAggregation:
     @staticmethod
-    def generate_secret_shares(
-        value: np.ndarray, num_shares: int = 3, threshold: int = 2
-    ) -> List[np.ndarray]:
+    def generate_secret_shares(value: np.ndarray, num_shares: int = 3, threshold: int = 2) -> List[np.ndarray]:
         shares = []
-        coefficients = [value] + [
-            np.random.random(value.shape) for _ in range(threshold - 1)
-        ]
+        coefficients = [value] + [np.random.random(value.shape) for _ in range(threshold - 1)]
 
         for i in range(1, num_shares + 1):
             share = np.zeros_like(value)
@@ -160,9 +153,7 @@ class SecureAggregation:
         return shares
 
     @staticmethod
-    def reconstruct_from_shares(
-        shares: List[Tuple[int, np.ndarray]], threshold: int = 2
-    ) -> np.ndarray:
+    def reconstruct_from_shares(shares: List[Tuple[int, np.ndarray]], threshold: int = 2) -> np.ndarray:
         if len(shares) < threshold:
             raise ValueError("Insufficient shares for reconstruction")
 
@@ -186,18 +177,12 @@ class FederatedLearningManager:
         self.training_history: List[Dict[str, Any]] = []
 
     def register_client(self, user_id: str) -> str:
-        client_id = hashlib.sha256(
-            f"{user_id}_{datetime.utcnow()}".encode()
-        ).hexdigest()[:16]
+        client_id = hashlib.sha256(f"{user_id}_{datetime.utcnow()}".encode()).hexdigest()[:16]
         self.clients[client_id] = RecoveryClientModel(user_id)
-        logger.info(
-            f"Registered federated client | ClientID={client_id} | UserID={user_id}"
-        )
+        logger.info(f"Registered federated client | ClientID={client_id} | UserID={user_id}")
         return client_id
 
-    def train_client_local(
-        self, client_id: str, local_data: Any, epochs: int = 1
-    ) -> Optional[ModelUpdate]:
+    def train_client_local(self, client_id: str, local_data: Any, epochs: int = 1) -> Optional[ModelUpdate]:
         if client_id not in self.clients:
             logger.warning(f"Unknown client | ClientID={client_id}")
             return None
@@ -218,9 +203,7 @@ class FederatedLearningManager:
 
         return update
 
-    def federated_round(
-        self, client_data: Dict[str, Any]
-    ) -> Optional[Dict[str, np.ndarray]]:
+    def federated_round(self, client_data: Dict[str, Any]) -> Optional[Dict[str, np.ndarray]]:
         updates = []
 
         for client_id, data in client_data.items():
@@ -247,9 +230,7 @@ class FederatedLearningManager:
 
         return global_weights
 
-    def get_personalized_weights(
-        self, client_id: str
-    ) -> Optional[Dict[str, np.ndarray]]:
+    def get_personalized_weights(self, client_id: str) -> Optional[Dict[str, np.ndarray]]:
         if client_id not in self.clients:
             return None
         return self.clients[client_id].get_weights()
@@ -269,9 +250,7 @@ class FederatedLearningManager:
         }
 
 
-def create_federated_manager(
-    privacy_epsilon: float = 1.0, min_clients: int = 3
-) -> FederatedLearningManager:
+def create_federated_manager(privacy_epsilon: float = 1.0, min_clients: int = 3) -> FederatedLearningManager:
     config = FederatedConfig(
         min_clients=min_clients,
         privacy_epsilon=privacy_epsilon,
@@ -281,16 +260,11 @@ def create_federated_manager(
     return FederatedLearningManager(config)
 
 
-def simulate_federated_training(
-    manager: FederatedLearningManager, num_rounds: int = 5
-) -> Dict[str, Any]:
+def simulate_federated_training(manager: FederatedLearningManager, num_rounds: int = 5) -> Dict[str, Any]:
     client_ids = [manager.register_client(f"user_{i}") for i in range(3)]
 
     for round_num in range(num_rounds):
-        client_data = {
-            client_id: {"mock_data": np.random.random((10, 5))}
-            for client_id in client_ids
-        }
+        client_data = {client_id: {"mock_data": np.random.random((10, 5))} for client_id in client_ids}
 
         global_weights = manager.federated_round(client_data)
         if not global_weights:

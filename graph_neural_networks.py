@@ -1,10 +1,11 @@
 import logging
-from typing import Dict, Any, List, Optional, Set
-from datetime import datetime
-import numpy as np
-from dataclasses import dataclass
-from enum import Enum
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -210,9 +211,7 @@ class RecoveryKnowledgeGraph:
             edge = GraphEdge(source, target, edge_type, weight, confidence)
             self.add_edge(edge)
 
-        logger.info(
-            f"Initialized recovery knowledge graph | Nodes={len(self.nodes)} | Edges={len(self.edges)}"
-        )
+        logger.info(f"Initialized recovery knowledge graph | Nodes={len(self.nodes)} | Edges={len(self.edges)}")
 
     def add_node(self, node: GraphNode) -> bool:
         if node.node_id not in self.nodes:
@@ -242,9 +241,7 @@ class RecoveryKnowledgeGraph:
 
         return self.adjacency_matrix
 
-    def get_neighbors(
-        self, node_id: str, edge_type: Optional[EdgeType] = None
-    ) -> List[str]:
+    def get_neighbors(self, node_id: str, edge_type: Optional[EdgeType] = None) -> List[str]:
         neighbors = []
         for edge in self.edges:
             if edge.source == node_id:
@@ -252,9 +249,7 @@ class RecoveryKnowledgeGraph:
                     neighbors.append(edge.target)
         return neighbors
 
-    def find_paths(
-        self, source: str, target: str, max_length: int = 3
-    ) -> List[List[str]]:
+    def find_paths(self, source: str, target: str, max_length: int = 3) -> List[List[str]]:
         paths = []
 
         def dfs(current: str, path: List[str], visited: Set[str]):
@@ -340,9 +335,7 @@ class GraphNeuralNetwork:
 
         return output
 
-    def predict_node_outcomes(
-        self, graph: RecoveryKnowledgeGraph, user_state: Dict[str, float]
-    ) -> Dict[str, float]:
+    def predict_node_outcomes(self, graph: RecoveryKnowledgeGraph, user_state: Dict[str, float]) -> Dict[str, float]:
         node_features = []
         node_order = list(graph.nodes.keys())
 
@@ -420,21 +413,15 @@ class RecoveryGraphAnalyzer:
         self.gnn = GraphNeuralNetwork(input_dim=4, hidden_dim=8, output_dim=1)
         self.analysis_history: List[Dict[str, Any]] = []
 
-    def analyze_user_recovery_network(
-        self, user_id: str, user_state: Dict[str, float]
-    ) -> Dict[str, Any]:
-        outcome_predictions = self.gnn.predict_node_outcomes(
-            self.knowledge_graph, user_state
-        )
+    def analyze_user_recovery_network(self, user_id: str, user_state: Dict[str, float]) -> Dict[str, Any]:
+        outcome_predictions = self.gnn.predict_node_outcomes(self.knowledge_graph, user_state)
 
         influence_analysis: Dict[str, Dict[str, float]] = {}
         for factor in user_state.keys():
             if factor in self.knowledge_graph.nodes:
                 influence_analysis[factor] = {}
                 for outcome in outcome_predictions.keys():
-                    influence_score = self.knowledge_graph.calculate_influence_score(
-                        factor, outcome
-                    )
+                    influence_score = self.knowledge_graph.calculate_influence_score(factor, outcome)
                     influence_analysis[factor][outcome] = influence_score
 
         critical_paths = self._find_critical_paths(user_state, outcome_predictions)
@@ -451,8 +438,7 @@ class RecoveryGraphAnalyzer:
             "graph_complexity": {
                 "nodes": len(self.knowledge_graph.nodes),
                 "edges": len(self.knowledge_graph.edges),
-                "connectivity": len(self.knowledge_graph.edges)
-                / len(self.knowledge_graph.nodes),
+                "connectivity": len(self.knowledge_graph.edges) / len(self.knowledge_graph.nodes),
             },
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
@@ -460,9 +446,7 @@ class RecoveryGraphAnalyzer:
         self.analysis_history.append(analysis)
         return analysis
 
-    def _find_critical_paths(
-        self, user_state: Dict[str, float], outcomes: Dict[str, float]
-    ) -> List[Dict[str, Any]]:
+    def _find_critical_paths(self, user_state: Dict[str, float], outcomes: Dict[str, float]) -> List[Dict[str, Any]]:
         critical_paths = []
 
         high_risk_factors = [f for f, v in user_state.items() if v > 0.7]
@@ -479,9 +463,7 @@ class RecoveryGraphAnalyzer:
                             "strength": path_strength,
                             "risk_factor": factor,
                             "outcome": outcome,
-                            "intervention_points": self._identify_intervention_points(
-                                path
-                            ),
+                            "intervention_points": self._identify_intervention_points(path),
                         }
                     )
 
@@ -513,9 +495,7 @@ class RecoveryGraphAnalyzer:
                     intervention_node,
                 ) in self.knowledge_graph.nodes.items():
                     if intervention_node.node_type == NodeType.INTERVENTION:
-                        if node_id in self.knowledge_graph.get_neighbors(
-                            intervention_id
-                        ):
+                        if node_id in self.knowledge_graph.get_neighbors(intervention_id):
                             intervention_points.append(intervention_id)
 
         return list(set(intervention_points))
@@ -531,9 +511,7 @@ class RecoveryGraphAnalyzer:
                 affected_outcomes = []
 
                 for outcome in outcomes.keys():
-                    influence = self.knowledge_graph.calculate_influence_score(
-                        intervention_id, outcome
-                    )
+                    influence = self.knowledge_graph.calculate_influence_score(intervention_id, outcome)
                     if influence > 0.1:
                         intervention_score += influence * (1.0 - outcomes[outcome])
                         affected_outcomes.append(outcome)
@@ -542,16 +520,11 @@ class RecoveryGraphAnalyzer:
                     recommendations.append(
                         {
                             "intervention": intervention_id,
-                            "effectiveness": intervention_node.features.get(
-                                "effectiveness", 0.5
-                            ),
-                            "accessibility": intervention_node.features.get(
-                                "accessibility", 0.5
-                            ),
+                            "effectiveness": intervention_node.features.get("effectiveness", 0.5),
+                            "accessibility": intervention_node.features.get("accessibility", 0.5),
                             "potential_impact": intervention_score,
                             "affected_outcomes": affected_outcomes,
-                            "priority": intervention_score
-                            * intervention_node.features.get("effectiveness", 0.5),
+                            "priority": intervention_score * intervention_node.features.get("effectiveness", 0.5),
                         }
                     )
 
@@ -617,11 +590,7 @@ class RecoveryGraphAnalyzer:
                 "nodes": len(self.knowledge_graph.nodes),
                 "edges": len(self.knowledge_graph.edges),
                 "node_types": {
-                    nt.value: sum(
-                        1
-                        for n in self.knowledge_graph.nodes.values()
-                        if n.node_type == nt
-                    )
+                    nt.value: sum(1 for n in self.knowledge_graph.nodes.values() if n.node_type == nt)
                     for nt in NodeType
                 },
             },
@@ -635,9 +604,7 @@ class RecoveryGraphAnalyzer:
         insights = []
 
         if len(analyses) > 5:
-            insights.append(
-                "Graph neural network analysis shows consistent recovery factor patterns"
-            )
+            insights.append("Graph neural network analysis shows consistent recovery factor patterns")
 
         outcome_trends = defaultdict(list)
         for analysis in analyses:
@@ -648,13 +615,9 @@ class RecoveryGraphAnalyzer:
             if len(values) > 3:
                 trend = np.polyfit(range(len(values)), values, 1)[0]
                 if trend > 0.05:
-                    insights.append(
-                        f"Graph analysis indicates increasing risk trend for {outcome}"
-                    )
+                    insights.append(f"Graph analysis indicates increasing risk trend for {outcome}")
                 elif trend < -0.05:
-                    insights.append(
-                        f"Graph analysis shows improving trend for {outcome}"
-                    )
+                    insights.append(f"Graph analysis shows improving trend for {outcome}")
 
         return insights
 
@@ -663,8 +626,6 @@ def create_recovery_graph_analyzer() -> RecoveryGraphAnalyzer:
     return RecoveryGraphAnalyzer()
 
 
-def analyze_recovery_network(
-    user_id: str, user_state: Dict[str, float]
-) -> Dict[str, Any]:
+def analyze_recovery_network(user_id: str, user_state: Dict[str, float]) -> Dict[str, Any]:
     analyzer = create_recovery_graph_analyzer()
     return analyzer.analyze_user_recovery_network(user_id, user_state)

@@ -1,9 +1,10 @@
 import logging
-from typing import Dict, Any, List, Optional, Set
-from datetime import datetime
-import numpy as np
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
+import numpy as np
 
 logger = logging.getLogger("recoveryos")
 
@@ -263,9 +264,7 @@ class RecoveryCausalGraph:
     def add_edge(self, edge: CausalEdge) -> bool:
         if edge.source in self.nodes and edge.target in self.nodes:
             self.edges.append(edge)
-            logger.info(
-                f"Added causal edge | {edge.source} -> {edge.target} | Strength={edge.strength}"
-            )
+            logger.info(f"Added causal edge | {edge.source} -> {edge.target} | Strength={edge.strength}")
             return True
         return False
 
@@ -273,13 +272,10 @@ class RecoveryCausalGraph:
         return [
             edge
             for edge in self.edges
-            if edge.target == target
-            and edge.relation_type == CausalRelationType.DIRECT_CAUSE
+            if edge.target == target and edge.relation_type == CausalRelationType.DIRECT_CAUSE
         ]
 
-    def get_all_causes(
-        self, target: str, visited: Optional[Set[str]] = None
-    ) -> List[str]:
+    def get_all_causes(self, target: str, visited: Optional[Set[str]] = None) -> List[str]:
         if visited is None:
             visited = set()
 
@@ -303,34 +299,21 @@ class RecoveryCausalGraph:
             if node.interventionable:
                 causes = self.get_all_causes(target)
                 if node_name in causes:
-                    direct_edges = [
-                        e
-                        for e in self.edges
-                        if e.source == node_name and e.target == target
-                    ]
-                    indirect_strength = self._calculate_indirect_effect(
-                        node_name, target
-                    )
+                    direct_edges = [e for e in self.edges if e.source == node_name and e.target == target]
+                    indirect_strength = self._calculate_indirect_effect(node_name, target)
 
                     intervention_points.append(
                         {
                             "node": node_name,
                             "description": node.description,
-                            "direct_effect": (
-                                direct_edges[0].strength if direct_edges else 0.0
-                            ),
+                            "direct_effect": (direct_edges[0].strength if direct_edges else 0.0),
                             "indirect_effect": indirect_strength,
-                            "total_effect": (
-                                direct_edges[0].strength if direct_edges else 0.0
-                            )
-                            + indirect_strength,
+                            "total_effect": (direct_edges[0].strength if direct_edges else 0.0) + indirect_strength,
                             "interventionable": True,
                         }
                     )
 
-        return sorted(
-            intervention_points, key=lambda x: abs(x["total_effect"]), reverse=True
-        )
+        return sorted(intervention_points, key=lambda x: abs(x["total_effect"]), reverse=True)
 
     def _calculate_indirect_effect(self, source: str, target: str) -> float:
         paths = self._find_all_paths(source, target)
@@ -347,9 +330,7 @@ class RecoveryCausalGraph:
 
         return total_indirect
 
-    def _find_all_paths(
-        self, source: str, target: str, path: Optional[List[str]] = None
-    ) -> List[List[str]]:
+    def _find_all_paths(self, source: str, target: str, path: Optional[List[str]] = None) -> List[List[str]]:
         if path is None:
             path = [source]
 
@@ -359,9 +340,7 @@ class RecoveryCausalGraph:
         paths = []
         for edge in self.edges:
             if edge.source == source and edge.target not in path:
-                new_paths = self._find_all_paths(
-                    edge.target, target, path + [edge.target]
-                )
+                new_paths = self._find_all_paths(edge.target, target, path + [edge.target])
                 paths.extend(new_paths)
 
         return paths
@@ -387,9 +366,7 @@ class CounterfactualReasoning:
 
         counterfactual_outcome = self._predict_outcome(counterfactual_state)
 
-        effect_size = counterfactual_outcome.get(
-            "relapse_risk", 0.5
-        ) - original_outcome.get("relapse_risk", 0.5)
+        effect_size = counterfactual_outcome.get("relapse_risk", 0.5) - original_outcome.get("relapse_risk", 0.5)
 
         return {
             "original_state": observed_state,
@@ -412,27 +389,21 @@ class CounterfactualReasoning:
 
                 for edge in causes:
                     if edge.source in state:
-                        contribution = (
-                            state[edge.source] * edge.strength * edge.confidence
-                        )
+                        contribution = state[edge.source] * edge.strength * edge.confidence
                         predicted_value += contribution * 0.1
 
                 outcomes[node_name] = np.clip(predicted_value, 0.0, 1.0)
 
         return outcomes
 
-    def _generate_explanation(
-        self, intervention: Dict[str, float], effect_size: float
-    ) -> str:
+    def _generate_explanation(self, intervention: Dict[str, float], effect_size: float) -> str:
         if abs(effect_size) < 0.05:
             return f"The intervention on {list(intervention.keys())} would have minimal impact on relapse risk."
 
         direction = "reduce" if effect_size < 0 else "increase"
         magnitude = "significantly" if abs(effect_size) > 0.2 else "moderately"
 
-        intervention_desc = ", ".join(
-            [f"{k} to {v:.2f}" for k, v in intervention.items()]
-        )
+        intervention_desc = ", ".join([f"{k} to {v:.2f}" for k, v in intervention.items()])
 
         return f"Changing {intervention_desc} would {magnitude} {direction} relapse risk by {abs(effect_size):.2f}."
 
@@ -441,14 +412,8 @@ class CounterfactualReasoning:
 
         for var in intervention.keys():
             if var in self.graph.nodes:
-                related_edges = [
-                    e for e in self.graph.edges if e.source == var or e.target == var
-                ]
-                avg_confidence = (
-                    np.mean([e.confidence for e in related_edges])
-                    if related_edges
-                    else 0.5
-                )
+                related_edges = [e for e in self.graph.edges if e.source == var or e.target == var]
+                avg_confidence = np.mean([e.confidence for e in related_edges]) if related_edges else 0.5
                 confidences.append(avg_confidence)
 
         return float(np.mean(np.array(confidences))) if confidences else 0.5
@@ -460,9 +425,7 @@ class CausalInferenceEngine:
         self.counterfactual_reasoner = CounterfactualReasoning(self.causal_graph)
         self.inference_history: List[Dict[str, Any]] = []
 
-    def analyze_causal_factors(
-        self, user_state: Dict[str, float], target: str = "relapse_risk"
-    ) -> Dict[str, Any]:
+    def analyze_causal_factors(self, user_state: Dict[str, float], target: str = "relapse_risk") -> Dict[str, Any]:
         direct_causes = self.causal_graph.get_direct_causes(target)
         all_causes = self.causal_graph.get_all_causes(target)
 
@@ -479,9 +442,7 @@ class CausalInferenceEngine:
                         "causal_strength": cause.strength,
                         "contribution": causal_contribution,
                         "confidence": cause.confidence,
-                        "description": self.causal_graph.nodes[
-                            cause.source
-                        ].description,
+                        "description": self.causal_graph.nodes[cause.source].description,
                     }
                 )
 
@@ -493,9 +454,7 @@ class CausalInferenceEngine:
             "direct_factors": factor_analysis,
             "all_causal_factors": all_causes,
             "top_risk_factors": factor_analysis[:3],
-            "intervention_recommendations": self.causal_graph.find_intervention_points(
-                target
-            )[:3],
+            "intervention_recommendations": self.causal_graph.find_intervention_points(target)[:3],
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
 
@@ -520,9 +479,7 @@ class CausalInferenceEngine:
                 action = "increase"
 
             intervention = {node_name: suggested_change}
-            counterfactual = self.counterfactual_reasoner.generate_counterfactual(
-                user_state, intervention
-            )
+            counterfactual = self.counterfactual_reasoner.generate_counterfactual(user_state, intervention)
 
             suggestions.append(
                 {
@@ -537,16 +494,10 @@ class CausalInferenceEngine:
                 }
             )
 
-        return sorted(
-            suggestions, key=lambda x: abs(x["expected_effect"]), reverse=True
-        )
+        return sorted(suggestions, key=lambda x: abs(x["expected_effect"]), reverse=True)
 
-    def what_if_analysis(
-        self, user_state: Dict[str, float], hypothetical_changes: Dict[str, float]
-    ) -> Dict[str, Any]:
-        counterfactual = self.counterfactual_reasoner.generate_counterfactual(
-            user_state, hypothetical_changes
-        )
+    def what_if_analysis(self, user_state: Dict[str, float], hypothetical_changes: Dict[str, float]) -> Dict[str, Any]:
+        counterfactual = self.counterfactual_reasoner.generate_counterfactual(user_state, hypothetical_changes)
 
         analysis = {
             "scenario": "what_if_analysis",
@@ -555,9 +506,7 @@ class CausalInferenceEngine:
             "causal_effect": counterfactual["causal_effect"],
             "explanation": counterfactual["explanation"],
             "confidence": counterfactual["confidence"],
-            "recommendation": self._generate_recommendation(
-                counterfactual["causal_effect"]
-            ),
+            "recommendation": self._generate_recommendation(counterfactual["causal_effect"]),
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
 
@@ -565,7 +514,9 @@ class CausalInferenceEngine:
 
     def _generate_recommendation(self, causal_effect: float) -> str:
         if causal_effect < -0.1:
-            return "This intervention shows strong potential for reducing relapse risk. Consider implementing gradually."
+            return (
+                "This intervention shows strong potential for reducing relapse risk. Consider implementing gradually."
+            )
         elif causal_effect < -0.05:
             return "This intervention may provide modest benefits. Monitor progress carefully."
         elif causal_effect > 0.1:
@@ -574,9 +525,7 @@ class CausalInferenceEngine:
             return "This intervention is unlikely to significantly impact relapse risk."
 
     def get_causal_insights(self, user_id: str) -> Dict[str, Any]:
-        user_analyses = [
-            a for a in self.inference_history if a.get("user_id") == user_id
-        ]
+        user_analyses = [a for a in self.inference_history if a.get("user_id") == user_id]
 
         if not user_analyses:
             return {"message": "No causal analysis history available for this user"}
@@ -590,9 +539,7 @@ class CausalInferenceEngine:
             "causal_graph_summary": {
                 "nodes": len(self.causal_graph.nodes),
                 "edges": len(self.causal_graph.edges),
-                "interventionable_factors": len(
-                    [n for n in self.causal_graph.nodes.values() if n.interventionable]
-                ),
+                "interventionable_factors": len([n for n in self.causal_graph.nodes.values() if n.interventionable]),
             },
             "insights": self._extract_insights(user_analyses),
         }
@@ -601,9 +548,7 @@ class CausalInferenceEngine:
         insights = []
 
         if len(analyses) > 1:
-            insights.append(
-                "Longitudinal causal analysis shows patterns in recovery factors."
-            )
+            insights.append("Longitudinal causal analysis shows patterns in recovery factors.")
 
         common_factors: Dict[str, int] = {}
         for analysis in analyses:
@@ -613,9 +558,7 @@ class CausalInferenceEngine:
 
         if common_factors:
             most_common = max(common_factors.keys(), key=lambda k: common_factors[k])
-            insights.append(
-                f"'{most_common}' appears as a consistent causal factor across analyses."
-            )
+            insights.append(f"'{most_common}' appears as a consistent causal factor across analyses.")
 
         return insights
 

@@ -1,10 +1,10 @@
 import logging
-import time
 import re
-from typing import Dict, Any, Optional, List
-from datetime import datetime
+import time
 from dataclasses import dataclass
+from datetime import datetime
 from functools import wraps
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("recoveryos")
 
@@ -96,9 +96,7 @@ class EliteObservability:
         if not success:
             metric.error_count += 1
 
-        metric.success_rate = (
-            metric.request_count - metric.error_count
-        ) / metric.request_count
+        metric.success_rate = (metric.request_count - metric.error_count) / metric.request_count
         metric.last_request = datetime.utcnow().isoformat() + "Z"
 
         safe_request_data = self.redactor.redact_dict(request_data or {})
@@ -122,9 +120,7 @@ class EliteObservability:
             "total_requests": sum(m.request_count for m in self.metrics.values()),
             "total_errors": sum(m.error_count for m in self.metrics.values()),
             "avg_success_rate": (
-                sum(m.success_rate for m in self.metrics.values()) / len(self.metrics)
-                if self.metrics
-                else 1.0
+                sum(m.success_rate for m in self.metrics.values()) / len(self.metrics) if self.metrics else 1.0
             ),
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
@@ -154,9 +150,7 @@ def track_elite_endpoint(endpoint_name: str):
                 raise
             finally:
                 latency_ms = (time.time() - start_time) * 1000
-                elite_observability.track_request(
-                    endpoint_name, latency_ms, success, request_data
-                )
+                elite_observability.track_request(endpoint_name, latency_ms, success, request_data)
 
         return wrapper
 

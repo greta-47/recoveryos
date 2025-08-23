@@ -42,9 +42,7 @@ class PatientSummary(BaseModel):
     recovery_days: int
     trend: TrendData
     risk_flags: RiskFlags
-    ai_insights: Optional[Dict[str, Any]] = (
-        None  # e.g., {"summary": "...", "suggestion": "..."}
-    )
+    ai_insights: Optional[Dict[str, Any]] = None  # e.g., {"summary": "...", "suggestion": "..."}
     next_action: str  # e.g., "Follow up if urge > 4"
 
 
@@ -151,8 +149,6 @@ def clinician_dashboard(current_user: dict = Depends(get_current_user)):
 
     # Filter by clinic scope (stubbed)
     patient_list: List[PatientSummary] = [
-        p
-        for uid, p in MOCK_DATA.items()
-        if is_patient_in_clinic(uid, current_user.get("clinic_id", ""))
+        p for uid, p in MOCK_DATA.items() if is_patient_in_clinic(uid, current_user.get("clinic_id", ""))
     ]
     return patient_list

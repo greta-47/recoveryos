@@ -1,10 +1,10 @@
-import logging
-from typing import Dict, Any, List, Optional, Union
-from datetime import datetime
-import os
-from dataclasses import dataclass, asdict
-from enum import Enum
 import json
+import logging
+import os
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger("recoveryos")
 
@@ -142,9 +142,7 @@ class EliteConfigManager:
 
         return True
 
-    def get_feature_config(
-        self, feature: Union[EliteFeature, str]
-    ) -> Optional[FeatureConfig]:
+    def get_feature_config(self, feature: Union[EliteFeature, str]) -> Optional[FeatureConfig]:
         feature_name = feature.value if isinstance(feature, EliteFeature) else feature
         return self.config.features.get(feature_name)
 
@@ -177,9 +175,7 @@ class EliteConfigManager:
             }
         )
 
-        logger.info(
-            f"Enabled elite feature | Feature={feature_name} | Rollout={rollout_percentage}%"
-        )
+        logger.info(f"Enabled elite feature | Feature={feature_name} | Rollout={rollout_percentage}%")
         return True
 
     def disable_feature(self, feature: Union[EliteFeature, str]) -> bool:
@@ -240,9 +236,7 @@ class EliteConfigManager:
             "new_percentage": new_percentage,
             "target_percentage": target_percentage,
             "increment": increment,
-            "status": (
-                "in_progress" if new_percentage < target_percentage else "completed"
-            ),
+            "status": ("in_progress" if new_percentage < target_percentage else "completed"),
             "timestamp": datetime.utcnow().isoformat() + "Z",
         }
 
@@ -251,9 +245,7 @@ class EliteConfigManager:
 
         return rollout_info
 
-    def record_feature_metrics(
-        self, feature: Union[EliteFeature, str], metrics: Dict[str, Any]
-    ):
+    def record_feature_metrics(self, feature: Union[EliteFeature, str], metrics: Dict[str, Any]):
         feature_name = feature.value if isinstance(feature, EliteFeature) else feature
 
         if feature_name not in self.feature_metrics:
@@ -276,13 +268,10 @@ class EliteConfigManager:
         if "latency_ms" in metrics:
             current_avg = self.feature_metrics[feature_name]["avg_latency"]
             total_calls = (
-                self.feature_metrics[feature_name]["success_count"]
-                + self.feature_metrics[feature_name]["error_count"]
+                self.feature_metrics[feature_name]["success_count"] + self.feature_metrics[feature_name]["error_count"]
             )
 
-            new_avg = (
-                (current_avg * (total_calls - 1)) + metrics["latency_ms"]
-            ) / total_calls
+            new_avg = ((current_avg * (total_calls - 1)) + metrics["latency_ms"]) / total_calls
             self.feature_metrics[feature_name]["avg_latency"] = new_avg
 
         self._auto_adjust_rollout(feature_name)
@@ -309,9 +298,7 @@ class EliteConfigManager:
         if error_rate > 0.1 and current_rollout > 10:
             new_rollout = max(10, current_rollout - 20)
             feature_config.rollout_percentage = new_rollout
-            logger.warning(
-                f"Auto-reduced rollout due to errors | Feature={feature_name} | NewRollout={new_rollout}%"
-            )
+            logger.warning(f"Auto-reduced rollout due to errors | Feature={feature_name} | NewRollout={new_rollout}%")
 
         elif error_rate < 0.02 and avg_latency < 100 and current_rollout < 100:
             new_rollout = min(100, current_rollout + 10)
@@ -357,27 +344,15 @@ class EliteConfigManager:
         total_features = len(self.config.features)
         enabled_features = sum(1 for f in self.config.features.values() if f.enabled)
 
-        total_errors = sum(
-            m.get("error_count", 0) for m in self.feature_metrics.values()
-        )
-        total_successes = sum(
-            m.get("success_count", 0) for m in self.feature_metrics.values()
-        )
+        total_errors = sum(m.get("error_count", 0) for m in self.feature_metrics.values())
+        total_successes = sum(m.get("success_count", 0) for m in self.feature_metrics.values())
 
         success_rate = (
-            total_successes / (total_successes + total_errors)
-            if (total_successes + total_errors) > 0
-            else 1.0
+            total_successes / (total_successes + total_errors) if (total_successes + total_errors) > 0 else 1.0
         )
 
-        avg_latencies = [
-            m.get("avg_latency", 0)
-            for m in self.feature_metrics.values()
-            if m.get("avg_latency", 0) > 0
-        ]
-        avg_system_latency = (
-            sum(avg_latencies) / len(avg_latencies) if avg_latencies else 0
-        )
+        avg_latencies = [m.get("avg_latency", 0) for m in self.feature_metrics.values() if m.get("avg_latency", 0) > 0]
+        avg_system_latency = sum(avg_latencies) / len(avg_latencies) if avg_latencies else 0
 
         health_score = (
             success_rate * 0.6
@@ -390,11 +365,7 @@ class EliteConfigManager:
             "success_rate": success_rate,
             "enabled_feature_ratio": enabled_features / total_features,
             "avg_latency_ms": avg_system_latency,
-            "status": (
-                "excellent"
-                if health_score > 0.9
-                else "good" if health_score > 0.7 else "needs_attention"
-            ),
+            "status": ("excellent" if health_score > 0.9 else "good" if health_score > 0.7 else "needs_attention"),
         }
 
 

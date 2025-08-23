@@ -130,9 +130,7 @@ def _filter_by_consent(trends: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if can_send_weekly(cr):
             filtered.append(p)
         else:
-            logger.info(
-                "Excluded from weekly briefing (no consent) | User=%s", p["user_id"]
-            )
+            logger.info("Excluded from weekly briefing (no consent) | User=%s", p["user_id"])
     return filtered
 
 
@@ -158,20 +156,12 @@ def run_weekly_briefing(background_tasks: BackgroundTasks):
         trends = _filter_by_consent(raw)
 
         # Prioritization
-        at_risk = [
-            p
-            for p in trends
-            if p["risk_flags"].get("rising_urge")
-            or p["risk_flags"].get("engagement_drop")
-        ]
+        at_risk = [p for p in trends if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")]
         improved = [
             p
             for p in trends
             if (p["risk_flags"].get("rising_urge") is False)
-            and (
-                str(p["trend"].get("mood_change", "0")).replace("+", "")
-                not in {"", "0"}
-            )
+            and (str(p["trend"].get("mood_change", "0")).replace("+", "") not in {"", "0"})
             and (float(str(p["trend"]["mood_change"]).replace("+", "")) >= 0.5)
         ]
 
@@ -223,9 +213,7 @@ Weekly RecoveryOS Briefing ({briefing["period"]})
 This briefing is de-identified and for clinical use only.
         """.strip()
 
-        recipients = os.getenv(
-            "BRIEFINGS_RECIPIENTS", "clinical-team@recoveryos.app"
-        ).split(",")
+        recipients = os.getenv("BRIEFINGS_RECIPIENTS", "clinical-team@recoveryos.app").split(",")
         subject = f"RecoveryOS Weekly Briefing – {briefing['report_date']}"
 
         # Queue async send
@@ -261,11 +249,7 @@ def preview_weekly_briefing():
     Useful for testing or clinician review.
     """
     trends = _filter_by_consent(get_patient_trends_last_7d())
-    at_risk = [
-        p
-        for p in trends
-        if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")
-    ]
+    at_risk = [p for p in trends if p["risk_flags"].get("rising_urge") or p["risk_flags"].get("engagement_drop")]
     improved = [
         p
         for p in trends

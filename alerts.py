@@ -146,11 +146,7 @@ def send_clinician_alert(
         return
 
     # Simple per-user throttle to avoid spam
-    cooldown = timedelta(
-        minutes=(
-            throttle_minutes if throttle_minutes is not None else ALERT_THROTTLE_MINUTES
-        )
-    )
+    cooldown = timedelta(minutes=(throttle_minutes if throttle_minutes is not None else ALERT_THROTTLE_MINUTES))
     now = datetime.utcnow()
     last = _last_sent_at.get(user_id)
     if last and (now - last) < cooldown:

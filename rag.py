@@ -136,9 +136,7 @@ def _ensure_store_shapes(dim: int) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
                 )
                 return np.empty((0, dim), dtype=np.float32), []
             if len(meta) != emb.shape[0]:
-                logger.warning(
-                    "Metadata length mismatch with embeddings. Rebuilding store."
-                )
+                logger.warning("Metadata length mismatch with embeddings. Rebuilding store.")
                 return np.empty((0, dim), dtype=np.float32), []
             return emb.astype(np.float32, copy=False), meta
         except Exception as e:
@@ -157,9 +155,7 @@ def _save_store(emb: np.ndarray, meta: List[Dict[str, Any]], dim: int) -> None:
 
 def _encode_texts(texts: List[str]) -> np.ndarray:
     model = _get_model()
-    vectors = model.encode(
-        texts, show_progress_bar=False, normalize_embeddings=False
-    )  # we normalize ourselves
+    vectors = model.encode(texts, show_progress_bar=False, normalize_embeddings=False)  # we normalize ourselves
     vectors = np.array(vectors, dtype=np.float32)
     return _normalize(vectors)
 
@@ -254,9 +250,7 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         # Encode and normalize
         new_vecs = _encode_texts(texts)  # (M, d)
         if new_vecs.shape[1] != dim:
-            logger.warning(
-                "Model dim changed mid-run; rebuilding store from new batch."
-            )
+            logger.warning("Model dim changed mid-run; rebuilding store from new batch.")
             emb = np.empty((0, new_vecs.shape[1]), dtype=np.float32)
             meta = []
             dim = int(new_vecs.shape[1])
@@ -300,9 +294,7 @@ def retrieve(
     try:
         with _STORE_LOCK:
             emb = np.load(EMBEDDINGS_FILE).astype(np.float32, copy=False)
-            meta: List[Dict[str, Any]] = json.loads(
-                METADATA_FILE.read_text(encoding="utf-8")
-            )
+            meta: List[Dict[str, Any]] = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
             if emb.ndim != 2 or emb.shape[1] != dim or len(meta) != emb.shape[0]:
                 logger.warning("Store corrupted or mismatched; returning empty results")
                 return []

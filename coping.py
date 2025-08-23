@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 try:
     from alerts import queue_clinician_alert
 except Exception:  # fallback if alerts.py missing during local tests
+
     def queue_clinician_alert(  # type: ignore[misc]
         background_tasks,
         user_id: str,
@@ -35,9 +36,9 @@ class CopingRequest(BaseModel):
     sleep_hours: float = Field(7.0, ge=0, le=24, description="Hours slept last night")
     isolation: int = Field(3, ge=1, le=5, description="1=isolated, 5=connected")
     energy: int = Field(3, ge=1, le=5, description="1=exhausted, 5=energized")
-    craving_type: Optional[
-        Literal["alcohol", "opioid", "stimulant", "benzo", "other"]
-    ] = Field(None, description="Substance the urge is for (if known)")
+    craving_type: Optional[Literal["alcohol", "opioid", "stimulant", "benzo", "other"]] = Field(
+        None, description="Substance the urge is for (if known)"
+    )
     context: Optional[str] = Field(
         None,
         max_length=200,
@@ -73,12 +74,8 @@ class CopingResponse(BaseModel):
         "mindfulness",
         "professional-help",
     ] = Field(..., description="Type of tool")
-    urgency_level: Literal["low", "moderate", "high"] = Field(
-        "moderate", description="For routing logic"
-    )
-    suggested_duration: str = Field(
-        "5 minutes", description="Recommended time to spend"
-    )
+    urgency_level: Literal["low", "moderate", "high"] = Field("moderate", description="For routing logic")
+    suggested_duration: str = Field("5 minutes", description="Recommended time to spend")
     message: str = Field(..., description="Personalized encouragement")
     timestamp: str = Field(
         default_factory=lambda: f"{datetime.utcnow().isoformat()}Z",
@@ -91,12 +88,8 @@ class CopingResponse(BaseModel):
 
     # For UI + alerts
     risk_score: float = Field(0.0, ge=0, le=10, description="0–10 composite risk score")
-    risk_level: Literal["Low", "Moderate", "High", "Severe"] = Field(
-        "Low", description="Discrete risk level"
-    )
-    risk_factors: List[Dict] = Field(
-        default_factory=list, description="Top contributing factors"
-    )
+    risk_level: Literal["Low", "Moderate", "High", "Severe"] = Field("Low", description="Discrete risk level")
+    risk_factors: List[Dict] = Field(default_factory=list, description="Top contributing factors")
 
 
 router = APIRouter(prefix="/coping", tags=["coping"])
@@ -107,12 +100,7 @@ router = APIRouter(prefix="/coping", tags=["coping"])
 # ----------------------
 def _risk_analyze(mood: int, urge: int, isolation: int, energy: int) -> Dict:
     # very simple composite
-    score = (
-        (urge * 1.8)
-        + max(0, 3 - mood) * 0.8
-        + max(0, 3 - isolation) * 0.6
-        + max(0, 3 - energy) * 0.6
-    )
+    score = (urge * 1.8) + max(0, 3 - mood) * 0.8 + max(0, 3 - isolation) * 0.6 + max(0, 3 - energy) * 0.6
     score = max(0.0, min(10.0, score))
     if score >= 9:
         level = "Severe"
@@ -125,21 +113,13 @@ def _risk_analyze(mood: int, urge: int, isolation: int, energy: int) -> Dict:
 
     factors: List[Dict] = []
     if urge >= 4:
-        factors.append(
-            {"name": "High Urge", "impact": 0.8, "explanation": "Self-reported urge is high (≥4)."}
-        )
+        factors.append({"name": "High Urge", "impact": 0.8, "explanation": "Self-reported urge is high (≥4)."})
     if mood <= 2:
-        factors.append(
-            {"name": "Low Mood", "impact": 0.5, "explanation": "Mood is low (≤2)."}
-        )
+        factors.append({"name": "Low Mood", "impact": 0.5, "explanation": "Mood is low (≤2)."})
     if isolation <= 2:
-        factors.append(
-            {"name": "Isolation", "impact": 0.4, "explanation": "Social connection is low (≤2)."}
-        )
+        factors.append({"name": "Isolation", "impact": 0.4, "explanation": "Social connection is low (≤2)."})
     if energy <= 2:
-        factors.append(
-            {"name": "Exhaustion", "impact": 0.3, "explanation": "Energy level is very low (≤2)."}
-        )
+        factors.append({"name": "Exhaustion", "impact": 0.3, "explanation": "Energy level is very low (≤2)."})
     return {"score": round(score, 1), "level": level, "factors": factors[:3]}
 
 
@@ -191,9 +171,7 @@ def _suggest_tool(
         suggested_duration = "10 minutes"
         message = "When sleep feels far away, this can help your body relax enough to rest."
 
-    resources = (
-        ["https://recoveryos.app/guided/urge-surfing.mp3"] if category == "grounding" else []
-    )
+    resources = ["https://recoveryos.app/guided/urge-surfing.mp3"] if category == "grounding" else []
 
     return {
         "tool": tool,
