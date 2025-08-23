@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Test script to verify security headers implementation."""
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, '/home/ubuntu/repos/recoveryos')
 
 def test_security_headers():

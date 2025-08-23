@@ -3,7 +3,6 @@
 
 import subprocess
 import sys
-import os
 import time
 
 def test_docker_build():

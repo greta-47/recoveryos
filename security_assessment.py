@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Security assessment script for RecoveryOS."""
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, '/home/ubuntu/repos/recoveryos')
 
 def test_app_functionality():

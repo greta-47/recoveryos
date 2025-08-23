@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Test script to verify environment-specific configuration works correctly."""
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, '/home/ubuntu/repos/recoveryos')
 
 def test_production_config():
@@ -27,8 +28,8 @@ def test_production_config():
         print(f'  Allow Localhost: {config["allow_localhost"]}')
         
         assert config["csp_mode"] == "enforce", "Production should enforce CSP"
-        assert config["enable_https_enforcement"] == True, "Production should enforce HTTPS"
-        assert config["allow_localhost"] == False, "Production should not allow localhost"
+        assert config["enable_https_enforcement"] is True, "Production should enforce HTTPS"
+        assert config["allow_localhost"] is False, "Production should not allow localhost"
         
         print('✅ Production configuration correct!')
         return True
@@ -59,8 +60,8 @@ def test_development_config():
         print(f'  Allow Localhost: {config["allow_localhost"]}')
         
         assert config["csp_mode"] == "report-only", "Development should use CSP report-only"
-        assert config["enable_https_enforcement"] == False, "Development should not enforce HTTPS"
-        assert config["allow_localhost"] == True, "Development should allow localhost"
+        assert config["enable_https_enforcement"] is False, "Development should not enforce HTTPS"
+        assert config["allow_localhost"] is True, "Development should allow localhost"
         
         print('✅ Development configuration correct!')
         return True

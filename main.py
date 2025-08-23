@@ -302,7 +302,7 @@ def agents_run(body: AgentsIn, request: Request):
                     logger.warning("PHI detected", extra={"extra": {"request_id": request_id, "field": key}})
                     result[key] = "[REDACTED] Output may contain sensitive data."
         return {**result, "request_id": request_id, "timestamp": now_iso()}
-    except Exception:
+    except Exception as e:
         logger.exception("agent_error", extra={"extra": {"request_id": request_id}})
         if os.getenv("TESTING") == "true" and "OpenAI API error" in str(e):
             raise HTTPException(status_code=503, detail="Agent pipeline unavailable in test environment")

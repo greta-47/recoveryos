@@ -1,9 +1,9 @@
 from fastapi.testclient import TestClient
+
+from main import app
 from test_config import setup_test_environment
 
 setup_test_environment()
-
-from main import app
 
 client = TestClient(app)
 

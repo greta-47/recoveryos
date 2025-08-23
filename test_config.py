@@ -1,6 +1,6 @@
 """Test configuration utilities for RecoveryOS."""
-import os
 import logging
+import os
 
 logger = logging.getLogger("recoveryos")
 

@@ -2,9 +2,10 @@
 Security middleware for RecoveryOS API.
 Implements HTTPS security headers and enforcement.
 """
-import os
 import logging
+import os
 from typing import Callable
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
