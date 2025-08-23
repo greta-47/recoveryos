@@ -69,7 +69,7 @@ def test_coverage():
     print("\n📊 Testing Code Coverage...")
 
     success, stdout, stderr = run_command(
-        "pytest test_elite_endpoints.py -v --cov=main --cov=observability_enhanced --cov=feature_flags --cov-report=term --cov-fail-under=80",
+        "pytest test_elite_endpoints.py -v --cov=main --cov=observability_enhanced --cov=feature_flags --cov-report=term --cov-fail-under=80",  # noqa: E501
         check=False,
     )
 

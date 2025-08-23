@@ -166,8 +166,12 @@ class AutonomousWorkflow:
         triggered_guardrails = guardrail_results["triggered_guardrails"]
 
         logger.warning(
-            f"Workflow escalation | ID={self.workflow_id} | Level={escalation_level} | Guardrails={triggered_guardrails}"
-        )
+    "Workflow escalation | ID=%s | Level=%s | Guardrails=%s",
+    self.workflow_id,
+    escalation_level,
+    triggered_guardrails,
+)
+
 
         if escalation_level == "emergency":
             return {

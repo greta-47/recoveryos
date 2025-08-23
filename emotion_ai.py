@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 import logging
 import re
 from datetime import datetime
