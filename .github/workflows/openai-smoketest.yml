@@ -11,18 +11,26 @@ jobs:
   smoketest:
     runs-on: ubuntu-latest
     continue-on-error: true
+    permissions:
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
       - name: Install OpenAI SDK
         run: pip install "openai>=1.40.0"
+
+      # This just logs a note when the secret is missing (non-blocking).
       - name: Note if secret missing (non-blocking)
-        if: ${{ secrets.OPENAI_API_KEY == '' }}
+        if: ${{ !secrets.OPENAI_API_KEY }}
         run: echo "Skipping smoketest: OPENAI_API_KEY secret not set in repo (non-blocking)."
+
       - name: Run smoketest
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        if: ${{ secrets.OPENAI_API_KEY }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
