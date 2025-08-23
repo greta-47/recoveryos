@@ -27,3 +27,11 @@ pydantic-settings==2.4.0
 
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+
+# Elite AI Dependencies
+networkx==3.1
+cryptography==41.0.7
+sympy==1.12
+aiohttp>=3.12.14
+prometheus-client==0.20.0
+types-requests==2.31.0.20240406

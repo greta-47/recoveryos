@@ -1,20 +1,31 @@
 # coping.py
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, List, Dict
-from datetime import datetime
-import os
 import logging
+import os
+from datetime import datetime
+from typing import Dict, List, Literal, Optional
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from pydantic import BaseModel, Field
 
 try:
     from alerts import queue_clinician_alert
 except Exception:  # fallback if alerts.py missing during local tests
-    def queue_clinician_alert(*args, **kwargs):
+
+    def queue_clinician_alert(  # type: ignore[misc]
+        background_tasks,
+        user_id: str,
+        risk_score: float,
+        factors: list,
+        suggested_action: str,
+    ):
+        # no-op in local fallback
         pass
+
 
 logger = logging.getLogger("recoveryos")
 
 RISK_HIGH_THRESHOLD = float(os.getenv("RISK_HIGH_THRESHOLD", "7.0"))
+
 
 # ----------------------
 # Models
@@ -28,7 +39,11 @@ class CopingRequest(BaseModel):
     craving_type: Optional[Literal["alcohol", "opioid", "stimulant", "benzo", "other"]] = Field(
         None, description="Substance the urge is for (if known)"
     )
-    context: Optional[str] = Field(None, max_length=200, description="Brief context (avoid PHI: no names, locations)")
+    context: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Brief context (avoid PHI: no names, locations)",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -46,24 +61,39 @@ class CopingRequest(BaseModel):
         }
     }
 
+
 class CopingResponse(BaseModel):
     tool: str = Field(..., description="Name of the coping skill")
     description: str = Field(..., description="How to do it (1–2 sentences)")
-    category: Literal["grounding", "breathing", "distraction", "connection", "body-scan", "mindfulness", "professional-help"] = Field(
-        ..., description="Type of tool"
-    )
+    category: Literal[
+        "grounding",
+        "breathing",
+        "distraction",
+        "connection",
+        "body-scan",
+        "mindfulness",
+        "professional-help",
+    ] = Field(..., description="Type of tool")
     urgency_level: Literal["low", "moderate", "high"] = Field("moderate", description="For routing logic")
     suggested_duration: str = Field("5 minutes", description="Recommended time to spend")
     message: str = Field(..., description="Personalized encouragement")
-    timestamp: str = Field(default_factory=lambda: f"{datetime.utcnow().isoformat()}Z", description="UTC timestamp")
-    resources: List[str] = Field(default_factory=list, description="Optional: links to videos, audio, or handouts")
+    timestamp: str = Field(
+        default_factory=lambda: f"{datetime.utcnow().isoformat()}Z",
+        description="UTC timestamp",
+    )
+    resources: List[str] = Field(
+        default_factory=list,
+        description="Optional: links to videos, audio, or handouts",
+    )
 
     # For UI + alerts
     risk_score: float = Field(0.0, ge=0, le=10, description="0–10 composite risk score")
     risk_level: Literal["Low", "Moderate", "High", "Severe"] = Field("Low", description="Discrete risk level")
     risk_factors: List[Dict] = Field(default_factory=list, description="Top contributing factors")
 
+
 router = APIRouter(prefix="/coping", tags=["coping"])
+
 
 # ----------------------
 # Minimal rule-based engine + risk model (stub)
@@ -75,18 +105,35 @@ def _risk_analyze(mood: int, urge: int, isolation: int, energy: int) -> Dict:
     
     score = (urge * 1.8) + mood_deficit * 0.8 + isolation_deficit * 0.6 + energy_deficit * 0.6
     score = max(0.0, min(10.0, score))
-    if score >= 9: level = "Severe"
-    elif score >= 7: level = "High"
-    elif score >= 4: level = "Moderate"
-    else: level = "Low"
-    factors = []
-    if urge >= 4: factors.append({"name": "High Urge", "impact": 0.8, "explanation": "Self-reported urge is high (≥4)."})
-    if mood <= 2: factors.append({"name": "Low Mood", "impact": 0.5, "explanation": "Mood is low (≤2)."})
-    if isolation <= 2: factors.append({"name": "Isolation", "impact": 0.4, "explanation": "Social connection is low (≤2)."})
-    if energy <= 2: factors.append({"name": "Exhaustion", "impact": 0.3, "explanation": "Energy level is very low (≤2)."})
+    if score >= 9:
+        level = "Severe"
+    elif score >= 7:
+        level = "High"
+    elif score >= 4:
+        level = "Moderate"
+    else:
+        level = "Low"
+
+    factors: List[Dict] = []
+    if urge >= 4:
+        factors.append({"name": "High Urge", "impact": 0.8, "explanation": "Self-reported urge is high (≥4)."})
+    if mood <= 2:
+        factors.append({"name": "Low Mood", "impact": 0.5, "explanation": "Mood is low (≤2)."})
+    if isolation <= 2:
+        factors.append({"name": "Isolation", "impact": 0.4, "explanation": "Social connection is low (≤2)."})
+    if energy <= 2:
+        factors.append({"name": "Exhaustion", "impact": 0.3, "explanation": "Energy level is very low (≤2)."})
     return {"score": round(score, 1), "level": level, "factors": factors[:3]}
 
-def _suggest_tool(mood: int, urge: int, sleep_hours: float, isolation: int, energy: int, craving_type: Optional[str]) -> Dict:
+
+def _suggest_tool(
+    mood: int,
+    urge: int,
+    sleep_hours: float,
+    isolation: int,
+    energy: int,
+    craving_type: Optional[str],
+) -> Dict:
     tool = "Box Breathing"
     description = "Inhale 4s, hold 4s, exhale 4s, hold 4s. Repeat for 5 minutes."
     category = "breathing"
@@ -127,6 +174,8 @@ def _suggest_tool(mood: int, urge: int, sleep_hours: float, isolation: int, ener
         suggested_duration = "10 minutes"
         message = "When sleep feels far away, this can help your body relax enough to rest."
 
+    resources = ["https://recoveryos.app/guided/urge-surfing.mp3"] if category == "grounding" else []
+
     return {
         "tool": tool,
         "description": description,
@@ -134,8 +183,9 @@ def _suggest_tool(mood: int, urge: int, sleep_hours: float, isolation: int, ener
         "urgency_level": urgency_level,
         "suggested_duration": suggested_duration,
         "message": message,
-        "resources": ["https://recoveryos.app/guided/urge-surfing.mp3"] if category == "grounding" else [],
+        "resources": resources,
     }
+
 
 # ----------------------
 # Routes
@@ -152,6 +202,7 @@ def recommend_coping_tool(request: CopingRequest, background_tasks: BackgroundTa
             craving_type=request.craving_type,
         )
         risk = _risk_analyze(request.mood, request.urge, request.isolation, request.energy)
+
         anon_user_id = "anon-user"  # TODO: replace with your de-identified user id
         suggested_action = "Offer same-day check-in"
 
@@ -173,7 +224,11 @@ def recommend_coping_tool(request: CopingRequest, background_tasks: BackgroundTa
 
     except Exception as e:
         logger.error(f"Coping tool failed | Error: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Coping tool generation failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Coping tool generation failed",
+        )
+
 
 @router.get("/healthz")
 def coping_health():

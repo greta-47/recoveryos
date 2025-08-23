@@ -1,8 +1,9 @@
 # db/db.py
-from sqlmodel import SQLModel, create_engine, Session
-from contextlib import contextmanager
-import os
 import logging
+import os
+from contextlib import contextmanager
+
+from sqlmodel import Session, SQLModel, create_engine
 
 # ----------------------
 # Logging
@@ -25,6 +26,7 @@ if not DATABASE_URL:
 is_sqlite = DATABASE_URL.startswith("sqlite")
 is_postgres = DATABASE_URL.startswith("postgresql")
 
+
 # ----------------------
 # Engine Configuration
 # ----------------------
@@ -34,8 +36,8 @@ def create_db_engine():
     engine_kwargs = {}
 
     if is_sqlite:
-        connect_args["check_same_thread"] = False  # Required for async
-        engine_kwargs["echo"] = False  # Set to True only in dev
+        connect_args["check_same_thread"] = False  # Required for async-style usage
+        engine_kwargs["echo"] = False  # Set to True only in local debugging
     elif is_postgres:
         # Connection pooling for production
         engine_kwargs["pool_size"] = 10
@@ -45,7 +47,9 @@ def create_db_engine():
 
     return create_engine(DATABASE_URL, connect_args=connect_args, **engine_kwargs)
 
+
 engine = create_db_engine()
+
 
 # ----------------------
 # Initialize DB
@@ -55,9 +59,18 @@ def init_db():
     Create all tables.
     Call once at startup.
     """
-    from .models import User, Checkin, Supporter, Tool, RiskEvent, ConsentRecord  # noqa
+    from .models import Checkin, ConsentRecord, RiskEvent, Supporter, Tool, User  # noqa: F401
+
+    # Optional models from separate modules; safe to ignore if absent
+    try:
+        from user_profiles import UserProfile  # noqa: F401
+        from interaction_history import InteractionHistory  # noqa: F401
+    except ImportError:
+        pass
+
     SQLModel.metadata.create_all(engine)
     logger.info("✅ Database initialized — all tables created or verified")
+
 
 # ----------------------
 # Session Management
@@ -78,6 +91,7 @@ def get_session():
         raise
     finally:
         session.close()
+
 
 # Optional: FastAPI dependency (if using)
 # def get_db():

@@ -7,10 +7,12 @@ from main import app
 
 client = TestClient(app)
 
+
 def test_root():
     r = client.get("/")
     assert r.status_code == 200
-    assert r.json()["ok"] is True
+    assert r.json().get("ok") is True
+
 
 def test_agents_endpoint_without_api_key():
     """Test that agents endpoint works in test environment."""

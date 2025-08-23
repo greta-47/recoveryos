@@ -24,8 +24,14 @@ COPY --chown=root:root requirements.lock.txt /wheels/requirements.lock.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     sh -euc 'python -m pip install --upgrade pip setuptools wheel pip-tools && \
-             echo ">> Using requirements.txt (fallback due to setuptools hash issue)"; \
-             pip wheel --wheel-dir=/wheels/dist -r /wheels/requirements.txt'
+             if [ -s /wheels/requirements.lock.txt ]; then \
+               echo ">> Using requirements.lock.txt (try hashes, then fallback)"; \
+               pip wheel --wheel-dir=/wheels/dist --require-hashes -r /wheels/requirements.lock.txt || \
+               pip wheel --wheel-dir=/wheels/dist -r /wheels/requirements.lock.txt; \
+             else \
+               echo ">> Using requirements.txt"; \
+               pip wheel --wheel-dir=/wheels/dist -r /wheels/requirements.txt; \
+             fi'
 
 ########## Stage 2: slim runtime ##########
 FROM python:3.11.9-slim AS runtime
@@ -64,11 +70,12 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # App source
 COPY --chown=appuser:appuser . /app
-USER appuser
 
 # Create entrypoint script for read-only filesystem support
 COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
+
+USER appuser
 
 # Healthcheck (simple & reliable)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

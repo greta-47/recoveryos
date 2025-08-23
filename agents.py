@@ -1,21 +1,21 @@
-# agents.py
+import json
+import logging
 import os
+import re
+import sys
 import time
 import uuid
-import re
-import json
-import sys
-from typing import Dict, Any, List, Optional
 from datetime import datetime
-from openai import OpenAI, APIError, RateLimitError
-import logging
+from typing import Any, Dict, List, Optional
+
+from openai import APIError, OpenAI, RateLimitError
 
 # ----------------------
 # Logging
 # ----------------------
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s'
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("recoveryos")
 
@@ -42,11 +42,15 @@ SYSTEM = """You are a coordinated multi-agent team for RecoveryOS (BC, Canada).
 Agents: Researcher, Analyst, Critic (BC compliance), Strategist, Advisor.
 Core principles:
 - Trauma-informed, professional, decision-ready
+- Deep clinical reasoning for complex cases (dual diagnosis, poly-substance, trauma)
+- Evidence-based pathways and interventions
 - No clinical diagnosis or crisis advice
 - Cite sources, note assumptions, keep concise
 - Never include PHI or patient identifiers
+- Personalized responses based on user profile and history
 - All outputs must be de-identified and audit-safe
 """
+
 
 # ----------------------
 # Prompts
@@ -146,6 +150,7 @@ QUALITY CHECK BEFORE YOU SUBMIT
 
 BEGIN."""
 
+
 def analyst_prompt(okrs: str) -> str:
     return f"""ROLE: Analyst + Test Designer (RecoveryOS)
 
@@ -188,6 +193,7 @@ STYLE
 - Be concise. No fluff. Only actionable insights.
 """
 
+
 CRITIC_PROMPT = """ROLE: Critic (Compliance + Red Team)
 Challenge assumptions and feasibility. Flag hidden costs (support load, returns), platform risk, data handling.
 BC/Canada guardrails: informed consent before sharing, data minimization, no PHI in email, crisis disclaimers,
@@ -199,6 +205,7 @@ Produce a 90-day GTM plan with 3 budget variants (Lean / Standard / Aggressive).
 Include: ICP, offer, channels, budget, KPIs (leading/lagging), 30/60/90 milestones,
 and clear stop/scale thresholds.
 """
+
 
 def advisor_prompt(okrs: str) -> str:
     return f"""You are the final Advisor in the RecoveryOS multi-agent pipeline.
@@ -231,6 +238,7 @@ Your job is not to summarize — it is to **decide, align, and reveal trade-offs
 Be concise. Be courageous. Be clinical.
 """
 
+
 # ----------------------
 # Helpers
 # ----------------------
@@ -243,6 +251,7 @@ def _contains_phi(text: str) -> bool:
     ]
     return any(re.search(p, text, re.I) for p in patterns)
 
+
 def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
     for attempt in range(max_retries):
         try:
@@ -251,13 +260,13 @@ def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
                 temperature=0.3,
                 messages=[
                     {"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": content}
+                    {"role": "user", "content": content},
                 ],
-                timeout=15
+                timeout=15,
             )
-            return resp.choices[0].message.content
+            return resp.choices[0].message.content or ""
         except RateLimitError:
-            wait = 2 ** attempt
+            wait = 2**attempt
             time.sleep(wait)
         except APIError as e:
             if attempt == max_retries - 1:
@@ -265,8 +274,10 @@ def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
             time.sleep(2)
     raise RuntimeError("Max retries exceeded")
 
+
 # --- JSON extraction for Analyst's Top 5 tests ---
 _JSON_ARRAY_RE = re.compile(r"\[\s*(?:\{[\s\S]*?\})(?:\s*,\s*\{[\s\S]*?\}\s*)*\s*\]")
+
 
 def _fix_json_like(s: str) -> str:
     """Best-effort: normalize curly quotes and remove trailing commas."""
@@ -275,6 +286,7 @@ def _fix_json_like(s: str) -> str:
     s = s.replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'")
     s = re.sub(r",(\s*[}\]])", r"\1", s)
     return s
+
 
 def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
     """
@@ -311,10 +323,13 @@ def _parse_analyst_tests(text: str) -> List[Dict[str, Any]]:
                 return out
     return []
 
+
 # ----------------------
 # Pipeline
 # ----------------------
-def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
+def run_multi_agent(
+    topic: str, horizon: str, okrs: str, user_context: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     request_id = str(uuid.uuid4())
     logger.info(f"Agent pipeline started | ID={request_id} | Topic='{topic}'")
 
@@ -325,8 +340,18 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
         raise ValueError("Horizon and OKRs are required")
 
     try:
+        context_info = ""
+        if user_context:
+            profile = user_context.get("user_profile", {})
+            if profile:
+                context_info = (
+                    "\nUser Context: "
+                    f"Communication style: {profile.get('communication_style', 'supportive')}, "
+                    f"Recovery goals: {profile.get('recovery_goals', 'general')}"
+                )
+
         # 1) Researcher
-        researcher = _chat(researcher_prompt(topic, horizon))
+        researcher = _chat(researcher_prompt(topic, horizon) + context_info)
 
         # 2) Analyst (Top 5 tests)
         analyst = _chat(f"Researcher findings:\n{researcher}\n\n{analyst_prompt(okrs)}")
@@ -347,14 +372,19 @@ def run_multi_agent(topic: str, horizon: str, okrs: str) -> Dict[str, Any]:
             + "\n\nContext:\n"
             + f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\nStrategist:\n{strategist}"
         )
-        raw_memo = client.chat.completions.create(
-            model=MODEL_HIGH,
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": SYSTEM},
-                {"role": "user", "content": advisor_input},
-            ],
-        ).choices[0].message.content
+        raw_memo = (
+            client.chat.completions.create(
+                model=MODEL_HIGH,
+                temperature=0.2,
+                messages=[
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": advisor_input},
+                ],
+            )
+            .choices[0]
+            .message.content
+            or ""
+        )
 
         advisor_memo = "[REDACTED] Potential PHI detected." if _contains_phi(raw_memo) else raw_memo
 

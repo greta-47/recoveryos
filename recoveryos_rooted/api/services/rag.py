@@ -1,2 +1,2 @@
-def retrieve(query:str)->list:
+def retrieve(query: str) -> list:
     return []

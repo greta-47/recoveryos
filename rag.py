@@ -1,12 +1,12 @@
 # rag.py
 from __future__ import annotations
 
-import os
 import json
 import logging
+import os
 import threading
-from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -20,9 +20,9 @@ RAG_DEVICE = os.getenv("RAG_DEVICE", "cpu")  # "cpu" or "cuda"
 RAG_DIR = Path(os.getenv("RAG_STORE_DIR", "rag_store"))
 RAG_DIR.mkdir(parents=True, exist_ok=True)
 
-EMBEDDINGS_FILE = RAG_DIR / "embeddings.npy"   # shape: (N, d) float32 (normalized)
-METADATA_FILE   = RAG_DIR / "metadata.json"    # list[Dict]
-MANIFEST_FILE   = RAG_DIR / "manifest.json"    # {model, dim, count, updated_at}
+EMBEDDINGS_FILE = RAG_DIR / "embeddings.npy"  # shape: (N, d) float32 (normalized)
+METADATA_FILE = RAG_DIR / "metadata.json"  # list[Dict]
+MANIFEST_FILE = RAG_DIR / "manifest.json"  # {model, dim, count, updated_at}
 
 # Thread lock to avoid concurrent writers
 _STORE_LOCK = threading.Lock()
@@ -83,6 +83,7 @@ def _save_manifest(model_name: str, dim: int, count: int) -> None:
 
 def _now_iso() -> str:
     from datetime import datetime
+
     return datetime.utcnow().isoformat() + "Z"
 
 
@@ -128,7 +129,11 @@ def _ensure_store_shapes(dim: int) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
             emb = np.load(EMBEDDINGS_FILE, mmap_mode=None)
             meta = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
             if emb.ndim != 2 or emb.shape[1] != dim:
-                logger.warning("Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.", emb.shape, dim)
+                logger.warning(
+                    "Embedding dim mismatch (have=%s, expected=%s). Rebuilding store.",
+                    emb.shape,
+                    dim,
+                )
                 return np.empty((0, dim), dtype=np.float32), []
             if len(meta) != emb.shape[0]:
                 logger.warning("Metadata length mismatch with embeddings. Rebuilding store.")
@@ -207,7 +212,7 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         logger.warning("No documents provided to ingest.")
         return
 
-    model = _get_model()
+    _get_model()
     dim = _DIM or 384  # fallback
 
     with _STORE_LOCK:
@@ -217,7 +222,7 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         texts: List[str] = []
         new_meta: List[Dict[str, Any]] = []
         for doc in documents:
-            doc_id = str(doc.get("id") or f"doc-{len(meta)+len(new_meta)}")
+            doc_id = str(doc.get("id") or f"doc-{len(meta) + len(new_meta)}")
             title = str(doc.get("title") or "Untitled")
             content = str(doc.get("content") or "").strip()
             if not content:
@@ -226,15 +231,17 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
             chunks = _chunk_text(content) if chunk else [content]
             for i, c in enumerate(chunks):
                 texts.append(c)
-                new_meta.append({
-                    "id": f"{doc_id}#{i}" if len(chunks) > 1 else doc_id,
-                    "doc_id": doc_id,
-                    "title": title,
-                    "content": c,
-                    "chunk_index": i,
-                    "source": doc.get("source"),
-                    "tags": doc.get("tags"),
-                })
+                new_meta.append(
+                    {
+                        "id": f"{doc_id}#{i}" if len(chunks) > 1 else doc_id,
+                        "doc_id": doc_id,
+                        "title": title,
+                        "content": c,
+                        "chunk_index": i,
+                        "source": doc.get("source"),
+                        "tags": doc.get("tags"),
+                    }
+                )
 
         if not texts:
             logger.warning("No text content to embed after preprocessing.")
@@ -255,7 +262,12 @@ def ingest_documents(documents: List[Dict[str, str]], *, chunk: bool = True) -> 
         # Save
         _save_store(emb, meta, dim)
 
-        logger.info("✅ Ingested %s chunks from %s docs (total=%s)", len(new_meta), len(documents), emb.shape[0])
+        logger.info(
+            "✅ Ingested %s chunks from %s docs (total=%s)",
+            len(new_meta),
+            len(documents),
+            emb.shape[0],
+        )
 
 
 def retrieve(
@@ -272,7 +284,7 @@ def retrieve(
     if not query or not query.strip():
         return []
 
-    model = _get_model()
+    _get_model()
     dim = _DIM or 384
 
     if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
@@ -308,7 +320,13 @@ def retrieve(
             results.append(item)
 
         top = max((r["score"] for r in results), default=0.0)
-        logger.info("RAG retrieved %s results | k=%s | top=%.3f | query='%s'", len(results), k, top, query[:120])
+        logger.info(
+            "RAG retrieved %s results | k=%s | top=%.3f | query='%s'",
+            len(results),
+            k,
+            top,
+            query[:120],
+        )
         return results
 
     except Exception as e:
@@ -337,18 +355,18 @@ if __name__ == "__main__":
         {
             "id": "harm-reduction-101",
             "title": "Harm Reduction Principles",
-            "content": "Harm reduction meets patients where they are. It prioritizes safety, dignity, and incremental progress over abstinence-only goals. Key practices: needle exchange, naloxone access, non-judgmental engagement."
+            "content": "Harm reduction meets patients where they are. It prioritizes safety, dignity, and incremental progress over abstinence-only goals. Key practices: needle exchange, naloxone access, non-judgmental engagement.",
         },
         {
             "id": "de-escalation",
             "title": "De-escalation Techniques",
-            "content": "Use a soft tone, non-threatening posture, and active listening. Offer choices to restore sense of control. Validate feelings without agreeing. 'I see this is really hard' is better than 'Calm down.'"
+            "content": "Use a soft tone, non-threatening posture, and active listening. Offer choices to restore sense of control. Validate feelings without agreeing. 'I see this is really hard' is better than 'Calm down.'",
         },
         {
             "id": "urge-surfing",
             "title": "Urge Surfing Technique",
-            "content": "Teach patients to visualize cravings as waves: they rise, peak, and fall. Encourage riding the urge without acting. Mindfulness and breath are key tools."
-        }
+            "content": "Teach patients to visualize cravings as waves: they rise, peak, and fall. Encourage riding the urge without acting. Mindfulness and breath are key tools.",
+        },
     ]
 
     # Ingest once (append-safe)
@@ -358,4 +376,3 @@ if __name__ == "__main__":
     hits = retrieve("How do I help a patient with strong urges?")
     for r in hits:
         print(f"📄 {r['title']} (Score: {r['score']:.2f})\n{r['content']}\n")
-
