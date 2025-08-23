@@ -25,6 +25,7 @@ if not DATABASE_URL:
 is_sqlite = DATABASE_URL.startswith("sqlite")
 is_postgres = DATABASE_URL.startswith("postgresql")
 
+
 # ----------------------
 # Engine Configuration
 # ----------------------
@@ -45,7 +46,9 @@ def create_db_engine():
 
     return create_engine(DATABASE_URL, connect_args=connect_args, **engine_kwargs)
 
+
 engine = create_db_engine()
+
 
 # ----------------------
 # Initialize DB
@@ -56,8 +59,15 @@ def init_db():
     Call once at startup.
     """
     from .models import User, Checkin, Supporter, Tool, RiskEvent, ConsentRecord  # noqa
+
+    try:
+        from user_profiles import UserProfile  # noqa: F401
+        from interaction_history import InteractionHistory  # noqa: F401
+    except ImportError:
+        pass
     SQLModel.metadata.create_all(engine)
     logger.info("✅ Database initialized — all tables created or verified")
+
 
 # ----------------------
 # Session Management
@@ -78,6 +88,7 @@ def get_session():
         raise
     finally:
         session.close()
+
 
 # Optional: FastAPI dependency (if using)
 # def get_db():

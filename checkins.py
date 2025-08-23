@@ -11,12 +11,12 @@ import re
 # PHI / PII heuristics
 # ======================
 _PHI_PATTERNS = [
-    r"\b\d{3}-\d{3}-\d{4}\b",                              # phone (NA)
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", # email
-    r"\bDOB[:\s]*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b",         # DOB
-    r"\b(SIN|SSN)[:\s]*\d{3}[- ]?\d{3}[- ]?\d{3}\b",       # SIN/SSN
-    r"\b\d{3}-\d{2}-\d{4}\b",                              # SSN (US style)
-    r"\b[A-Z]{2}\d{6}\b",                                  # simple health card-ish
+    r"\b\d{3}-\d{3}-\d{4}\b",  # phone (NA)
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",  # email
+    r"\bDOB[:\s]*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b",  # DOB
+    r"\b(SIN|SSN)[:\s]*\d{3}[- ]?\d{3}[- ]?\d{3}\b",  # SIN/SSN
+    r"\b\d{3}-\d{2}-\d{4}\b",  # SSN (US style)
+    r"\b[A-Z]{2}\d{6}\b",  # simple health card-ish
 ]
 _PHI_RE = re.compile("|".join(_PHI_PATTERNS), re.I)
 
@@ -38,7 +38,9 @@ def _validate_tz(tz: Optional[str]) -> Optional[str]:
         ZoneInfo(tz)
         return tz
     except Exception:
-        raise ValueError("Invalid timezone. Use an IANA string like 'America/Vancouver'.")
+        raise ValueError(
+            "Invalid timezone. Use an IANA string like 'America/Vancouver'."
+        )
 
 
 # ======================
@@ -49,6 +51,7 @@ class CheckinIn(BaseModel):
     Daily check-in from patient.
     All fields are de-identified and voluntary.
     """
+
     mood: int = Field(
         ...,
         ge=1,
@@ -80,7 +83,9 @@ class CheckinIn(BaseModel):
         le=5,
         description="Energy level: 1 (exhausted) to 5 (energized)",
     )
-    craving_type: Optional[Literal["opioid", "alcohol", "stimulant", "benzo", "other"]] = Field(
+    craving_type: Optional[
+        Literal["opioid", "alcohol", "stimulant", "benzo", "other"]
+    ] = Field(
         None,
         description="Type of substance the urge is for (if known)",
     )
@@ -132,11 +137,16 @@ class SuggestionOut(BaseModel):
     AI-generated support response.
     Must be trauma-informed, non-shaming, and actionable.
     """
-    message: str = Field(..., description="Personalized encouragement or acknowledgment")
-    tool: str = Field(..., description="Coping skill or resource (e.g., 'Box breathing 4x4')")
-    category: Literal["grounding", "breathing", "distraction", "connection", "professional-help"] = Field(
-        ..., description="Type of coping strategy"
+
+    message: str = Field(
+        ..., description="Personalized encouragement or acknowledgment"
     )
+    tool: str = Field(
+        ..., description="Coping skill or resource (e.g., 'Box breathing 4x4')"
+    )
+    category: Literal[
+        "grounding", "breathing", "distraction", "connection", "professional-help"
+    ] = Field(..., description="Type of coping strategy")
     urgency_level: Literal["low", "moderate", "high"] = Field(
         "low", description="Urgency based on inputs (for routing)"
     )
@@ -157,6 +167,7 @@ class CheckinAnalytics(BaseModel):
     De-identified model for trend detection and AI insights.
     Used internally — never includes PHI.
     """
+
     user_id: str  # Anonymized ID (e.g., "usr-abc123")
     date: str  # YYYY-MM-DD
     mood: int
@@ -180,7 +191,9 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
     """
     # Urgency heuristic
     high = ci.urge >= 4 or ci.mood <= 2
-    moderate = (not high) and (ci.sleep_hours < 5 or ci.isolation_score <= 1 or ci.energy_level <= 2)
+    moderate = (not high) and (
+        ci.sleep_hours < 5 or ci.isolation_score <= 1 or ci.energy_level <= 2
+    )
     urgency = "high" if high else "moderate" if moderate else "low"
 
     # Tool & category
@@ -193,12 +206,16 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
         tool = "5-4-3-2-1 Grounding"
         category = "grounding"
         msg = "You’re not alone—low mood happens. Try this short grounding practice to steady your body first."
-        follow = "After grounding, consider a brief walk or light stretch to shift state."
+        follow = (
+            "After grounding, consider a brief walk or light stretch to shift state."
+        )
     elif ci.sleep_hours < 5:
         tool = "Body Scan (10 min) + Wind-Down Routine"
         category = "breathing"
         msg = "Sleep debt can amplify urges. A brief body scan can calm your system before bed."
-        follow = "Aim for a consistent bedtime and dim lights 60 minutes earlier tonight."
+        follow = (
+            "Aim for a consistent bedtime and dim lights 60 minutes earlier tonight."
+        )
     elif ci.isolation_score <= 1:
         tool = "Connection Micro-task (2 min)"
         category = "connection"
@@ -219,7 +236,9 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
     )
 
 
-def analytics_from_checkin(ci: CheckinIn, user_id: str, date: Optional[str] = None) -> CheckinAnalytics:
+def analytics_from_checkin(
+    ci: CheckinIn, user_id: str, date: Optional[str] = None
+) -> CheckinAnalytics:
     """
     Convert a CheckinIn to a CheckinAnalytics record with a simple risk score.
     Risk score (0–10) is a weighted combination of risk factors.
@@ -233,11 +252,11 @@ def analytics_from_checkin(ci: CheckinIn, user_id: str, date: Optional[str] = No
 
     # Weights (sum to 1.0 conceptually, then scale to 10)
     score_0_1 = (
-        urge_risk * 0.55 +
-        mood_risk * 0.20 +
-        sleep_risk * 0.10 +
-        iso_risk * 0.10 +
-        energy_risk * 0.05
+        urge_risk * 0.55
+        + mood_risk * 0.20
+        + sleep_risk * 0.10
+        + iso_risk * 0.10
+        + energy_risk * 0.05
     )
     score = round(min(max(score_0_1 * 10, 0.0), 10.0), 2)
 
