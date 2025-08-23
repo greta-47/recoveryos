@@ -1,0 +1,40 @@
+{
+  "release_20250814": {
+    "enabled": false,
+    "rollout_percentage": 0,
+    "description": "Elite AI endpoints release",
+    "created_at": "2025-08-14T23:47:25Z",
+    "environments": {
+      "staging": {
+        "enabled": true,
+        "rollout_percentage": 100
+      },
+      "production": {
+        "enabled": false,
+        "rollout_percentage": 0
+      }
+    }
+  },
+  "canary_deployment": {
+    "enabled": false,
+    "rollout_percentage": 5,
+    "description": "Canary deployment for gradual rollout",
+    "auto_rollback": {
+      "enabled": true,
+      "error_rate_threshold": 0.02,
+      "latency_threshold_ms": 1000,
+      "monitoring_window_minutes": 5
+    }
+  },
+  "enhanced_observability": {
+    "enabled": true,
+    "rollout_percentage": 100,
+    "description": "Enhanced metrics and tracing",
+    "features": {
+      "distributed_tracing": true,
+      "prometheus_metrics": true,
+      "structured_logging": true,
+      "pii_redaction": true
+    }
+  }
+}

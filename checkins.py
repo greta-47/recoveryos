@@ -75,7 +75,7 @@ class CheckinIn(BaseModel):
         le=5,
         description="Social connection: 0 (isolated) to 5 (connected)",
     )
-    # FIX: default must meet constraints (ge=1). Use neutral midpoint = 3.
+    # Default must meet constraints (ge=1). Neutral midpoint = 3.
     energy_level: int = Field(
         3,
         ge=1,
@@ -183,12 +183,12 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
     # Urgency heuristic
     high = ci.urge >= 4 or ci.mood <= 2
     moderate = (not high) and (ci.sleep_hours < 5 or ci.isolation_score <= 1 or ci.energy_level <= 2)
-    urgency = "high" if high else "moderate" if moderate else "low"
+    urgency: Literal["low", "moderate", "high"] = "high" if high else "moderate" if moderate else "low"
 
     # Tool & category
     if ci.urge >= 4:
         tool = "Urge Surfing — 5-minute guided wave visualization"
-        category = "grounding"
+        category: Literal["grounding", "breathing", "distraction", "connection", "professional-help"] = "grounding"
         msg = "Thanks for checking in. Strong urges can feel intense and temporary. Let’s ride the wave together."
         follow = "If the urge stays high after 10 minutes, message your support person or use a craving-delay timer."
     elif ci.mood <= 2:
@@ -215,8 +215,8 @@ def suggest_from_checkin(ci: CheckinIn) -> SuggestionOut:
     return SuggestionOut(
         message=msg,
         tool=tool,
-        category=category,  # type: ignore[arg-type]
-        urgency_level=urgency,  # type: ignore[arg-type]
+        category=category,
+        urgency_level=urgency,
         follow_up_suggestion=follow,
     )
 
@@ -237,9 +237,8 @@ def analytics_from_checkin(ci: CheckinIn, user_id: str, date: Optional[str] = No
     score_0_1 = urge_risk * 0.55 + mood_risk * 0.20 + sleep_risk * 0.10 + iso_risk * 0.10 + energy_risk * 0.05
     score = round(min(max(score_0_1 * 10, 0.0), 10.0), 2)
 
-    engagement_flag: Literal["high", "medium", "low"]
     if ci.notes and len(ci.notes.strip()) >= 40:
-        engagement_flag = "high"
+        engagement_flag: Literal["high", "medium", "low"] = "high"
     elif ci.notes:
         engagement_flag = "medium"
     else:

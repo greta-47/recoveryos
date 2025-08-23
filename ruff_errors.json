@@ -1,0 +1,353 @@
+[
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 24,
+      "row": 91
+    },
+    "filename": "/home/ubuntu/recoveryos/clinical_agents.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 92
+          },
+          "location": {
+            "column": 1,
+            "row": 91
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `full_prompt`"
+    },
+    "location": {
+      "column": 13,
+      "row": 91
+    },
+    "message": "Local variable `full_prompt` is assigned to but never used",
+    "noqa_row": 91,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E741",
+    "end_location": {
+      "column": 48,
+      "row": 238
+    },
+    "filename": "/home/ubuntu/recoveryos/continual_learning.py",
+    "fix": null,
+    "location": {
+      "column": 47,
+      "row": 238
+    },
+    "message": "Ambiguous variable name: `l`",
+    "noqa_row": 238,
+    "url": "https://docs.astral.sh/ruff/rules/ambiguous-variable-name"
+  },
+  {
+    "cell": null,
+    "code": "E741",
+    "end_location": {
+      "column": 54,
+      "row": 241
+    },
+    "filename": "/home/ubuntu/recoveryos/continual_learning.py",
+    "fix": null,
+    "location": {
+      "column": 53,
+      "row": 241
+    },
+    "message": "Ambiguous variable name: `l`",
+    "noqa_row": 241,
+    "url": "https://docs.astral.sh/ruff/rules/ambiguous-variable-name"
+  },
+  {
+    "cell": null,
+    "code": "E741",
+    "end_location": {
+      "column": 64,
+      "row": 243
+    },
+    "filename": "/home/ubuntu/recoveryos/continual_learning.py",
+    "fix": null,
+    "location": {
+      "column": 63,
+      "row": 243
+    },
+    "message": "Ambiguous variable name: `l`",
+    "noqa_row": 243,
+    "url": "https://docs.astral.sh/ruff/rules/ambiguous-variable-name"
+  },
+  {
+    "cell": null,
+    "code": "E741",
+    "end_location": {
+      "column": 53,
+      "row": 268
+    },
+    "filename": "/home/ubuntu/recoveryos/continual_learning.py",
+    "fix": null,
+    "location": {
+      "column": 52,
+      "row": 268
+    },
+    "message": "Ambiguous variable name: `l`",
+    "noqa_row": 268,
+    "url": "https://docs.astral.sh/ruff/rules/ambiguous-variable-name"
+  },
+  {
+    "cell": null,
+    "code": "E741",
+    "end_location": {
+      "column": 59,
+      "row": 279
+    },
+    "filename": "/home/ubuntu/recoveryos/continual_learning.py",
+    "fix": null,
+    "location": {
+      "column": 58,
+      "row": 279
+    },
+    "message": "Ambiguous variable name: `l`",
+    "noqa_row": 279,
+    "url": "https://docs.astral.sh/ruff/rules/ambiguous-variable-name"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 46,
+      "row": 64
+    },
+    "filename": "/home/ubuntu/recoveryos/db.py",
+    "fix": null,
+    "location": {
+      "column": 35,
+      "row": 64
+    },
+    "message": "`user_profiles.UserProfile` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 64,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 59,
+      "row": 65
+    },
+    "filename": "/home/ubuntu/recoveryos/db.py",
+    "fix": null,
+    "location": {
+      "column": 41,
+      "row": 65
+    },
+    "message": "`interaction_history.InteractionHistory` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 65,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 20,
+      "row": 68
+    },
+    "filename": "/home/ubuntu/recoveryos/differential_privacy.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 23,
+            "row": 68
+          },
+          "location": {
+            "column": 9,
+            "row": 68
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `max_utility`"
+    },
+    "location": {
+      "column": 9,
+      "row": 68
+    },
+    "message": "Local variable `max_utility` is assigned to but never used",
+    "noqa_row": 68,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 19,
+      "row": 124
+    },
+    "filename": "/home/ubuntu/recoveryos/emotion_ai.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 125
+          },
+          "location": {
+            "column": 1,
+            "row": 124
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `prompt`"
+    },
+    "location": {
+      "column": 13,
+      "row": 124
+    },
+    "message": "Local variable `prompt` is assigned to but never used",
+    "noqa_row": 124,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 16,
+      "row": 323
+    },
+    "filename": "/home/ubuntu/recoveryos/neuromorphic.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 19,
+            "row": 323
+          },
+          "location": {
+            "column": 9,
+            "row": 323
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `results`"
+    },
+    "location": {
+      "column": 9,
+      "row": 323
+    },
+    "message": "Local variable `results` is assigned to but never used",
+    "noqa_row": 323,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 10,
+      "row": 219
+    },
+    "filename": "/home/ubuntu/recoveryos/rag.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 13,
+            "row": 219
+          },
+          "location": {
+            "column": 5,
+            "row": 219
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `model`"
+    },
+    "location": {
+      "column": 5,
+      "row": 219
+    },
+    "message": "Local variable `model` is assigned to but never used",
+    "noqa_row": 219,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 10,
+      "row": 293
+    },
+    "filename": "/home/ubuntu/recoveryos/rag.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 13,
+            "row": 293
+          },
+          "location": {
+            "column": 5,
+            "row": 293
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `model`"
+    },
+    "location": {
+      "column": 5,
+      "row": 293
+    },
+    "message": "Local variable `model` is assigned to but never used",
+    "noqa_row": 293,
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 28
+    },
+    "filename": "/home/ubuntu/recoveryos/user_profiles.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 28
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 28,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  },
+  {
+    "cell": null,
+    "code": "E722",
+    "end_location": {
+      "column": 15,
+      "row": 40
+    },
+    "filename": "/home/ubuntu/recoveryos/user_profiles.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 40
+    },
+    "message": "Do not use bare `except`",
+    "noqa_row": 40,
+    "url": "https://docs.astral.sh/ruff/rules/bare-except"
+  }
+]

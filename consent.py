@@ -76,7 +76,7 @@ class ConsentRecord:
 
         # Expiration handling
         if expires_at is not None:
-            self.expires_at = expires_at
+            self.expires_at: Optional[datetime] = expires_at
         elif ttl_days is not None:
             self.expires_at = self.given_at + timedelta(days=int(ttl_days))
         else:
@@ -89,7 +89,11 @@ class ConsentRecord:
         """True if consent is currently valid."""
         now = now or datetime.utcnow()
 
-        if self.status in (ConsentStatus.WITHDRAWN, ConsentStatus.EXPIRED, ConsentStatus.PENDING):
+        if self.status in (
+            ConsentStatus.WITHDRAWN,
+            ConsentStatus.EXPIRED,
+            ConsentStatus.PENDING,
+        ):
             return False
 
         if self.expires_at and now >= self.expires_at:
