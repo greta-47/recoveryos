@@ -14,5 +14,6 @@ def setup_test_environment():
     
     os.environ.setdefault("RISK_HIGH_THRESHOLD", "7.0")
     os.environ.setdefault("DATABASE_URL", "sqlite:///test.db")
+    os.environ.setdefault("ENABLE_HTTPS_ENFORCEMENT", "false")
     
     return True

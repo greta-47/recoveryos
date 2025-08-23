@@ -35,3 +35,6 @@ sympy==1.12
 aiohttp>=3.12.14
 prometheus-client==0.20.0
 types-requests==2.31.0.20240406
+
+# Testing Dependencies
+pytest
