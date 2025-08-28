@@ -35,6 +35,10 @@ APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 API_KEY = os.getenv("API_KEY")
 ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o]
 
+_OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not _OPENAI_API_KEY:
+    raise RuntimeError("OPENAI_API_KEY is required but not set in the environment")
+
 
 # ----------------------
 # Structured logging
