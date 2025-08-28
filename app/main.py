@@ -16,7 +16,11 @@ app.add_middleware(EnforceHTTPSMiddleware, settings=settings)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.ALLOWED_ORIGINS] if settings.ALLOWED_ORIGINS else [],
+    allow_origins=(
+        [str(origin) for origin in settings.ALLOWED_ORIGINS]
+        if settings.ALLOWED_ORIGINS
+        else []
+    ),
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
