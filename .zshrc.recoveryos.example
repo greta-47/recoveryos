@@ -1,0 +1,22 @@
+# --- RecoveryOS config ---
+export RECOVERYOS_DIR="$HOME/Desktop/recoveryos"
+export RECOVERYOS_VENV="$RECOVERYOS_DIR/.venv"
+
+# OpenAI API Key (prefer loading from Secrets/env; only export if not already set)
+export OPENAI_API_KEY="${OPENAI_API_KEY}"
+
+# Only set PYTHONPATH if RecoveryOS exists
+if [ -d "$RECOVERYOS_DIR" ]; then
+  export PYTHONPATH="$RECOVERYOS_DIR${PYTHONPATH:+:$PYTHONPATH}"
+fi
+
+# Aliases for RecoveryOS server management
+alias runrecovery='cd "$RECOVERYOS_DIR" && [ -f "$RECOVERYOS_VENV/bin/activate" ] && source "$RECOVERYOS_VENV/bin/activate" && uvicorn main:app --reload'
+alias runrecovery_bg='cd "$RECOVERYOS_DIR" && [ -f "$RECOVERYOS_VENV/bin/activate" ] && source "$RECOVERYOS_VENV/bin/activate" && nohup uvicorn main:app --reload > "$RECOVERYOS_DIR/recoveryos.log" 2>&1 &'
+alias checkrecovery='ps aux | grep "[u]vicorn main:app"'
+alias stoprecovery='lsof -t -i:8000 | xargs -r kill -9'
+alias restartrecovery='stoprecovery >/dev/null 2>&1 || true; runrecovery'
+
+# Quick health check
+alias testrecovery='curl -sS http://127.0.0.1:8000/healthz'
+# --- end RecoveryOS config ---
