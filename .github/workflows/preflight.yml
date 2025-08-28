@@ -84,9 +84,10 @@ jobs:
 
       - name: Scan image with Trivy (SARIF)
         id: trivy
-        uses: aquasecurity/trivy-action@v0.21.0
+        uses: aquasecurity/trivy-action@v0.24.0
         continue-on-error: ${{ github.event_name == 'pull_request' }}
         with:
+          scan-type: 'image'
           image-ref: recoveryos:ci-smoke
           format: 'sarif'
           output: 'trivy-results.sarif'

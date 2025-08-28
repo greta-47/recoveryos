@@ -1,21 +1,16 @@
 name: Comprehensive CI/CD Pipeline
 
 on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - "**.md"
+      - ".github/ISSUE_TEMPLATE/**"
   pull_request:
+    branches: [ "main" ]
     paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '.github/**'
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '.github/**'
-    branches: [ main ]
-  push:
-    branches: [ main ]
+      - "**.md"
+      - ".github/ISSUE_TEMPLATE/**"
   workflow_dispatch:
 
 permissions:
@@ -41,16 +36,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: "detect --no-git -v --redact --exit-code 0"
+          args: '--verbose --redact --source .'
 
       - name: Trivy filesystem scan (non-blocking)
-        uses: aquasecurity/trivy-action@v0.21.0
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
-          scan-type: fs
-          format: table
-          severity: CRITICAL,HIGH
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
-          exit-code: '0'              # <- non-blocking
 
   # Only runs when pushing to main (not on PRs / feature branches)
   build_and_container_scan:
@@ -71,10 +66,11 @@ jobs:
           tags: local/app:latest
 
       - name: Trivy image scan (non-blocking)
-        uses: aquasecurity/trivy-action@v0.21.0
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
+          scan-type: 'image'
           image-ref: local/app:latest
-          format: table
-          severity: CRITICAL,HIGH
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
-          exit-code: '0'              # <- non-blocking
