@@ -2,6 +2,17 @@ name: Comprehensive CI/CD Pipeline
 
 on:
   pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/**'
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/**'
     branches: [ main ]
   push:
     branches: [ main ]
@@ -27,12 +38,13 @@ jobs:
 
       - name: Gitleaks (non-blocking)
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # redact findings; never fail the job
-          args: detect --no-git -v --redact --exit-code 0
+          args: "detect --no-git -v --redact --exit-code 0"
 
       - name: Trivy filesystem scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.21.0
         with:
           scan-type: fs
           format: table
@@ -59,7 +71,7 @@ jobs:
           tags: local/app:latest
 
       - name: Trivy image scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.21.0
         with:
           image-ref: local/app:latest
           format: table
