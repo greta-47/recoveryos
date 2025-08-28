@@ -44,15 +44,22 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     APP_VERSION="0.1.0" \
     PORT=8000 \
     WORKERS=1 \
-    TIMEOUT=45
+    TIMEOUT=45 \
+    TMPDIR=/tmp/app
 
-# Minimal runtime deps only (curl for healthcheck)
+# Minimal runtime deps only (curl for healthcheck, libpq5 for PostgreSQL)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+      curl libpq5 \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /var/tmp/*
 
 # Non-root user early so we can --chown on COPY
 RUN useradd -m -u 10001 appuser
+
+# Create directories for read-only filesystem support
+RUN mkdir -p /tmp/app /var/log/app /var/cache/app /app/logs /app/cache \
+ && chown -R appuser:appuser /tmp/app /var/log/app /var/cache/app /app/logs /app/cache
+
 WORKDIR /app
 
 # Install prebuilt wheels, then remove build artifacts (same layer)
@@ -63,20 +70,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # App source
 COPY --chown=appuser:appuser . /app
 
-# Optional prestart hook + clean PID1 signal handling (create as root, then chown)
-RUN echo '#!/usr/bin/env sh' > /app/entrypoint.sh && \
-    echo 'set -euo pipefail' >> /app/entrypoint.sh && \
-    echo '# Optional: run DB migrations, warmups, etc.' >> /app/entrypoint.sh && \
-    echo 'if [ -x /app/prestart.sh ]; then' >> /app/entrypoint.sh && \
-    echo '  /app/prestart.sh' >> /app/entrypoint.sh && \
-    echo 'fi' >> /app/entrypoint.sh && \
-    echo 'exec gunicorn -k uvicorn.workers.UvicornWorker \' >> /app/entrypoint.sh && \
-    echo '  --bind 0.0.0.0:${PORT} \' >> /app/entrypoint.sh && \
-    echo '  --workers ${WORKERS} \' >> /app/entrypoint.sh && \
-    echo '  --timeout ${TIMEOUT} \' >> /app/entrypoint.sh && \
-    echo '  main:app' >> /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh && \
-    chown appuser:appuser /app/entrypoint.sh
+# Create entrypoint script for read-only filesystem support
+COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 USER appuser
 
@@ -86,9 +82,14 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Metadata
 LABEL org.opencontainers.image.title="RecoveryOS API" \
-      org.opencontainers.image.description="AI-powered relapse prevention for addiction recovery" \
+      org.opencontainers.image.description="AI-powered relapse prevention for addiction recovery (Hardened)" \
       org.opencontainers.image.version="0.1.0" \
-      org.opencontainers.image.source="https://github.com/yourname/recoveryos"
+      org.opencontainers.image.source="https://github.com/greta-47/recoveryos" \
+      security.scan="trivy" \
+      security.non-root="true" \
+      security.readonly="supported" \
+      security.hardened="true" \
+      security.build-tools="removed"
 
 EXPOSE 8000
 ENTRYPOINT ["/app/entrypoint.sh"]
