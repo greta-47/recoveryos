@@ -1,4 +1,3 @@
-import os
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -9,10 +8,6 @@ def _no_openai_network(monkeypatch):
     Prevent real OpenAI calls in unit tests.
     Adjust import path to where your client is created (e.g., agents.py module path).
     """
-    try:
-        import openai
-    except Exception:
-        return
 
     patches = []
     for target in [

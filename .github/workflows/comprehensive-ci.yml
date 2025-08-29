@@ -18,7 +18,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       PYTHONUNBUFFERED: "1"
       APP_HOST: "127.0.0.1"
-      APP_PORT: "8000"
+      APP_PORT: "8001"
     steps:
       - uses: actions/checkout@v4
       
@@ -63,13 +63,14 @@ jobs:
           sed -n '1,200p' uvicorn.out || true
           exit 1
           
-      - name: Run tests
+      - name: Run unit tests (no e2e)
         run: |
-          pytest test_elite_endpoints.py -v
+          pytest -q -m "not e2e" --timeout=180
           
-      - name: Run E2E tests
+      - name: Run e2e tests (temporarily non-blocking)
+        continue-on-error: true
         run: |
-          python -m pytest test_api.py -v --tb=short || true
+          pytest -q -m "e2e" --timeout=300
           
       - name: Always dump server logs on failure
         if: failure()
