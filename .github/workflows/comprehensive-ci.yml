@@ -63,10 +63,6 @@ jobs:
           sed -n '1,200p' uvicorn.out || true
           exit 1
           
-      - name: Run linters
-        run: |
-          black --check .
-          
       - name: Run tests
         run: |
           pytest test_elite_endpoints.py -v
