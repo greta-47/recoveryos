@@ -6,6 +6,7 @@ Includes failing tests that demonstrate bugs and verify fixes.
 
 import sys
 import requests
+import pytest
 
 sys.path.append("/home/ubuntu/recoveryos")
 
@@ -13,6 +14,7 @@ BASE_URL = "http://localhost:8001"
 
 
 class TestContinualLearning:
+    @pytest.mark.e2e
     def test_continual_learning_with_correct_format(self):
         """Test continual learning with correct List[Dict] format"""
         response = requests.post(
@@ -28,6 +30,7 @@ class TestContinualLearning:
         assert "training_result" in data
         assert data["task_id"] == "stress_prediction"
 
+    @pytest.mark.e2e
     def test_continual_learning_with_dict_format(self):
         """Test continual learning handles Dict format (auto-conversion)"""
         response = requests.post(
@@ -44,6 +47,7 @@ class TestContinualLearning:
 
 
 class TestFederatedLearning:
+    @pytest.mark.e2e
     def test_federated_learning_single_client(self):
         """Test federated learning with single client data"""
         response = requests.post(
@@ -56,6 +60,7 @@ class TestFederatedLearning:
         assert "client_id" in data
         assert data["client_id"] == "test_client"
 
+    @pytest.mark.e2e
     def test_federated_learning_anonymous_client(self):
         """Test federated learning with anonymous client"""
         response = requests.post(
@@ -69,6 +74,7 @@ class TestFederatedLearning:
 
 
 class TestEdgeAI:
+    @pytest.mark.e2e
     def test_edge_ai_emotion_classifier(self):
         """Test edge AI with emotion_classifier model type"""
         response = requests.post(
@@ -81,6 +87,7 @@ class TestEdgeAI:
         assert data["model_type"] == "emotion"
         assert data["original_request"] == "emotion_classifier"
 
+    @pytest.mark.e2e
     def test_edge_ai_risk_predictor(self):
         """Test edge AI with risk_predictor model type"""
         response = requests.post(
@@ -91,6 +98,7 @@ class TestEdgeAI:
         assert data["model_type"] == "risk"
         assert data["original_request"] == "risk_predictor"
 
+    @pytest.mark.e2e
     def test_edge_ai_default_emotion(self):
         """Test edge AI with default emotion model"""
         response = requests.post(
@@ -102,6 +110,7 @@ class TestEdgeAI:
 
 
 class TestObservability:
+    @pytest.mark.e2e
     def test_metrics_endpoint(self):
         """Test that metrics endpoint works"""
         response = requests.get(f"{BASE_URL}/elite/metrics")
@@ -111,6 +120,7 @@ class TestObservability:
         assert "total_requests" in data
         assert "timestamp" in data
 
+    @pytest.mark.e2e
     def test_pii_redaction(self):
         """Test PII redaction in differential privacy endpoint"""
         response = requests.post(
@@ -124,6 +134,7 @@ class TestObservability:
 
 
 class TestAllEliteEndpoints:
+    @pytest.mark.e2e
     def test_all_endpoints_respond(self):
         """Test that all 10 elite endpoints respond successfully"""
         endpoints = [

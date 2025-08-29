@@ -6,10 +6,12 @@ Tests metrics, tracing, and PII redaction functionality
 
 import requests
 import time
+import pytest
 from observability_enhanced import PIIRedactor
 from feature_flags import feature_flags
 
 
+@pytest.mark.e2e
 def test_metrics_endpoint():
     """Test Prometheus metrics endpoint"""
     print("📊 Testing Metrics Endpoint...")
@@ -47,6 +49,7 @@ def test_metrics_endpoint():
         return False
 
 
+@pytest.mark.e2e
 def test_elite_metrics_endpoint():
     """Test elite metrics endpoint with feature flag integration"""
     print("📈 Testing Elite Metrics Endpoint...")
@@ -142,6 +145,7 @@ def test_feature_flags():
         return False
 
 
+@pytest.mark.e2e
 def test_correlation_ids():
     """Test correlation ID generation and tracking"""
     print("🔗 Testing Correlation IDs...")
