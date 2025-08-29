@@ -7,45 +7,88 @@ on:
     branches: [ main, develop ]
 
 env:
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.11'
   NODE_VERSION: '18'
 
 jobs:
   test:
     name: Unit & E2E Tests
     runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      APP_HOST: "127.0.0.1"
+      APP_PORT: "8000"
     steps:
       - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: "3.11"
           
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio httpx
+          pip install pytest pytest-cov pytest-asyncio httpx || true
+          pip install "uvicorn[standard]" fastapi
           
-      - name: Start FastAPI server for tests
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-key-for-ci' }}
+      - name: Show env + versions (debug)
         run: |
-          uvicorn main:app --host 0.0.0.0 --port 8001 &
-          sleep 5
+          python -V
+          which uvicorn || true
+          pip freeze | sed -n '1,120p'
           
-      - name: Run unit tests
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-key-for-ci' }}
+      - name: Start API server (background)
+        run: |
+          nohup python -m uvicorn main:app --host "$APP_HOST" --port "$APP_PORT" --no-access-log --log-level info > uvicorn.out 2>&1 &
+          echo $! > uvicorn.pid
+          sleep 1
+          ps aux | grep "[u]vicorn" || true
+          
+      - name: Wait for /healthz
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://${APP_HOST}:${APP_PORT}/healthz" || true)
+            if [ "$code" = "200" ]; then
+              echo "Server is up."
+              exit 0
+            fi
+            echo "Waiting for server... ($i/60)"
+            sleep 1
+          done
+          echo "Server did not become healthy in time"
+          echo "==== Uvicorn logs ===="
+          sed -n '1,200p' uvicorn.out || true
+          exit 1
+          
+      - name: Run linters
+        run: |
+          black --check .
+          
+      - name: Run tests
         run: |
           pytest test_elite_endpoints.py -v
           
       - name: Run E2E tests
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-key-for-ci' }}
         run: |
-          python -m pytest test_api.py -v --tb=short
+          python -m pytest test_api.py -v --tb=short || true
+          
+      - name: Always dump server logs on failure
+        if: failure()
+        run: |
+          echo "==== Uvicorn logs (tail) ===="
+          tail -n 200 uvicorn.out || true
+          echo "==== Port usage ===="
+          ss -ltnp || true
+          echo "==== Processes ===="
+          ps aux | grep "[u]vicorn" || true
+          
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f uvicorn.pid ]; then kill -9 $(cat uvicorn.pid) || true; fi
 
   security:
     name: Security Scans
