@@ -22,8 +22,10 @@ logger = logging.getLogger("recoveryos")
 # ----------------------
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    raise RuntimeError("OPENAI_API_KEY is not set in environment")
-client = OpenAI(api_key=api_key)
+    logger.warning("OPENAI_API_KEY is not set - OpenAI functionality will be disabled")
+    client = None
+else:
+    client = OpenAI(api_key=api_key)
 
 # Allow env overrides for models
 MODEL_FAST = os.getenv("OPENAI_MODEL_FAST", "gpt-4o-mini")
@@ -247,6 +249,9 @@ def _contains_phi(text: str) -> bool:
 
 
 def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
+    if client is None:
+        return "[OpenAI functionality disabled - OPENAI_API_KEY not configured]"
+    
     for attempt in range(max_retries):
         try:
             resp = client.chat.completions.create(
@@ -368,19 +373,22 @@ def run_multi_agent(
             + "\n\nContext:\n"
             + f"Researcher:\n{researcher}\n\nAnalyst:\n{analyst}\n\nCritic:\n{critic}\n\nStrategist:\n{strategist}"
         )
-        raw_memo = (
-            client.chat.completions.create(
-                model=MODEL_HIGH,
-                temperature=0.2,
-                messages=[
-                    {"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": advisor_input},
-                ],
+        if client is None:
+            raw_memo = "[OpenAI functionality disabled - OPENAI_API_KEY not configured]"
+        else:
+            raw_memo = (
+                client.chat.completions.create(
+                    model=MODEL_HIGH,
+                    temperature=0.2,
+                    messages=[
+                        {"role": "system", "content": SYSTEM},
+                        {"role": "user", "content": advisor_input},
+                    ],
+                )
+                .choices[0]
+                .message.content
+                or ""
             )
-            .choices[0]
-            .message.content
-            or ""
-        )
 
         advisor_memo = (
             "[REDACTED] Potential PHI detected."
