@@ -251,7 +251,7 @@ def _contains_phi(text: str) -> bool:
 def _chat(content: str, model: str = MODEL_FAST, max_retries: int = 3) -> str:
     if client is None:
         return "[OpenAI functionality disabled - OPENAI_API_KEY not configured]"
-    
+
     for attempt in range(max_retries):
         try:
             resp = client.chat.completions.create(
