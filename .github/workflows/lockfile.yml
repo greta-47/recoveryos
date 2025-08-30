@@ -2,7 +2,7 @@ name: Build lockfile
 
 on:
   push:
-    paths: [ "requirements.in" ]
+    paths: [ "requirements.txt" ]
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
         run: git rm -f requirements.lock.txt || true
 
       - name: Generate requirements.lock.txt with hashes
-        run: pip-compile --generate-hashes -o requirements.lock.txt requirements.in
+        run: pip-compile --generate-hashes -o requirements.lock.txt requirements.txt
 
       - name: Sanity check (must contain sha256 hashes)
         run: grep -q -- "--hash=sha256:" requirements.lock.txt
