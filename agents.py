@@ -31,9 +31,9 @@ if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not set in environment")
 client = OpenAI(api_key=api_key)
 
-# Allow env overrides for models
-MODEL_FAST = os.getenv("OPENAI_MODEL_FAST", "gpt-4o-mini")
-MODEL_HIGH = os.getenv("OPENAI_MODEL_HIGH", "gpt-4o")
+# Allow env overrides for models - using GPT-5 as requested
+MODEL_FAST = os.getenv("OPENAI_MODEL_FAST", "gpt-5")
+MODEL_HIGH = os.getenv("OPENAI_MODEL_HIGH", "gpt-5")
 
 # ----------------------
 # System message
@@ -349,7 +349,6 @@ def run_multi_agent(
                     f"Communication style: {profile.get('communication_style', 'supportive')}, "
                     f"Recovery goals: {profile.get('recovery_goals', 'general')}"
                 )
-
         # 1) Researcher
         researcher = _chat(researcher_prompt(topic, horizon) + context_info)
 
