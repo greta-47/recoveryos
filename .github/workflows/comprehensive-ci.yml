@@ -30,6 +30,8 @@ jobs:
     continue-on-error: true          # <- non-blocking
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Gitleaks (non-blocking)
         uses: gitleaks/gitleaks-action@v2
