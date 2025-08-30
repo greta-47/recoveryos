@@ -1,10 +1,17 @@
+import importlib
+import sys
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
-from main import app
+sys.path.insert(0, str(Path(__file__).parent))
+
 from test_config import setup_test_environment
 
 setup_test_environment()
 
+mod = importlib.import_module("main")
+app = mod.app
 client = TestClient(app)
 
 
