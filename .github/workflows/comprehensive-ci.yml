@@ -35,8 +35,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: '--verbose --redact --source .'
 
       - name: Trivy filesystem scan (non-blocking)
         uses: aquasecurity/trivy-action@0.33.0
