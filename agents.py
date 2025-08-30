@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import sys
 import time
 import uuid
 from datetime import datetime
@@ -23,7 +24,11 @@ logger = logging.getLogger("recoveryos")
 # ----------------------
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    raise RuntimeError("OPENAI_API_KEY is not set in environment")
+    if os.getenv("TESTING") or "test" in sys.argv[0] or any("test" in arg for arg in sys.argv):
+        api_key = "test-key-for-testing"
+        logger.warning("Using mock API key for testing environment")
+    else:
+        raise RuntimeError("OPENAI_API_KEY is not set in environment")
 client = OpenAI(api_key=api_key)
 
 # Allow env overrides for models

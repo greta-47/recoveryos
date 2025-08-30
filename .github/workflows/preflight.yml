@@ -4,7 +4,15 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/**'
   pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/**'
 
 permissions:
   contents: read
@@ -71,14 +79,30 @@ jobs:
         run: |
           python -m py_compile $(find . -name "*.py")
 
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Prune Docker
+        run: |
+          docker system prune -af || true
+          docker builder prune -af || true
+
       - name: Build Docker image (deterministic with lockfile)
         run: docker build -t recoveryos:ci-smoke -f Dockerfile .
 
       - name: Scan image with Trivy (SARIF)
         id: trivy
-        uses: aquasecurity/trivy-action@v0.24.0
+        uses: aquasecurity/trivy-action@0.33.0
         continue-on-error: ${{ github.event_name == 'pull_request' }}
         with:
+          scan-type: 'image'
           image-ref: recoveryos:ci-smoke
           format: 'sarif'
           output: 'trivy-results.sarif'

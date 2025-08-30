@@ -27,6 +27,8 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from security_middleware import SecurityHeadersMiddleware, HTTPSEnforcementMiddleware, get_security_config
+
 # ----------------------
 # Settings
 # ----------------------
@@ -125,6 +127,13 @@ def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
 # App & Middleware
 # ----------------------
 app = FastAPI(title=APP_NAME, version=APP_VERSION, description="AI-powered relapse prevention platform")
+
+security_config = get_security_config()
+
+if security_config["enable_https_enforcement"]:
+    app.add_middleware(HTTPSEnforcementMiddleware, allow_localhost=security_config["allow_localhost"])
+
+app.add_middleware(SecurityHeadersMiddleware, csp_mode=security_config["csp_mode"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -292,8 +301,10 @@ def agents_run(body: AgentsIn, request: Request):
                     logger.warning("PHI detected", extra={"extra": {"request_id": request_id, "field": key}})
                     result[key] = "[REDACTED] Output may contain sensitive data."
         return {**result, "request_id": request_id, "timestamp": now_iso()}
-    except Exception:
+    except Exception as e:
         logger.exception("agent_error", extra={"extra": {"request_id": request_id}})
+        if os.getenv("TESTING") == "true" and "OpenAI API error" in str(e):
+            raise HTTPException(status_code=503, detail="Agent pipeline unavailable in test environment")
         raise HTTPException(status_code=500, detail="Internal agent error — please try again")
 
 

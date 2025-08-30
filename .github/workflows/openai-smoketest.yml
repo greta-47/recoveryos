@@ -1,16 +1,15 @@
 name: OpenAI Smoketest
 
 on:
-  pull_request:
-    branches: [ main ]
   push:
-    branches: [ main, recoveryos-upgrade ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   smoketest:
     runs-on: ubuntu-latest
     continue-on-error: true
+    if: ${{ secrets.OPENAI_API_KEY != '' }}
     permissions:
       contents: read
 
@@ -24,14 +23,7 @@ jobs:
       - name: Install OpenAI SDK
         run: pip install "openai>=1.40.0"
 
-      # Only log a note when secret is missing (non-blocking)
-      - name: Note if secret missing (non-blocking)
-        if: ${{ !secrets.OPENAI_API_KEY }}
-        run: |
-          echo "Skipping smoketest: OPENAI_API_KEY secret not set in repo (non-blocking)."
-
       - name: Run smoketest
-        if: ${{ secrets.OPENAI_API_KEY }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
