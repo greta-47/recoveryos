@@ -3,6 +3,7 @@ import os
 import sys
 from openai import OpenAI, APIError, RateLimitError
 
+
 def main():
     provider = "openai"
     api_key = os.getenv("OPENAI_API_KEY")
@@ -47,6 +48,7 @@ def main():
     else:
         print("Test response:", content.strip())
         print("Token usage: unavailable")
+
 
 if __name__ == "__main__":
     main()
