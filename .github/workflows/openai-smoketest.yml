@@ -29,5 +29,6 @@ jobs:
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
         run: |
           export OPENAI_API_KEY="${OPENAI_API_KEY}"
+          export OPENAI_MODEL="${OPENAI_MODEL}"
           python scripts/openai_provider_test.py
 
