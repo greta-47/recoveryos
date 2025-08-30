@@ -22,9 +22,9 @@ def test_production_config():
         config = get_security_config()
 
         print("Production config:")
-        print(f'  CSP Mode: {config["csp_mode"]}')
-        print(f'  HTTPS Enforcement: {config["enable_https_enforcement"]}')
-        print(f'  Allow Localhost: {config["allow_localhost"]}')
+        print(f"  CSP Mode: {config['csp_mode']}")
+        print(f"  HTTPS Enforcement: {config['enable_https_enforcement']}")
+        print(f"  Allow Localhost: {config['allow_localhost']}")
 
         assert config["csp_mode"] == "enforce", "Production should enforce CSP"
         assert config["enable_https_enforcement"] is True, "Production should enforce HTTPS"
@@ -58,9 +58,9 @@ def test_development_config():
         config = get_security_config()
 
         print("Development config:")
-        print(f'  CSP Mode: {config["csp_mode"]}')
-        print(f'  HTTPS Enforcement: {config["enable_https_enforcement"]}')
-        print(f'  Allow Localhost: {config["allow_localhost"]}')
+        print(f"  CSP Mode: {config['csp_mode']}")
+        print(f"  HTTPS Enforcement: {config['enable_https_enforcement']}")
+        print(f"  Allow Localhost: {config['allow_localhost']}")
 
         assert config["csp_mode"] == "report-only", "Development should use CSP report-only"
         assert config["enable_https_enforcement"] is False, "Development should not enforce HTTPS"
