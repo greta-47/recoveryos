@@ -265,8 +265,10 @@ class ExplainableAIEngine:
         self,
         input_data: Dict[str, Any],
         prediction: Dict[str, Any],
-        methods: List[str] = ["shap", "causal"],
+        methods: List[str] | None = None,
     ) -> Dict[str, Any]:
+        if methods is None:
+            methods = ["shap", "causal"]
         explanations = {}
 
         for method in methods:
