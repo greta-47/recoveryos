@@ -19,6 +19,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       APP_HOST: "127.0.0.1"
       APP_PORT: "8001"
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       
@@ -39,6 +40,11 @@ jobs:
           python -V
           which uvicorn || true
           pip freeze | sed -n '1,120p'
+          
+      - name: Verify imports
+        run: |
+          python -c "import main; print('✅ main module imported successfully')"
+          python -c "import observability_enhanced; print('✅ observability_enhanced module imported successfully')"
           
       - name: Start API server (background)
         run: |
