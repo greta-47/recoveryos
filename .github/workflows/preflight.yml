@@ -40,15 +40,10 @@ jobs:
           python -m pip install -U pip pip-tools
           pip install ruff==0.4.8 black==24.4.2
 
-
-      - name: Dependency spec guard (requirements.txt only)
+      - name: Dependency spec guard (requirements.in required)
         run: |
-          if [ -f requirements.in ]; then
-            echo "requirements.in found but policy requires a single spec: requirements.txt only"
-            exit 1
-          fi
-          if [ ! -f requirements.txt ]; then
-            echo "requirements.txt is required and must be committed"
+          if [ ! -f requirements.in ]; then
+            echo "requirements.in is required and must be committed"
             exit 1
           fi
 
@@ -63,11 +58,13 @@ jobs:
             exit 1
           fi
           TMP_LOCK="$(mktemp)"
-pip-compile --quiet --generate-hashes -o "$TMP_LOCK" requirements.txt
-if ! diff -u requirements.lock.txt "$TMP_LOCK" >/dev/null 2>&1; then
-  echo "requirements.lock.txt is stale relative to requirements.txt"
-  exit 1
-fi
+          pip-compile --quiet --generate-hashes -o "$TMP_LOCK" \
+            requirements.base.in || pip-compile --quiet --generate-hashes -o "$TMP_LOCK" requirements.txt
+          if ! diff -u <(grep -v '^#' requirements.lock.txt) <(grep -v '^#' "$TMP_LOCK") >/dev/null 2>&1; then
+            echo "requirements.lock.txt is stale relative to source requirements"
+            echo "Run: pip-compile --generate-hashes -o requirements.lock.txt requirements.txt"
+            exit 1
+          fi
 
       - name: Lint (ruff)
         run: ruff check .

@@ -16,14 +16,7 @@ on:
 # Required so security scans can upload SARIF, etc.
 permissions:
   contents: read
-<<<<<<< HEAD
   pull-requests: read
-  security-events: write
-  packages: read
-  id-token: write
-
-=======
->>>>>>> 69d9b37 (ci(ci-stability): rewrite comprehensive-ci.yml — PR scans non-blocking; main-only container scan; Python 3.11; SARIF + concurrency (#34))
   security-events: write
   packages: read
   id-token: write
@@ -54,29 +47,12 @@ jobs:
       - name: ruff check
         run: ruff check .
 
-<<<<<<< HEAD
-tests:
-  name: Unit tests (if any)
-  needs: lint
-  runs-on: ubuntu-latest
-  # Only run if we actually have tests in the repo
-  if: ${{ hashFiles('tests/**') != '' }}
-  steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-    ...
-
-=======
   tests:
     name: Unit tests (if any)
     needs: lint
     runs-on: ubuntu-latest
     # Only run if we actually have tests in the repo
-    if: hashFiles('tests/**', '**/test_*.py', '**/*_test.py') != ''
->>>>>>> 69d9b37 (ci(ci-stability): rewrite comprehensive-ci.yml — PR scans non-blocking; main-only container scan; Python 3.11; SARIF + concurrency (#34))
+    if: ${{ hashFiles('tests/**') != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -119,13 +95,11 @@ tests:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trivy filesystem scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: fs
           format: sarif
           output: trivy-results.sarif
-<<<<<<< HEAD
-
           scanners: vuln
         continue-on-error: true
 
@@ -140,17 +114,6 @@ tests:
         with:
           sarif_file: trivy-results.sarif
 
-=======
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-
-      - name: Upload SARIF (Trivy)
-        if: success() || failure()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-results.sarif
-
->>>>>>> 69d9b37 (ci(ci-stability): rewrite comprehensive-ci.yml — PR scans non-blocking; main-only container scan; Python 3.11; SARIF + concurrency (#34))
   build_and_container_scan:
     name: Build & Container Scan (push to main)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -184,13 +147,12 @@ tests:
           tags: local/recoveryos:latest
 
       - name: Trivy image scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: image
           image-ref: local/recoveryos:latest
           format: sarif
           output: trivy-results.sarif
-<<<<<<< HEAD
           scanners: vuln
         continue-on-error: true
 
@@ -201,13 +163,6 @@ tests:
 
       - name: Upload SARIF (Trivy)
         if: ${{ steps.sarif-image.outputs.exists == 'true' }}
-=======
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-
-      - name: Upload SARIF (Trivy)
-        if: success() || failure()
->>>>>>> 69d9b37 (ci(ci-stability): rewrite comprehensive-ci.yml — PR scans non-blocking; main-only container scan; Python 3.11; SARIF + concurrency (#34))
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
