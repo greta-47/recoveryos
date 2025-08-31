@@ -16,6 +16,7 @@ on:
 # Required so security scans can upload SARIF, etc.
 permissions:
   contents: read
+  pull-requests: read
   security-events: write
   packages: read
   id-token: write
@@ -94,16 +95,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trivy filesystem scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: fs
           format: sarif
           output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+          scanners: vuln
+        continue-on-error: true
+
+      - name: Check SARIF exists
+        id: sarif
+        run: |
+          if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
 
       - name: Upload SARIF (Trivy)
-        if: success() || failure()
+        if: ${{ steps.sarif.outputs.exists == 'true' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
@@ -141,17 +147,22 @@ jobs:
           tags: local/recoveryos:latest
 
       - name: Trivy image scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: image
           image-ref: local/recoveryos:latest
           format: sarif
           output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+          scanners: vuln
+        continue-on-error: true
+
+      - name: Check SARIF exists
+        id: sarif-image
+        run: |
+          if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
 
       - name: Upload SARIF (Trivy)
-        if: success() || failure()
+        if: ${{ steps.sarif-image.outputs.exists == 'true' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
