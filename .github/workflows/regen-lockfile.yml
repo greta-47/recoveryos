@@ -1,0 +1,35 @@
+name: Regen lockfile (Linux)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile hashed lockfile
+        run: |
+          python -m pip install -U pip pip-tools==7.4.1
+          if [ -f requirements.base.in ]; then
+            pip-compile --quiet --generate-hashes -o requirements.lock.txt requirements.base.in
+          else
+            pip-compile --quiet --generate-hashes -o requirements.lock.txt requirements.txt
+          fi
+      - name: Create PR with updated lockfile
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/lockfile-linux-regenerate
+          title: "chore(ci): regenerate requirements.lock on Linux for deterministic hashes"
+          commit-message: "chore(ci): regenerate requirements.lock on Linux for deterministic hashes"
+          body: |
+            Generated on Ubuntu with pip-compile --generate-hashes (Python 3.11).
+            Acceptance: PR preflight ✅, main GHCR build ✅ with --require-hashes.
+          labels: ci
