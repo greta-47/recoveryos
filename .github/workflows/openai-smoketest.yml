@@ -5,30 +5,30 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   smoketest:
-    runs-on: ubuntu-latest
-    continue-on-error: true
     if: ${{ secrets.OPENAI_API_KEY != '' }}
-    permissions:
-      contents: read
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
 
-      - name: Install OpenAI SDK
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
-        run: pip install "openai>=1.40.0"
+      - name: Install deps (lockfile if present)
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements.lock.txt ]; then
+            pip install --require-hashes -r requirements.lock.txt
+          else
+            pip install -r requirements.txt
+          fi
 
       - name: Run smoketest
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
-        run: |
-          python scripts/openai_provider_test.py
+        run: python scripts/openai_provider_test.py
 
