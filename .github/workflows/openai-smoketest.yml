@@ -10,8 +10,6 @@ permissions:
 
 jobs:
   smoketest:
-    # Gate the whole job on the secret existing
-    if: ${{ secrets.OPENAI_API_KEY != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +19,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install deps (lockfile if present)
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         run: |
           python -m pip install -U pip
           if [ -f requirements.lock.txt ]; then
@@ -30,6 +29,7 @@ jobs:
           fi
 
       - name: Run smoketest
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/openai_provider_test.py
