@@ -21,9 +21,11 @@ jobs:
           python-version: '3.12'
 
       - name: Install OpenAI SDK
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         run: pip install "openai>=1.40.0"
 
       - name: Run smoketest
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
