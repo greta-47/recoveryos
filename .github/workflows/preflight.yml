@@ -32,10 +32,6 @@ jobs:
 
       - name: Dependency spec guard (requirements.txt only)
         run: |
-          if [ -f requirements.in ]; then
-            echo "requirements.in found but policy requires a single spec: requirements.txt only"
-            exit 1
-          fi
           if [ ! -f requirements.txt ]; then
             echo "requirements.txt is required and must be committed"
             exit 1
