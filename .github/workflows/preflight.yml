@@ -60,7 +60,7 @@ jobs:
           TMP_LOCK="$(mktemp)"
           pip-compile --quiet --generate-hashes -o "$TMP_LOCK" \
             requirements.base.in || pip-compile --quiet --generate-hashes -o "$TMP_LOCK" requirements.txt
-          if ! diff -u requirements.lock.txt "$TMP_LOCK" >/dev/null 2>&1; then
+          if ! diff -u <(grep -v '^#' requirements.lock.txt) <(grep -v '^#' "$TMP_LOCK") >/dev/null 2>&1; then
             echo "requirements.lock.txt is stale relative to source requirements"
             echo "Run: pip-compile --generate-hashes -o requirements.lock.txt requirements.txt"
             exit 1
