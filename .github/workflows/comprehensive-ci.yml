@@ -51,7 +51,7 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     # Only run if we actually have tests in the repo
-    if: hashFiles('tests/**', '**/test_*.py', '**/*_test.py') != ''
+    if: ${{ hashFiles('tests/**') != '' }}
     steps:
       - uses: actions/checkout@v4
 
