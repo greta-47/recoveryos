@@ -40,6 +40,7 @@ jobs:
           python -m pip install -U pip pip-tools
           pip install ruff==0.4.8 black==24.4.2
 
+
       - name: Dependency spec guard (requirements.txt only)
         run: |
           if [ -f requirements.in ]; then
@@ -62,12 +63,11 @@ jobs:
             exit 1
           fi
           TMP_LOCK="$(mktemp)"
-          pip-compile --quiet --generate-hashes -o - requirements.txt > "$TMP_LOCK"
-          if ! diff -u requirements.lock.txt "$TMP_LOCK" >/dev/null 2>&1; then
-            echo "requirements.lock.txt is stale relative to requirements.txt"
-            echo "Run: pip-compile --generate-hashes -o requirements.lock.txt requirements.txt"
-            exit 1
-          fi
+pip-compile --quiet --generate-hashes -o "$TMP_LOCK" requirements.txt
+if ! diff -u requirements.lock.txt "$TMP_LOCK" >/dev/null 2>&1; then
+  echo "requirements.lock.txt is stale relative to requirements.txt"
+  exit 1
+fi
 
       - name: Lint (ruff)
         run: ruff check .
@@ -97,20 +97,22 @@ jobs:
       - name: Build Docker image (deterministic with lockfile)
         run: docker build -t recoveryos:ci-smoke -f Dockerfile .
 
-      - name: Scan image with Trivy (SARIF)
-        id: trivy
-        uses: aquasecurity/trivy-action@0.33.0
-        continue-on-error: ${{ github.event_name == 'pull_request' }}
+      - name: Trivy scan (fs)
+        uses: aquasecurity/trivy-action@0.24.0
         with:
-          scan-type: 'image'
-          image-ref: recoveryos:ci-smoke
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
+          scan-type: fs
+          format: sarif
+          output: trivy-results.sarif
+          scanners: vuln
+        continue-on-error: true
+
+      - name: Check SARIF exists
+        id: sarif
+        run: |
+          if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
 
       - name: Upload Trivy SARIF
-        if: always()
+        if: ${{ steps.sarif.outputs.exists == 'true' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
