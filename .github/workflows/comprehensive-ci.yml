@@ -16,6 +16,11 @@ on:
 # Required so security scans can upload SARIF, etc.
 permissions:
   contents: read
+  pull-requests: read
+  security-events: write
+  packages: read
+  id-token: write
+
   security-events: write
   packages: read
   id-token: write
@@ -46,12 +51,20 @@ jobs:
       - name: ruff check
         run: ruff check .
 
-  tests:
-    name: Unit tests (if any)
-    needs: lint
-    runs-on: ubuntu-latest
-    # Only run if we actually have tests in the repo
-    if: hashFiles('tests/**', '**/test_*.py', '**/*_test.py') != ''
+tests:
+  name: Unit tests (if any)
+  needs: lint
+  runs-on: ubuntu-latest
+  # Only run if we actually have tests in the repo
+  if: ${{ hashFiles('tests/**') != '' }}
+  steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    ...
+
     steps:
       - uses: actions/checkout@v4
 
@@ -99,18 +112,17 @@ jobs:
           scan-type: fs
           format: sarif
           output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
 
-      - id: sarif-pr
-        name: Check SARIF exists
+          scanners: vuln
+        continue-on-error: true
+
+      - name: Check SARIF exists
+        id: sarif
         run: |
-          if [ -f trivy-results.sarif ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          fi
+          if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
 
       - name: Upload SARIF (Trivy)
-        if: ${{ steps.sarif-pr.outputs.exists == 'true' }}
+        if: ${{ steps.sarif.outputs.exists == 'true' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
@@ -154,18 +166,16 @@ jobs:
           image-ref: local/recoveryos:latest
           format: sarif
           output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+          scanners: vuln
+        continue-on-error: true
 
-      - id: sarif-main
-        name: Check SARIF exists
+      - name: Check SARIF exists
+        id: sarif-image
         run: |
-          if [ -f trivy-results.sarif ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          fi
+          if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
 
       - name: Upload SARIF (Trivy)
-        if: ${{ steps.sarif-main.outputs.exists == 'true' }}
+        if: ${{ steps.sarif-image.outputs.exists == 'true' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif

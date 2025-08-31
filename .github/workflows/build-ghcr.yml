@@ -1,9 +1,10 @@
-name: Build and Push to GHCR
+name: Build & Container Scan (push)
 
 on:
   push:
-    branches: ["main"]           # publish only on main
-  workflow_dispatch:              # allow manual publish runs
+    branches: [ "main" ]          # publish only on main
+  workflow_dispatch:               # allow manual publish runs
+
 
 permissions:
   contents: read
@@ -12,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ghcr-${{ github.ref_name }}
+  group: ghcr-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,8 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Free disk space
         uses: jlumbroso/free-disk-space@v1.3.1
@@ -41,7 +41,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
+      - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
@@ -64,18 +64,36 @@ jobs:
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Build and push
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true                                 # always push on main / manual
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+- name: Build and push
+  uses: docker/build-push-action@v6
+  with:
+    context: .
+    push: true                      # always push on main/manual
+    tags: ${{ steps.meta.outputs.tags }}
+    labels: ${{ steps.meta.outputs.labels }}
+    cache-from: type=gha
+    cache-to: type=gha,mode=max
 
-      - name: Generate SBOM
-       
-::contentReference[oaicite:0]{index=0}
+# Optional Trivy image scan (non-blocking)
+- name: Trivy scan (image)
+  uses: aquasecurity/trivy-action@0.24.0
+  with:
+    scan-type: image
+    image-ref: ghcr.io/${{ github.repository }}:latest
+    format: sarif
+    output: trivy-results.sarif
+    scanners: vuln
+  continue-on-error: true
+
+- name: Check SARIF exists
+  id: sarif-image
+  run: |
+    if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
+
+- name: Upload SARIF (Trivy)
+  if: ${{ steps.sarif-image.outputs.exists == 'true' }}
+  uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: trivy-results.sarif
+
 
