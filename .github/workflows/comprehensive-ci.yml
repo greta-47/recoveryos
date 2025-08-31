@@ -21,6 +21,10 @@ permissions:
   packages: read
   id-token: write
 
+  security-events: write
+  packages: read
+  id-token: write
+
 # Avoid duplicate runs fighting each other
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -47,12 +51,20 @@ jobs:
       - name: ruff check
         run: ruff check .
 
-  tests:
-    name: Unit tests (if any)
-    needs: lint
-    runs-on: ubuntu-latest
-    # Only run if we actually have tests in the repo
-    if: ${{ hashFiles('tests/**') != '' }}
+tests:
+  name: Unit tests (if any)
+  needs: lint
+  runs-on: ubuntu-latest
+  # Only run if we actually have tests in the repo
+  if: ${{ hashFiles('tests/**') != '' }}
+  steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    ...
+
     steps:
       - uses: actions/checkout@v4
 
@@ -95,11 +107,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trivy filesystem scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.0
         with:
           scan-type: fs
           format: sarif
           output: trivy-results.sarif
+
           scanners: vuln
         continue-on-error: true
 
@@ -147,7 +160,7 @@ jobs:
           tags: local/recoveryos:latest
 
       - name: Trivy image scan (non-blocking)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.0
         with:
           scan-type: image
           image-ref: local/recoveryos:latest
