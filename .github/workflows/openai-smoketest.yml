@@ -1,3 +1,11 @@
+name: OpenAI Smoketest
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
 jobs:
   smoketest:
     if: ${{ secrets.OPENAI_API_KEY != '' }}
@@ -9,7 +17,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install deps (lockfile if present)
         run: |
@@ -24,4 +32,3 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/openai_provider_test.py
-
