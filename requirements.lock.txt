@@ -384,9 +384,9 @@ fastapi==0.111.0 \
     --hash=sha256:97ecbf994be0bcbdadedf88c3150252bed7b2087075ac99735403b1b76cc8fc0 \
     --hash=sha256:b9db9dd147c91cb8b769f7183535773d8741dd46f9dc6676cd82eab510228cd7
     # via -r requirements.txt
-fastapi-cli==0.0.8 \
-    --hash=sha256:0ea95d882c85b9219a75a65ab27e8da17dac02873e456850fa0a726e96e985eb \
-    --hash=sha256:2360f2989b1ab4a3d7fc8b3a0b20e8288680d8af2e31de7c38309934d7f8a0ee
+fastapi-cli==0.0.10 \
+    --hash=sha256:04bef56b49f7357c6c4acd4f793b4433ed3f511be431ed0af68db6d3f8bd44b3 \
+    --hash=sha256:85a93df72ff834c3d2a356164512cabaf8f093d50eddad9309065a9c9ac5193a
     # via fastapi
 filelock==3.19.1 \
     --hash=sha256:66eda1888b0171c998b35be2bcc0f6d75c388a7ce20c3f3f37aa8e96c2dddf58 \
