@@ -2,18 +2,17 @@ name: Comprehensive CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
       - "**.md"
-      - ".github/ISSUE_TEMPLATE/**"
+      - "docs/**"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
       - "**.md"
-      - ".github/ISSUE_TEMPLATE/**"
+      - "docs/**"
   workflow_dispatch:
 
-# Required so security scans can upload SARIF, etc.
 permissions:
   contents: read
   pull-requests: read
@@ -21,11 +20,6 @@ permissions:
   packages: read
   id-token: write
 
-  security-events: write
-  packages: read
-  id-token: write
-
-# Avoid duplicate runs fighting each other
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -36,43 +30,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install ruff
-        run: python -m pip install -U pip && pip install "ruff>=0.5.0"
-
+        run: |
+          python -m pip install -U pip
+          pip install "ruff>=0.5.0"
       - name: ruff format --check
         run: ruff format --check .
-
       - name: ruff check
         run: ruff check .
 
-tests:
-  name: Unit tests (if any)
-  needs: lint
-  runs-on: ubuntu-latest
-  # Only run if we actually have tests in the repo
-  if: ${{ hashFiles('tests/**') != '' }}
-  steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-    ...
-
+  tests:
+    name: Unit tests (if any)
+    needs: lint
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('tests/**') != '' }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -80,47 +61,41 @@ tests:
           key: ${{ runner.os }}-py311-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-py311-
-
       - name: Install deps (best effort)
         run: |
           python -m pip install -U pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
           if [ -f pyproject.toml ]; then pip install -e . || true; fi
           pip install pytest || true
-
       - name: Run pytest
         run: pytest -q
 
   security_scans_pr:
     name: Security Scans (pull_request)
-    if: github.event_name == 'pull_request'
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    continue-on-error: true   # non-blocking on PRs
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Gitleaks (non-blocking)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Trivy filesystem scan (non-blocking)
+        id: trivy-fs
         uses: aquasecurity/trivy-action@0.33.0
         with:
           scan-type: fs
           format: sarif
           output: trivy-results.sarif
-
           scanners: vuln
         continue-on-error: true
-
       - name: Check SARIF exists
         id: sarif
         run: |
           if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
-
       - name: Upload SARIF (Trivy)
         if: ${{ steps.sarif.outputs.exists == 'true' }}
         uses: github/codeql-action/upload-sarif@v3
@@ -129,11 +104,10 @@ tests:
 
   build_and_container_scan:
     name: Build & Container Scan (push to main)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Free disk space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
@@ -143,23 +117,20 @@ tests:
           haskell: true
           large-packages: true
           swap-storage: true
-
       - name: Prune Docker
         run: |
           docker system prune -af || true
           docker builder prune -af || true
-
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
-
       - name: Build image (local only, do NOT push)
         uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           tags: local/recoveryos:latest
-
       - name: Trivy image scan (non-blocking)
+        id: trivy-image
         uses: aquasecurity/trivy-action@0.33.0
         with:
           scan-type: image
@@ -168,12 +139,10 @@ tests:
           output: trivy-results.sarif
           scanners: vuln
         continue-on-error: true
-
       - name: Check SARIF exists
         id: sarif-image
         run: |
           if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
-
       - name: Upload SARIF (Trivy)
         if: ${{ steps.sarif-image.outputs.exists == 'true' }}
         uses: github/codeql-action/upload-sarif@v3
