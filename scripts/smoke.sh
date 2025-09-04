@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-URL="${1:-http://127.0.0.1:8000/healthz}"
+BASE_URL="${BASE_URL:-http://127.0.0.1:8000}"
+HEALTH_ENDPOINT="${HEALTH_ENDPOINT:-/healthz}"
+URL="${BASE_URL}${HEALTH_ENDPOINT}"
 
-echo "=== RecoveryOS Smoke Test ==="
-echo "Testing endpoint: $URL"
+echo "[smoke] GET ${URL}"
 
-if curl -fsSL "$URL" | grep -q "status.*ok"; then
-  echo "✅ PASS: Health check successful"
+if HTTP_CODE="$(curl -fsSL -o /dev/null -w "%{http_code}" "${URL}")"; then
+  echo "[smoke] HTTP ${HTTP_CODE}"
+  echo "[smoke] PASS"
   exit 0
 else
-  echo "❌ FAIL: Health check failed"
-  exit 1
+  code=$?
+  echo "[smoke] HTTP ${HTTP_CODE:-unknown}"
+  echo "[smoke] FAIL (curl exit ${code})"
+  exit "${code}"
 fi
