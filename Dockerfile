@@ -23,7 +23,7 @@ COPY --chown=root:root requirements.txt /wheels/requirements.txt
 COPY --chown=root:root requirements.lock.txt /wheels/requirements.lock.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    sh -euc 'python -m pip install --upgrade pip setuptools wheel pip-tools && \
+    sh -euc 'python -m pip install 'pip==24.2.1' setuptools wheel 'pip-tools==7.4.1' && \
              if [ -s /wheels/requirements.lock.txt ]; then \
                echo ">> Using requirements.lock.txt (hash-locked)"; \
                pip wheel --wheel-dir=/wheels/dist --require-hashes -r /wheels/requirements.lock.txt; \

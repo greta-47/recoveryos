@@ -8,7 +8,7 @@
 ```bash
 docker run --rm -v "$PWD":/w -w /w python:3.11-slim bash -lc '
   set -euo pipefail
-  python -m pip install -U pip pip-tools
+  python -m pip install 'pip==24.2.1' 'pip-tools==7.4.1'
   if [ -f requirements.base.in ]; then
     pip-compile --quiet --generate-hashes -o requirements.lock.txt requirements.base.in
   else

@@ -18,7 +18,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install pip-tools
-        run: python -m pip install -U pip pip-tools
+        run: python -m pip install 'pip==24.2.1' 'pip-tools==7.4.1'
 
       - name: Remove old lockfile (if any)
         run: git rm -f requirements.lock.txt || true

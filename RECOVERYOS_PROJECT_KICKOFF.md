@@ -51,7 +51,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 Generate the lockfile **only on Linux + Python 3.11**:
 
 ```bash
-docker run --rm -v "$PWD":/app -w /app python:3.11-slim bash -lc   'python -m pip install -U pip pip-tools==7.4.1 &&    pip-compile --generate-hashes -o requirements.lock.txt requirements.txt'
+docker run --rm -v "$PWD":/app -w /app python:3.11-slim bash -lc   'python -m pip install 'pip==24.2.1' 'pip-tools==7.4.1' &&    pip-compile --generate-hashes -o requirements.lock.txt requirements.txt'
 ```
 
 Commit message for lockfile-only updates:
