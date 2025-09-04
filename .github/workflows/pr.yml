@@ -32,7 +32,7 @@ jobs:
 
       - name: Install tooling
         run: |
-          python -m pip install 'pip==24.2.1' 'pip-tools==7.4.1'
+          python -m pip install 'pip==24.2' 'pip-tools==7.4.1'
           pip install ruff==0.4.8 black==24.4.2
 
       - name: Dependency spec guard (requirements.txt only)

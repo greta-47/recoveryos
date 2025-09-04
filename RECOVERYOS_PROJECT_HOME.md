@@ -26,7 +26,7 @@
 - **Ruff‑only** lint/format: `ruff format .` then `ruff check --fix .` before commits.
 - **Deterministic lockfile** on **Linux + Python 3.11** only (never on Mac):
   ```bash
-  docker run --rm -v "$PWD":/app -w /app python:3.11-slim bash -lc   'pip install 'pip==24.2.1' 'pip-tools==7.4.1' && pip-compile --generate-hashes -o requirements.lock.txt requirements.txt'
+  docker run --rm -v "$PWD":/app -w /app python:3.11-slim bash -lc   'pip install 'pip==24.2' 'pip-tools==7.4.1' && pip-compile --generate-hashes -o requirements.lock.txt requirements.txt'
   ```
 - **Security posture**: non-root Docker, strict CSP, local Swagger UI (no CDN), HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy.
 - **Branch hygiene**: small, single‑purpose PRs; no unrelated edits; no build artifacts or .env files.
