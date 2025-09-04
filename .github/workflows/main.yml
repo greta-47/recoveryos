@@ -1,10 +1,9 @@
-name: Build & Container Scan (push)
+name: Main Build & Publish
 
 on:
   push:
-    branches: [ "main" ]          # publish only on main
-  workflow_dispatch:               # allow manual publish runs
-
+    branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,13 +12,13 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ghcr-${{ github.ref }}
+  group: main-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  docker:
+  build_and_container_scan:
+    name: Build & Container Scan
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -64,36 +63,39 @@ jobs:
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-- name: Build and push
-  uses: docker/build-push-action@v6
-  with:
-    context: .
-    push: true                      # always push on main/manual
-    tags: ${{ steps.meta.outputs.tags }}
-    labels: ${{ steps.meta.outputs.labels }}
-    cache-from: type=gha
-    cache-to: type=gha,mode=max
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-# Optional Trivy image scan (non-blocking)
-- name: Trivy scan (image)
-  uses: aquasecurity/trivy-action@0.24.0
-  with:
-    scan-type: image
-    image-ref: ghcr.io/${{ github.repository }}:latest
-    format: sarif
-    output: trivy-results.sarif
-    scanners: vuln
-  continue-on-error: true
+      - name: Trivy scan (image)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: image
+          image-ref: ghcr.io/${{ github.repository_owner }}/recoveryos:latest
+          format: sarif
+          output: trivy-results.sarif
+          scanners: vuln
+        continue-on-error: true
 
-- name: Check SARIF exists
-  id: sarif-image
-  run: |
-    if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Check SARIF exists
+        id: sarif-image
+        run: |
+          if [ -f trivy-results.sarif ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
 
-- name: Upload SARIF (Trivy)
-  if: ${{ steps.sarif-image.outputs.exists == 'true' }}
-  uses: github/codeql-action/upload-sarif@v3
-  with:
-    sarif_file: trivy-results.sarif
+      - name: Upload SARIF (Trivy)
+        if: ${{ steps.sarif-image.outputs.exists == 'true' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
 
-
+      - name: Enforce HIGH+ failure on main
+        if: steps.trivy.outcome != 'success'
+        run: |
+          echo "Trivy reported CRITICAL/HIGH issues on main"
+          exit 1

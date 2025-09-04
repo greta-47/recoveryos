@@ -44,13 +44,12 @@ from security_middleware import (
 APP_NAME = os.getenv("APP_NAME", "RecoveryOS API")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 API_KEY = os.getenv("API_KEY")  # if unset, auth is disabled
-ALLOWED_ORIGINS = [
-    o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o
-]
+ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o]
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     # Don’t hard-fail: health/docs should still work; agents will 503 if used without key.
     pass
+
 
 # -----------------------------------------------------------------------------
 # Structured logging
@@ -77,6 +76,7 @@ if not logger.handlers:
     handler.setFormatter(JsonLogFormatter())
     logger.addHandler(handler)
 
+
 # -----------------------------------------------------------------------------
 # Utils
 # -----------------------------------------------------------------------------
@@ -90,6 +90,7 @@ def _client_fp(request: Request) -> str:
     h = blake2b(digest_size=8)
     h.update(f"{host}-{minute}".encode())
     return h.hexdigest()
+
 
 # -----------------------------------------------------------------------------
 # Optional imports (soft dependencies)
@@ -117,6 +118,7 @@ except Exception:  # pragma: no cover
     except Exception:
         briefing_router = None  # type: ignore[assignment]
 
+
 # -----------------------------------------------------------------------------
 # Auth
 # -----------------------------------------------------------------------------
@@ -126,6 +128,7 @@ def api_key_auth(x_api_key: Optional[str] = Header(default=None)) -> None:
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
+
 # -----------------------------------------------------------------------------
 # App & Middleware
 # -----------------------------------------------------------------------------
@@ -133,7 +136,7 @@ app = FastAPI(
     title=APP_NAME,
     version=APP_VERSION,
     description="AI-powered relapse prevention platform",
-    docs_url=None,   # we serve a CSP-safe /docs below
+    docs_url=None,  # we serve a CSP-safe /docs below
     redoc_url=None,
 )
 
@@ -160,6 +163,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 if os.path.isdir("ui"):
     app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")
 
+
 # -----------------------------------------------------------------------------
 # Models
 # -----------------------------------------------------------------------------
@@ -175,6 +179,7 @@ class AgentsIn(BaseModel):
     horizon: str = Field(default="90 days", max_length=50)
     okrs: str = Field(default="1) Cash-flow positive 2) Consistent scaling 3) CSAT 85%", max_length=500)
 
+
 # -----------------------------------------------------------------------------
 # Request/Response logging with request ID
 # -----------------------------------------------------------------------------
@@ -182,18 +187,36 @@ class AgentsIn(BaseModel):
 async def request_logger(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     fp = _client_fp(request)
-    logger.info("request", extra={"extra": {"path": request.url.path, "method": request.method, "request_id": request_id, "client_fp": fp}})
+    logger.info(
+        "request",
+        extra={
+            "extra": {"path": request.url.path, "method": request.method, "request_id": request_id, "client_fp": fp}
+        },
+    )
     try:
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
-        logger.info("response", extra={"extra": {"path": request.url.path, "status": response.status_code, "request_id": request_id, "client_fp": fp}})
+        logger.info(
+            "response",
+            extra={
+                "extra": {
+                    "path": request.url.path,
+                    "status": response.status_code,
+                    "request_id": request_id,
+                    "client_fp": fp,
+                }
+            },
+        )
         return response
     except Exception as err:  # noqa: BLE001
-        logger.exception("unhandled_error", extra={"extra": {"path": request.url.path, "request_id": request_id, "client_fp": fp}})
+        logger.exception(
+            "unhandled_error", extra={"extra": {"path": request.url.path, "request_id": request_id, "client_fp": fp}}
+        )
         return JSONResponse(
             status_code=500,
             content={"error": {"type": "server_error", "message": "Unexpected error", "request_id": request_id}},
         )
+
 
 # -----------------------------------------------------------------------------
 # Exception handlers
@@ -203,14 +226,24 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     rid = request.headers.get("X-Request-ID", "")
     return JSONResponse(
         status_code=422,
-        content={"error": {"type": "validation_error", "message": "Invalid request payload", "fields": exc.errors(), "request_id": rid}},
+        content={
+            "error": {
+                "type": "validation_error",
+                "message": "Invalid request payload",
+                "fields": exc.errors(),
+                "request_id": rid,
+            }
+        },
     )
 
 
 @app.exception_handler(HTTPException)
 async def http_error_handler(request: Request, exc: HTTPException):
     rid = request.headers.get("X-Request-ID", "")
-    return JSONResponse(status_code=exc.status_code, content={"error": {"type": "http_error", "message": exc.detail, "request_id": rid}})
+    return JSONResponse(
+        status_code=exc.status_code, content={"error": {"type": "http_error", "message": exc.detail, "request_id": rid}}
+    )
+
 
 # -----------------------------------------------------------------------------
 # CSP-safe Swagger UI
@@ -230,6 +263,7 @@ def docs_ui():
 @app.get("/.well-known/appspecific/com.chrome.devtools.json", include_in_schema=False)
 def _chrome_probe() -> Response:
     return Response(status_code=204)
+
 
 # -----------------------------------------------------------------------------
 # Routes
@@ -256,8 +290,25 @@ def create_checkin(checkin: Checkin, request: Request):
     else:
         tool = "Breathing — Box breathing 4x4"
 
-    logger.info("checkin", extra={"extra": {"request_id": rid, "urge": checkin.urge, "mood": checkin.mood, "tool": tool, "client_fp": _client_fp(request)}})
-    return {"message": "Check-in received", "tool": tool, "data": checkin.model_dump(), "timestamp": _now_iso(), "request_id": rid}
+    logger.info(
+        "checkin",
+        extra={
+            "extra": {
+                "request_id": rid,
+                "urge": checkin.urge,
+                "mood": checkin.mood,
+                "tool": tool,
+                "client_fp": _client_fp(request),
+            }
+        },
+    )
+    return {
+        "message": "Check-in received",
+        "tool": tool,
+        "data": checkin.model_dump(),
+        "timestamp": _now_iso(),
+        "request_id": rid,
+    }
 
 
 @app.post("/agents/run", dependencies=[Depends(api_key_auth)])
@@ -271,13 +322,18 @@ def agents_run(body: AgentsIn, request: Request):
     try:
         result = run_multi_agent(body.topic, body.horizon, body.okrs)
         for key in ["researcher", "analyst", "critic", "strategist", "advisor_memo"]:
-            if key in result and isinstance(result[key], str) and re.search(r"patient \d+|name:|DOB:", result[key], re.I):
+            if (
+                key in result
+                and isinstance(result[key], str)
+                and re.search(r"patient \d+|name:|DOB:", result[key], re.I)
+            ):
                 logger.warning("PHI detected", extra={"extra": {"request_id": rid, "field": key}})
                 result[key] = "[REDACTED] Output may contain sensitive data."
         return {**result, "request_id": rid, "timestamp": _now_iso()}
     except Exception as err:  # noqa: BLE001
         logger.exception("agent_error", extra={"extra": {"request_id": rid}})
         raise HTTPException(status_code=500, detail="Internal agent error — please try again") from err
+
 
 # -----------------------------------------------------------------------------
 # Optional routers
@@ -296,9 +352,11 @@ try:
     app.add_middleware(PrometheusMiddleware)
     app.add_route("/metrics", handle_metrics)
 except Exception:  # pragma: no cover
+
     @app.get("/metrics", include_in_schema=False)
     async def metrics_placeholder():
         return PlainTextResponse("starlette_exporter not installed")
+
 
 # -----------------------------------------------------------------------------
 # Entrypoint
@@ -313,4 +371,3 @@ if __name__ == "__main__":
         reload=True,
         proxy_headers=True,
     )
-
