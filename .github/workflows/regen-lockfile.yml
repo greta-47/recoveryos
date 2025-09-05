@@ -23,9 +23,9 @@ jobs:
           python -m pip install 'pip-tools==7.4.1'
           pip-compile --version
 
-      - name: Compile hashed lockfile
+      - name: Compile hashed lockfile (upgrade)
         run: |
-          pip-compile --quiet --generate-hashes -o requirements.lock.txt requirements.txt
+          pip-compile --upgrade --generate-hashes -o requirements.lock.txt requirements.txt
 
       - name: Create PR with refreshed lockfile
         uses: peter-evans/create-pull-request@v6
