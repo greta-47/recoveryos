@@ -43,3 +43,4 @@ jobs:
             Acceptance: PR preflight ✅, main GHCR build ✅ with --require-hashes.
           labels: ci
 # Trigger workflow
+# Updated lockfile merged
