@@ -2,9 +2,14 @@ name: Build & Container Scan (push)
 
 on:
   push:
+<<<<<<< HEAD
     branches: [ "main" ]          # publish only on main
   workflow_dispatch:               # allow manual publish runs
 
+=======
+    branches: ["main"]           # publish only on main
+  workflow_dispatch:              # allow manual publish runs
+>>>>>>> b4d11c1 (ci(ghcr): publish only on main + add required permissions + concurrency (#30))
 
 permissions:
   contents: read
@@ -13,7 +18,11 @@ permissions:
   id-token: write
 
 concurrency:
+<<<<<<< HEAD
   group: ghcr-${{ github.ref }}
+=======
+  group: ghcr-${{ github.ref_name }}
+>>>>>>> b4d11c1 (ci(ghcr): publish only on main + add required permissions + concurrency (#30))
   cancel-in-progress: true
 
 jobs:
@@ -64,6 +73,7 @@ jobs:
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+<<<<<<< HEAD
 - name: Build and push
   uses: docker/build-push-action@v6
   with:
@@ -97,3 +107,20 @@ jobs:
     sarif_file: trivy-results.sarif
 
 
+=======
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true                                 # always push on main / manual
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate SBOM
+       
+::contentReference[oaicite:0]{index=0}
+
+>>>>>>> b4d11c1 (ci(ghcr): publish only on main + add required permissions + concurrency (#30))
