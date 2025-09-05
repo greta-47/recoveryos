@@ -42,5 +42,5 @@ jobs:
             Generated on Ubuntu with pip-compile --generate-hashes (Python 3.11).
             Acceptance: PR preflight ✅, main GHCR build ✅ with --require-hashes.
           labels: ci
-# Trigger workflow
+# Fresh lockfile regeneration
 # Updated lockfile merged
