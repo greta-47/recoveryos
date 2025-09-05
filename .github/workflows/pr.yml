@@ -22,7 +22,7 @@ jobs:
           python-version: '3.11'
       - name: Install pip-tools (Linux)
         run: |
-          python -m pip install 'pip==24.2' 'pip-tools==7.4.1'
+          python -m pip install 'pip==24.2.1' 'pip-tools==7.4.1'
       - name: Regenerate lockfile (temp) on Linux
         run: |
           pip-compile --quiet --generate-hashes -o /tmp/requirements.lock.txt requirements.txt
