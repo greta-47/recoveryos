@@ -2,6 +2,12 @@ name: Regen lockfile (Linux)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - chore/ci-workflows-consolidation
+    paths:
+      - 'requirements.txt'
+      - '.github/workflows/regen-lockfile.yml'
 
 permissions:
   contents: write
