@@ -1,0 +1,92 @@
+name: PR CI (informational scans + lockfile preflight)
+
+on:
+  pull_request:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  preflight-lock:
+    name: Preflight · lockfile freshness (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pip-tools (Linux)
+        run: |
+          python -m pip install 'pip==24.2' 'pip-tools==7.4.1'
+      - name: Regenerate lockfile (temp) on Linux
+        run: |
+          pip-compile --quiet --generate-hashes -o /tmp/requirements.lock.txt requirements.txt
+      - name: Diff lockfile (ignore comments)
+        run: |
+          awk '!/^\s*#/' requirements.lock.txt > /tmp/current.txt
+          awk '!/^\s*#/' /tmp/requirements.lock.txt > /tmp/new.txt
+          set -e
+          if ! diff -u /tmp/current.txt /tmp/new.txt > /tmp/lock.diff; then
+            echo "::error file=requirements.lock.txt::Lockfile is stale relative to requirements.txt"
+            cat /tmp/lock.diff || true
+            exit 1
+          fi
+
+  lint:
+    name: Lint · ruff (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m pip install -U pip
+          python -m pip install -U ruff
+      - run: ruff format --check .
+      - run: ruff check .
+
+  scans:
+    name: Scans · gitleaks + trivy (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: detect --no-banner --redact --verbose
+      - name: Trivy FS (vuln-only → SARIF)
+        run: |
+          docker run --rm \
+            -v "$PWD":/work \
+            -w /work \
+            aquasec/trivy fs --security-checks vuln \
+            --format sarif --output trivy-results.sarif \
+            --severity HIGH,CRITICAL . || true
+      - name: Upload SARIF (if present)
+        if: ${{ always() && hashFiles('trivy-results.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+  docker-smoke:
+    name: Docker · smoke build (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: false
