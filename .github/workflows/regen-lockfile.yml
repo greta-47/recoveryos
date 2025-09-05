@@ -4,18 +4,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write      # allow pushing branch
+  pull-requests: write # allow opening PR
 
 jobs:
   regen:
     name: Compile hashed lockfile
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -28,23 +26,9 @@ jobs:
 
       - name: Compile hashed lockfile (upgrade)
         run: |
-          pip-compile --upgrade --generate-hashes \
-            -o requirements.lock.txt requirements.txt
-
-      - name: Check for lockfile changes
-        id: diff
-        run: |
-          git add requirements.lock.txt
-          if git diff --cached --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes in requirements.lock.txt"
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-            git status --porcelain
-          fi
+          pip-compile --upgrade --generate-hashes -o requirements.lock.txt requirements.txt
 
       - name: Create PR with refreshed lockfile
-        if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           branch: chore/lockfile-linux-refresh
