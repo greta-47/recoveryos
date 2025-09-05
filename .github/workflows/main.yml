@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: |
-          python -m pip install 'pip==24.2.1' 'pip-tools==7.4.1'
+          python -m pip install 'pip==24.2' 'pip-tools==7.4.1'
       - run: |
           pip-compile --quiet --generate-hashes -o /tmp/requirements.lock.txt requirements.txt
       - run: |
@@ -94,21 +94,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: echo "IMAGE=$(echo ghcr.io/${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-      - uses: gitleaks/gitleaks-action@v2
+      - name: Run gitleaks (blocking)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: detect --no-banner --redact --verbose
-      - continue-on-error: true
+      - name: Trivy Image → SARIF (non-blocking step)
+        continue-on-error: true
         run: |
           docker run --rm \
             -v "$PWD":/work \
             aquasec/trivy image --security-checks vuln \
             --format sarif --output trivy-image.sarif \
             --severity HIGH,CRITICAL ${{ env.IMAGE }}:sha-${{ github.sha }} || true
-      - if: ${{ always() && hashFiles('trivy-image.sarif') != '' }}
+      - name: Upload SARIF (if present)
+        if: ${{ always() && hashFiles('trivy-image.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-image.sarif
-      - run: |
+      - name: Trivy Image (blocking)
+        run: |
           docker run --rm aquasec/trivy image --security-checks vuln \
             --exit-code 1 --severity HIGH,CRITICAL \
             ${{ env.IMAGE }}:sha-${{ github.sha }}
